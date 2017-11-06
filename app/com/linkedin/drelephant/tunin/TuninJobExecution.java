@@ -3,8 +3,7 @@ package com.linkedin.drelephant.tunin;
 public class TuninJobExecution {
 
     public int _jobId;
-    public int _executionId;
-    public String _schedulerExecutionId;
+    public String _schedulerJobExecutionId;
     public enum TuninJobState {SUCCEEDED, FAILED, RUNNING, SKIPPED};
     public TuninJobState _state;
     public float _resourceUsage;
@@ -12,8 +11,7 @@ public class TuninJobExecution {
     public float _inputSize;
 
     public int getJobId() {return _jobId;}
-    public int getExecutionId() {return _executionId;}
-    public String getSchedulerExecutionId() {return _schedulerExecutionId;}
+    public String getSchedulerExecutionId() {return _schedulerJobExecutionId;}
     public TuninJobState getState() {return _state;}
     public float getResourceUsage() { return _resourceUsage;}
     public float getExecutionTime() { return _executionTime;}
@@ -23,12 +21,8 @@ public class TuninJobExecution {
         _jobId = jobId;
     }
 
-    public void setExecutionId(int executionId){
-        _executionId = executionId;
-    }
-
     public void setSchedulerExecutionId(String schedulerExecutionId){
-        _schedulerExecutionId = schedulerExecutionId;
+        _schedulerJobExecutionId = schedulerExecutionId;
     }
 
     public void setState(TuninJobState state){
