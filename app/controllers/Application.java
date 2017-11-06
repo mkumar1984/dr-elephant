@@ -18,7 +18,6 @@ package controllers;
 
 import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.linkedin.drelephant.ElephantContext;
@@ -29,23 +28,16 @@ import com.linkedin.drelephant.util.Utils;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 import models.AppHeuristicResult;
 import models.AppResult;
+import models.Job;
 
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.log4j.Logger;
+
 import play.api.templates.Html;
 import play.data.DynamicForm;
 import play.data.Form;
@@ -63,15 +55,7 @@ import views.html.page.helpPage;
 import views.html.page.homePage;
 import views.html.page.jobHistoryPage;
 import views.html.page.searchPage;
-import views.html.results.compareResults;
-import views.html.results.flowDetails;
-import views.html.results.oldFlowHistoryResults;
-import views.html.results.jobDetails;
-import views.html.results.oldJobHistoryResults;
-import views.html.results.oldFlowMetricsHistoryResults;
-import views.html.results.oldJobMetricsHistoryResults;
-import views.html.results.searchResults;
-
+import views.html.results.*;
 import views.html.page.oldFlowHistoryPage;
 import views.html.page.oldJobHistoryPage;
 import views.html.results.jobHistoryResults;
@@ -457,7 +441,7 @@ public class Application extends Controller {
    * @return A map of Job Urls to the list of jobs corresponding to the 2 flow execution urls
    */
   private static Map<IdUrlPair, Map<IdUrlPair, List<AppResult>>> compareFlows(List<AppResult> results1, List<AppResult> results2) {
-    
+
     Map<IdUrlPair, Map<IdUrlPair, List<AppResult>>> jobDefMap = new HashMap<IdUrlPair, Map<IdUrlPair, List<AppResult>>>();
 
     if (results1 != null && !results1.isEmpty() && results2 != null && !results2.isEmpty()) {
@@ -876,6 +860,24 @@ public class Application extends Controller {
     }
   }
 
+  /**
+   * Rest API for searching a particular job information
+   * E.g, localhost:8080/rest/job?id=xyz
+   */
+  public static Result getTuningJob(String id) {
+
+    if (id == null || id.isEmpty()) {
+      return badRequest("No job id provided.");
+    }
+
+    Job job=Job.find.select("*").where().idEq(id).findUnique();
+
+    if (job != null) {
+      return ok(Json.toJson(job));
+    } else {
+      return notFound("Unable to find job on id: " + id);
+    }
+  }
   /**
    * Rest API for searching all jobs triggered by a particular Scheduler Job
    * E.g., localhost:8080/rest/jobexec?id=xyz
