@@ -1,21 +1,22 @@
 package com.linkedin.drelephant.tunin;
 
-
+import models.AlgoParam;
 import java.util.List;
 
 public class TunerState {
 
-    private List<Individual> _archieve;
+    private List<Individual> _archive;
     private List<Individual> _previousPopulation;
     private List<Individual> _currentPopulation;
     private List<List<Integer>> _randomState;
+    private List<AlgoParam> _parameters;
 
-    public void setArchieve(List<Individual> archieve){
-        this._archieve = archieve;
+    public void setArchive(List<Individual> archive){
+        this._archive = archive;
     }
 
-    public List<Individual> getArchieve(){
-        return _archieve;
+    public List<Individual> getArchive(){
+        return _archive;
     }
 
     public void setPreviousPopulation(List<Individual> previousPopulation){
@@ -41,4 +42,8 @@ public class TunerState {
     public List<List<Integer>> getRandomState(){
         return _randomState;
     }
+
+    public void setParameters(List<AlgoParam> parameters){ this._parameters = parameters; }
+
+    public List<AlgoParam> getParameters(){ return _parameters; }
 }
