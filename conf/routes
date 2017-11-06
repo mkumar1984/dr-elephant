@@ -55,6 +55,8 @@ GET        /rest/resourceusagedatabyuser        controllers.Application.restReso
 GET        /rest/user-details                   controllers.api.v1.Web.restGetUsersSummaryStats()
 GET        /rest/workflow-exceptions            controllers.api.v1.Web.restExceptions()
 GET        /rest/exception-statuses             controllers.api.v1.Web.restExceptionStatuses()
+GET        /rest/tuningJob                      controllers.Application.getTuningJob(id: String)
+
 
 # Metrics calls
 GET        /ping                                controllers.MetricsController.ping()
