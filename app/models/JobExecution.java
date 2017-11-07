@@ -2,11 +2,15 @@ package models;
 
 import java.sql.Timestamp;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import play.db.ebean.Model;
@@ -53,13 +57,15 @@ public class JobExecution extends Model {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  public Long param_set_id;
+  public Long paramSetId;
 
-  @Column(nullable = false)
-  public Integer jobId;
+  @ManyToOne(cascade = CascadeType.ALL)
+  @JoinTable(name="job", joinColumns={@JoinColumn(name ="job_id", referencedColumnName="job_id")})
+  public Job job;
 
-  @Column(nullable = false)
-  public Integer algoId;
+  @ManyToOne(cascade = CascadeType.ALL)
+  @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
+  public Algo algo;
 
   @Column(nullable = false)
   public ParamSetStatus paramSetState;
