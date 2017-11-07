@@ -1,15 +1,25 @@
 package com.linkedin.drelephant.tunin;
 
 import models.AlgoParam;
+import models.Job;
+
 import java.util.List;
 
 public class TunerState {
-
+    private Job _tuningJob;
     private List<Individual> _archive;
     private List<Individual> _previousPopulation;
     private List<Individual> _currentPopulation;
     private List<List<Integer>> _randomState;
-    private List<AlgoParam> _parameters;
+    private List<AlgoParam> _parametersToTune;
+
+    public void setTuningJob(Job tuningJob){
+        this._tuningJob = tuningJob;
+    }
+
+    public Job getTuningJob(){
+        return _tuningJob;
+    }
 
     public void setArchive(List<Individual> archive){
         this._archive = archive;
@@ -43,7 +53,7 @@ public class TunerState {
         return _randomState;
     }
 
-    public void setParameters(List<AlgoParam> parameters){ this._parameters = parameters; }
+    public void setParametersToTune(List<AlgoParam> parameters){ this._parametersToTune = parameters; }
 
-    public List<AlgoParam> getParameters(){ return _parameters; }
+    public List<AlgoParam> getParametersToTune(){ return _parametersToTune; }
 }
