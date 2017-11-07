@@ -1,6 +1,8 @@
 package com.linkedin.drelephant.tunin;
 
 import com.avaje.ebean.Expr;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonObject;
 import models.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import play.libs.Json;
@@ -29,22 +31,46 @@ public abstract class ParamGenerator {
 
     private List<Particle> jsonToParticleList(JsonNode jsonParticleList){
 
+        List<Particle> particleList = new ArrayList<>();
+        for (JsonNode jsonParticle: jsonParticleList ){
+            Particle particle = new Particle();
+
+            List<Float> candidate = new ArrayList<>();
+            JsonNode jsonCandidate = jsonParticle.get("_candidate");
+            for (JsonNode jsonValue: jsonCandidate){
+                float value = jsonValue.floatValue();
+                candidate.add(value);
+            }
+            boolean maximize =jsonParticle.get("maximize").asBoolean();
+            double birthDate = jsonParticle.get("birthdate").asDouble();
+            float fitness = jsonParticle.get("fitness").floatValue();
+
+            particle.setCandidate(candidate);
+            particle.setMaximize(maximize);
+            particle.setBirthDate(birthDate);
+            particle.setFitness(fitness);
+            particleList.add(particle);
+        }
+        return particleList;
+    }
+
+    private JsonNode particleListToJson(List<Particle> particleList){
+        JsonNode jsonNode = Json.toJson(particleList);
+        return jsonNode;
     }
 
     private List<TunerState> getJobsTunerState(List<Job> tuninJobs){
-        // Todo: fitness of current pop will be populated where?
         List<TunerState> tunerStateList = new ArrayList<>();
         for (Job job: tuninJobs){
             TunerState tunerState = new TunerState();
             tunerState.setTuningJob(job);
             JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
             String savedState = new String(jobSavedState.savedState);
-            // Need to add fitness to the current population
+            // Todo: Need to add fitness to the current population
             tunerState.setStringTunerState(savedState);
             int algoId = job.algo.algoId;
-
-            List<AlgoParam> algoParamList = AlgoParam.find.where().Expr.eq()
-
+            List<AlgoParam> algoParamList = AlgoParam.find.where().eq("algoId", algoId).findList();
+            tunerState.setParametersToTune(algoParamList);
             tunerStateList.add(tunerState);
         }
         return tunerStateList;
@@ -61,7 +87,6 @@ public abstract class ParamGenerator {
          * update the tuner state
          */
 
-        List<JobExecution> jobExecutionList = new ArrayList<>();
         List<JobSuggestedParamValue> jobSuggestedParamValueList= new ArrayList<>();
 
         for (TunerState jobTunerState: jobTunerStateList){
@@ -72,20 +97,9 @@ public abstract class ParamGenerator {
             String stringTunerState = jobTunerState.getStringTunerState();
             JsonNode jsonTunerState = Json.toJson(stringTunerState);
 
-            // Todo: From the json extract the currentPopulaion list of individuals
-            List<Particle> suggestedPopulation = new ArrayList<>();
-            JsonNode jsonSuggestedtPopulation = jsonTunerState.get("current_population");
-            for (JsonNode jsonSuggestedParticle: jsonSuggestedtPopulation ){
-                Particle suggestedParticle = new Particle();
+            JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
 
-                // Todo: fill the individual
-                suggestedParticle.setCandidate();
-
-                float fitness = Float.valueOf(jsonSuggestedParticle.get("fitness").textValue());
-                suggestedParticle.setFitness(fitness);
-            }
-
-//            List<Particle> suggestedPopulation = jobTunerState.getCurrentPopulation();
+            List<Particle> suggestedPopulation = jsonToParticleList(jsonSuggestedPopulation);
 
             for (Particle suggestedParticle: suggestedPopulation){
 
@@ -112,15 +126,20 @@ public abstract class ParamGenerator {
                     jobExecution.paramSetState = JobExecution.ParamSetStatus.CREATED;
                 }
 
+                Long paramSetId = saveSuggestedParamMetadata(jobExecution);
                 jobSuggestedParamValue.jobExecution = jobExecution;
-                suggestedParticle.setJobExecution(jobExecution);
-
-                jobExecutionList.add(jobExecution);
+                jobSuggestedParamValue.jobExecution.paramSetId = paramSetId;
+                suggestedParticle.setPramSetId(paramSetId);
                 jobSuggestedParamValueList.add(jobSuggestedParamValue);
             }
+
+            JsonNode updatedJsonSuggestedPopulation = particleListToJson(suggestedPopulation);
+            ObjectNode updatedJsonTunerState = (ObjectNode) jsonTunerState;
+            updatedJsonTunerState.put("current_population", updatedJsonSuggestedPopulation);
+            String updatedStringTunerState = Json.stringify(updatedJsonTunerState);
+            jobTunerState.setStringTunerState(updatedStringTunerState);
         }
 
-        saveSuggestedParamMetadata(jobExecutionList);
         saveSuggestedParams(jobSuggestedParamValueList);
         saveTunerState(jobTunerStateList);
     }
@@ -138,7 +157,7 @@ public abstract class ParamGenerator {
 
     }
 
-    private void saveSuggestedParamMetadata(List<JobExecution> jobExecutionList){
+    private Long saveSuggestedParamMetadata(JobExecution jobExecution){
 
     }
 
