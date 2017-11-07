@@ -4,7 +4,7 @@ import models.JobExecution;
 
 import java.util.List;
 
-public class Individual {
+public class Particle {
 
     private List<Float> _candidate;
     private float _fitness;
