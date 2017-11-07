@@ -1,5 +1,7 @@
 package com.linkedin.drelephant.tunin;
 
+import models.JobExecution;
+
 import java.util.List;
 
 public class Individual {
@@ -8,6 +10,7 @@ public class Individual {
     private float _fitness;
     private double _birthDate;
     private boolean _maximize;
+    private JobExecution _jobExecution;
 
     public void setCandidate(List<Float> candidate){
         this._candidate = candidate;
@@ -39,5 +42,13 @@ public class Individual {
 
     public boolean getMaximize (){
         return _maximize;
+    }
+
+    public void setJobExecution(JobExecution jobExecution){
+        this._jobExecution = jobExecution;
+    }
+
+    public JobExecution getJobExecution(){
+        return _jobExecution;
     }
 }
