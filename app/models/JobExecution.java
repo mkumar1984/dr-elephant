@@ -83,4 +83,6 @@ public class JobExecution extends Model {
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
+  public static Finder<Long, JobExecution> find = new Finder<Long, JobExecution>(Long.class, JobExecution.class);
+
 }

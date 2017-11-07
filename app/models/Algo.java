@@ -63,4 +63,6 @@ public class Algo extends Model{
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
+  public static Finder<Integer, Algo> find = new Finder<Integer, Algo>(Integer.class, Algo.class);
+
 }
