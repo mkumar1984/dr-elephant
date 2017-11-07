@@ -69,4 +69,7 @@ public class AlgoParam extends Model{
 
   public Timestamp createdTs;
   public Timestamp updatedTs;
+
+  public static Finder<Integer, AlgoParam> find = new Finder<Integer, AlgoParam>(Integer.class, AlgoParam.class);
+
 }
