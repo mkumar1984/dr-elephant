@@ -1,10 +1,13 @@
 package models;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -33,7 +36,8 @@ public class JobExecution extends Model {
     NOT_STARTED,
     IN_PROGRESS,
     SUCCEDED,
-    FAILED
+    FAILED,
+    CANCELLED
   }
 
   public static class TABLE {
@@ -52,7 +56,7 @@ public class JobExecution extends Model {
     public static final String costMetric = "costMetric";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
-
+    public static final String job = "job";
   }
 
   @Id
@@ -67,18 +71,20 @@ public class JobExecution extends Model {
   @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
   public Algo algo;
 
-  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
   public ParamSetStatus paramSetState;
 
-  @Column(nullable = false)
   public Boolean isDefaultExecution;
 
   public String jobExecutionId;
   public String flowExecutionId;
+
+  @Enumerated(EnumType.STRING)
   public ExecutionState executionState;
+
   public Double resourceUsage;
   public Double executionTime;
-  public Long inputSizeInMb;
+  public Double inputSizeInMb;
   public Double costMetric;
   public Timestamp createdTs;
   public Timestamp updatedTs;

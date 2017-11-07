@@ -23,8 +23,14 @@ import com.google.common.collect.Sets;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.Metrics;
 import com.linkedin.drelephant.analysis.Severity;
+import com.linkedin.drelephant.exceptions.azkaban.AzkabanWorkflowClient;
+import com.linkedin.drelephant.tunin.AutoTuningAPIHelper;
+import com.linkedin.drelephant.tunin.AzkabanJobStatusUtil;
+import com.linkedin.drelephant.tunin.FitnessComputeUtil;
+import com.linkedin.drelephant.tunin.JobCompleteDetector;
 import com.linkedin.drelephant.util.Utils;
 
+import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -32,6 +38,8 @@ import java.util.*;
 import models.AppHeuristicResult;
 import models.AppResult;
 import models.Job;
+import models.JobExecution;
+import models.JobSuggestedParamValue;
 
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -864,18 +872,128 @@ public class Application extends Controller {
    * Rest API for searching a particular job information
    * E.g, localhost:8080/rest/job?id=xyz
    */
-  public static Result getTuningJob(String id) {
+  public static Result getTuningJob(String id, String token) {
 
     if (id == null || id.isEmpty()) {
       return badRequest("No job id provided.");
     }
 
-    Job job=Job.find.select("*").where().idEq(id).findUnique();
+    //    try{
+    //      AzkabanWorkflowClient azkabanWorkflowClient=new AzkabanWorkflowClient("https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=4567967");
+    //      azkabanWorkflowClient.login("ro_elephant_az_svc", new File("/Users/mkumar1/hguest.private_key.der"));
+    //    }catch(Exception e)
+    //    {
+    //      logger.error("Error in log " , e);
+    //    }
 
-    if (job != null) {
-      return ok(Json.toJson(job));
+    JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
+    FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
+    List<JobExecution> jobExecutions = null;
+    try {
+      switch (id) {
+        case "1":
+          logger.error("100 ID value is " + id);
+          jobExecutions = jobCompleteDetector.getJobExecution();
+          break;
+        case "2":
+          logger.error("100 ID value is " + id);
+          jobExecutions = jobCompleteDetector.getJobExecution();
+          jobExecutions = jobCompleteDetector.getCompletedJob(jobExecutions, token);
+          break;
+        case "3":
+          logger.error("100 ID value is " + id);
+          jobExecutions = jobCompleteDetector.updateCompletedJobs(token);
+          break;
+        case "4":
+          logger.error("100 ID value is " + id);
+          jobExecutions = fitnessComputeUtil.getJobExecution();
+          break;
+        case "5":
+          logger.error("100 ID value is " + id);
+          jobExecutions = fitnessComputeUtil.getJobExecution();
+          fitnessComputeUtil.updateJobMetrics(jobExecutions);
+          break;
+        case "6":
+          logger.error("100 ID value is " + id);
+          return callGetCurrentRunParameters();
+        case "7":
+          logger.error("100 ID value is " + id);
+          return callGetCurrentRunParameters1();
+        default:
+          Job job = Job.find.select("*").where().idEq(id).findUnique();
+          if (job != null) {
+            return ok(Json.toJson(job));
+          } else {
+            return notFound("Unable to find job on id: " + id);
+          }
+      }
+    } catch (Exception e) {
+      logger.error("Error in log ", e);
+      e.printStackTrace();
+      logger.error("Error " + e.getStackTrace().toString());
+    }
+
+    //JobSuggestedParamValue jobSuggestedParamValue=JobSuggestedParamValue.find.select("*").where()
+
+    if (jobExecutions != null) {
+      return ok(Json.toJson(jobExecutions));
     } else {
       return notFound("Unable to find job on id: " + id);
+    }
+  }
+
+  public static Result callGetCurrentRunParameters()
+  {
+
+    Map<String, String> paramValueMap=new HashMap<String, String>();
+    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
+    paramValueMap.put("mapreduce.map.memory.mb", "20000");
+    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
+
+    String defaultParams=Json.toJson(paramValueMap).toString();
+    String projectName="metricsV2";
+    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
+    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424";
+    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+    String client="UMP";
+    String userName="mkumar1";
+    Boolean isRetry=false;
+    Boolean skipExecutionForOptimization=false;
+    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
+  }
+  public static Result callGetCurrentRunParameters1()
+  {
+
+    Map<String, String> paramValueMap=new HashMap<String, String>();
+    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
+    paramValueMap.put("mapreduce.map.memory.mb", "20000");
+    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
+
+    String defaultParams=Json.toJson(paramValueMap).toString();
+    String projectName="metricsV2";
+    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
+    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426";
+    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+    String client="UMP";
+    String userName="mkumar1";
+    Boolean isRetry=false;
+    Boolean skipExecutionForOptimization=false;
+    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
+  }
+
+
+  public static Result getCurrentRunParameters(String projectName, String flowDefId, String jobDefId, String flowExecId, String jobExecId, String defaultParams, String client, String userName, Boolean isRetry, Boolean skipExecutionForOptimization)
+  {
+    AutoTuningAPIHelper autoTuningAPIHelper=new AutoTuningAPIHelper();
+    Map<String, String> outputParams=autoTuningAPIHelper.getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
+    if(outputParams!=null)
+    {
+      return ok(Json.toJson(outputParams));
+    }else
+    {
+      return notFound("Unable to find parameters for given job: " + jobDefId + " and flow: " + flowDefId);
     }
   }
   /**

@@ -114,7 +114,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     this.configuration = configuration;
     String initialFetchWindowString = configuration.get(FETCH_INITIAL_WINDOW_MS);
     if (initialFetchWindowString != null) {
-      long initialFetchWindow = Long.getLong(initialFetchWindowString);
+      long initialFetchWindow = Long.parseLong(initialFetchWindowString);
       _lastTime = System.currentTimeMillis() - FETCH_DELAY - initialFetchWindow;
       _fetchStartTime = _lastTime;
     }

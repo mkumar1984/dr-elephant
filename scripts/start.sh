@@ -110,6 +110,10 @@ if [ -n "${keytab_location}" ]; then
   echo "keytab_location: " $keytab_location
   OPTS+=" -Dkeytab.location=$keytab_location"
 fi
+if [ -n "${krb_conf_file}" ]; then
+  echo "krb_conf_file: " $krb_conf_file
+  OPTS+=" -Djava.security.krb5.conf=$krb_conf_file"
+fi
 
 if [ -n "${application_secret}" ]; then
   OPTS+=" -Dapplication.secret=$application_secret"
