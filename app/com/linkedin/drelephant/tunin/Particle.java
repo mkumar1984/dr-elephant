@@ -10,7 +10,7 @@ public class Particle {
     private float _fitness;
     private double _birthDate;
     private boolean _maximize;
-    private JobExecution _jobExecution;
+    private Long _paramSetId;
 
     public void setCandidate(List<Float> candidate){
         this._candidate = candidate;
@@ -44,11 +44,11 @@ public class Particle {
         return _maximize;
     }
 
-    public void setJobExecution(JobExecution jobExecution){
-        this._jobExecution = jobExecution;
+    public void setPramSetId(Long paramSetId){
+        this._paramSetId = paramSetId;
     }
 
-    public JobExecution getJobExecution(){
-        return _jobExecution;
+    public Long getParamSetId(){
+        return _paramSetId;
     }
 }
