@@ -1,15 +1,17 @@
 package com.linkedin.drelephant.tunin;
 
-import models.JobExecution;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Particle {
 
     private List<Float> _candidate;
     private float _fitness;
-    private double _birthDate;
+    private double _birthdate;
     private boolean _maximize;
+
     private Long _paramSetId;
 
     public void setCandidate(List<Float> candidate){
@@ -28,12 +30,12 @@ public class Particle {
         return _fitness;
     }
 
-    public void setBirthDate(double birthDate){
-        this._birthDate = birthDate;
+    public void setBirthdate(double birthDate){
+        this._birthdate = birthDate;
     }
 
-    public double getBirthDate(){
-        return _birthDate;
+    public double getBirthdate(){
+        return _birthdate;
     }
 
     public void setMaximize(boolean maximize){
