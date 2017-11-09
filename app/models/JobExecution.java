@@ -2,16 +2,7 @@ package models;
 
 import java.sql.Timestamp;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 import play.db.ebean.Model;
 
@@ -67,6 +58,7 @@ public class JobExecution extends Model {
   @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
   public Algo algo;
 
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   public ParamSetStatus paramSetState;
 
@@ -75,6 +67,8 @@ public class JobExecution extends Model {
 
   public String jobExecutionId;
   public String flowExecutionId;
+
+  @Enumerated(EnumType.STRING)
   public ExecutionState executionState;
   public Double resourceUsage;
   public Double executionTime;
