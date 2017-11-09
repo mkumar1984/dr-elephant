@@ -18,11 +18,17 @@ package controllers;
 
 import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.Metrics;
 import com.linkedin.drelephant.analysis.Severity;
+import com.linkedin.drelephant.tunin.PSOParamGenerator;
+import com.linkedin.drelephant.tunin.ParamGenerator;
+import com.linkedin.drelephant.tunin.Particle;
+import com.linkedin.drelephant.tunin.TunerState;
 import com.linkedin.drelephant.util.Utils;
 
 import java.text.ParseException;
@@ -33,6 +39,7 @@ import models.AppHeuristicResult;
 import models.AppResult;
 import models.Job;
 
+import models.JobExecution;
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -878,6 +885,43 @@ public class Application extends Controller {
       return notFound("Unable to find job on id: " + id);
     }
   }
+
+  public static Result restParam(){
+    ParamGenerator paramGenerator = new PSOParamGenerator();
+    List<Job> jobList = paramGenerator.fetchJobsForParamSuggestion();
+//    List<TunerState> tunerStateList= paramGenerator.getJobsTunerState(jobList);
+    Job job = jobList.get(0);
+    JobExecution jobExecution = new JobExecution();
+    jobExecution.job = job;
+    jobExecution.algo = job.algo;
+    jobExecution.isDefaultExecution = false;
+    jobExecution.paramSetState = JobExecution.ParamSetStatus.DISCARDED;
+
+    Long num = paramGenerator.saveSuggestedParamMetadata(jobExecution);
+    if(num!=null){
+      return ok(Json.toJson(num));
+    } else{
+      return notFound("Null return");
+    }
+//    List<Particle> particleList = new ArrayList<Particle>();
+//    Particle particle = new Particle();
+//    List<Float> floatList = new ArrayList<Float>();
+//    floatList.add((float) 1.2);
+//    floatList.add((float) 1.4);
+//    particle.setCandidate(floatList);
+//    particle.setFitness((float) 1.6);
+//    particle.setBirthdate((double) 1.8);
+//    particle.setMaximize(false);
+////    particle.setPramSetId((long) 1);
+//    particleList.add(particle);
+//    JsonNode json = paramGenerator.particleListToJson(particleList);
+//
+//    particleList = paramGenerator.jsonToParticleList(json);
+//    return ok(json);
+  }
+
+
+
   /**
    * Rest API for searching all jobs triggered by a particular Scheduler Job
    * E.g., localhost:8080/rest/jobexec?id=xyz
