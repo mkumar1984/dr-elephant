@@ -15,14 +15,15 @@ public class JobSuggestedParamValue extends Model{
   private static final long serialVersionUID = 1L;
   public static class TABLE {
     public static final String TABLE_NAME = "job_suggested_param_value";
-    public static final String paramSetId = "paramSetId";
-    public static final String paramId = "paramId";
+    public static final String paramSetId = "primaryKeyParamSetId";
+    public static final String paramId = "primaryKeyParamId";
     public static final String paramValue = "paramValue";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
   }
 
   @EmbeddedId
+  @Transient
   public PrimaryKey paramValuePK;
   public String paramValue;
   public Timestamp createdTs;
@@ -38,18 +39,21 @@ public class JobSuggestedParamValue extends Model{
 
   @Embeddable
   public static class PrimaryKey implements Serializable{
-      public Integer paramId;
-      public Integer paramSetId;
+      @Transient
+      public Integer primaryKeyParamId;
+
+      @Transient
+      public Long primaryKeyParamSetId;
 
       @Override
       public int hashCode(){
-          return new HashCodeBuilder(17,37).append(paramId).append(paramSetId).toHashCode();
+          return new HashCodeBuilder(17,37).append(primaryKeyParamId).append(primaryKeyParamSetId).toHashCode();
       }
 
       @Override
       public boolean equals(Object obj){
           if(obj instanceof PrimaryKey){
-              if(((PrimaryKey)obj).paramId == paramId && ((PrimaryKey)obj).paramSetId == paramSetId){
+              if(((PrimaryKey)obj).primaryKeyParamId == primaryKeyParamId && ((PrimaryKey)obj).primaryKeyParamSetId == primaryKeyParamSetId){
                   return true;
                 }
                 else{

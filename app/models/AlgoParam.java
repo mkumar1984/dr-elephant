@@ -19,7 +19,7 @@ public class AlgoParam extends Model{
 
   public static class TABLE {
     public static final String TABLE_NAME = "algo_param";
-    public static final String paramId = "paramId";
+    public static final String paramId = "primaryKeyParamId";
     public static final String paramName = "paramName";
     public static final String algoId = "algoId";
     public static final String paramValueType = "paramValueType";
