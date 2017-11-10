@@ -2,7 +2,6 @@ package com.linkedin.drelephant.tunin;
 
 import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import controllers.Application;
 import models.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import play.libs.Json;
@@ -17,7 +16,7 @@ public abstract class ParamGenerator {
     abstract TunerState generateParamSet(TunerState jobTunerState);
 
     // Done
-    private List<Particle> jsonToParticleList(JsonNode jsonParticleList){
+    public List<Particle> jsonToParticleList(JsonNode jsonParticleList){
 
         List<Particle> particleList = new ArrayList<Particle>();
 
@@ -25,6 +24,14 @@ public abstract class ParamGenerator {
 
             Particle particle = Json.fromJson(jsonParticle, Particle.class);
             if(particle!=null){
+                if(particle.getCandidate()==null){
+                    JsonNode jsonCandidate = jsonParticle.get("_candidate");
+                    if(jsonCandidate!=null){
+                        List<Double> candidate = new ArrayList<Double>();
+                        candidate = Json.fromJson(jsonCandidate, candidate.getClass());
+                        particle.setCandidate(candidate);
+                    }
+                }
                 particleList.add(particle);
             }
         }
@@ -55,7 +62,7 @@ public abstract class ParamGenerator {
     }
 
     //Done
-    private JsonNode particleListToJson(List<Particle> particleList){
+    public JsonNode particleListToJson(List<Particle> particleList){
         JsonNode jsonNode = Json.toJson(particleList);
         return jsonNode;
     }
@@ -77,17 +84,23 @@ public abstract class ParamGenerator {
         return tunerStateList;
     }
 
-    private List<JobSuggestedParamValue> getParamValueList(Particle particle, List<AlgoParam> paramList){
+    // Done
+    public List<JobSuggestedParamValue> getParamValueList(Particle particle, List<AlgoParam> paramList){
         List<JobSuggestedParamValue> jobSuggestedParamValueList = new ArrayList<JobSuggestedParamValue>();
 
-        List<Float> candidate = particle.getCandidate();
+        List<Double> candidate = particle.getCandidate();
 
         for (int i=0; i< candidate.size() && i<paramList.size(); i++){
             JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
+            JobSuggestedParamValue.PrimaryKey primaryKey = new JobSuggestedParamValue.PrimaryKey();
+
             int paramId = paramList.get(i).paramId;
+            primaryKey.primaryKeyParamId = paramId;
             AlgoParam algoParam = AlgoParam.find.byId(paramId);
+
+            jobSuggestedParamValue.paramValuePK = primaryKey;
             jobSuggestedParamValue.algoParam = algoParam;
-            jobSuggestedParamValue.paramValue = Float.toString(candidate.get(i));
+            jobSuggestedParamValue.paramValue = Double.toString(candidate.get(i));
             jobSuggestedParamValueList.add(jobSuggestedParamValue);
         }
 
@@ -95,7 +108,7 @@ public abstract class ParamGenerator {
     }
 
 
-    private void updateDatabase(List<TunerState> jobTunerStateList){
+    public void updateDatabase(List<TunerState> jobTunerStateList){
         /**
          * For every tuner state:
          *  For every new particle:
@@ -115,8 +128,12 @@ public abstract class ParamGenerator {
             List<AlgoParam> paramList = jobTunerState.getParametersToTune();
             String stringTunerState = jobTunerState.getStringTunerState();
 
-            JsonNode jsonTunerState = Json.toJson(stringTunerState);
+            JsonNode jsonTunerState = Json.parse(stringTunerState);
             JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
+
+            if(jsonSuggestedPopulation == null){
+                break;
+            }
             List<Particle> suggestedPopulation = jsonToParticleList(jsonSuggestedPopulation);
 
             for (Particle suggestedParticle: suggestedPopulation){
@@ -130,7 +147,7 @@ public abstract class ParamGenerator {
                     jobExecution.paramSetState = JobExecution.ParamSetStatus.FITNESS_COMPUTED;
                     jobExecution.resourceUsage = (double) -1;
                     jobExecution.executionTime = (double) -1;
-                    jobExecution.costMetric = 3 * job.averageResourceUsage * job.allowedMaxResourceUsagePercent;
+                    jobExecution.costMetric = 3 * job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100.0;
                 }
                 else{
                     jobExecution.paramSetState = JobExecution.ParamSetStatus.CREATED;
@@ -139,6 +156,7 @@ public abstract class ParamGenerator {
 
                 for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
                     jobSuggestedParamValue.jobExecution = jobExecution;
+                    jobSuggestedParamValue.paramValuePK.primaryKeyParamSetId = paramSetId;
                 }
                 suggestedParticle.setPramSetId(paramSetId);
                 saveSuggestedParams(jobSuggestedParamValueList);
@@ -154,23 +172,24 @@ public abstract class ParamGenerator {
         saveTunerState(jobTunerStateList);
     }
 
-    private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList){
+    //Done
+    public boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList){
         //[1] sort.mb > 60% of map.memory: To avoid heap memory failure
         //[2] map.memory - sort.mb < 768: To avoid heap memory failure
         //[3] pig.maxCombinedSplitSize > 1.8*mapreduce.map.memory.mb
 
         int violations = 0;
-        int mrSortMemory = -1;
-        int mrMapMemory = -1;
-        int pigMaxCombinedSplitSize = -1;
+        double mrSortMemory = -1;
+        double mrMapMemory = -1;
+        double pigMaxCombinedSplitSize = -1;
 
         for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
             if(jobSuggestedParamValue.algoParam.paramName.equals("mapreduce.task.io.sort.mb")){
-                mrSortMemory = Integer.parseInt(jobSuggestedParamValue.paramValue);
+                mrSortMemory = Double.parseDouble(jobSuggestedParamValue.paramValue);
             } else if(jobSuggestedParamValue.algoParam.paramName.equals("mapreduce.map.memory.mb")){
-                mrMapMemory = Integer.parseInt(jobSuggestedParamValue.paramValue);
+                mrMapMemory = Double.parseDouble(jobSuggestedParamValue.paramValue);
             }else if(jobSuggestedParamValue.algoParam.paramName.equals("pig.maxCombinedSplitSize")){
-                pigMaxCombinedSplitSize = Integer.parseInt(jobSuggestedParamValue.paramValue);
+                pigMaxCombinedSplitSize = Double.parseDouble(jobSuggestedParamValue.paramValue);
             }
         }
 
@@ -196,7 +215,7 @@ public abstract class ParamGenerator {
     }
 
     //Done
-    private void saveTunerState(List<TunerState> tunerStateList){
+    public void saveTunerState(List<TunerState> tunerStateList){
         for (TunerState tunerState: tunerStateList){
             JobSavedState jobSavedState = new JobSavedState();
             jobSavedState.jobId = tunerState.getTuningJob().jobId;
@@ -206,14 +225,14 @@ public abstract class ParamGenerator {
     }
 
 
-    private void saveSuggestedParams(List<JobSuggestedParamValue> jobSuggestedParamValueList){
+    public void saveSuggestedParams(List<JobSuggestedParamValue> jobSuggestedParamValueList){
         for(JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
             jobSuggestedParamValue.save();
         }
     }
 
     //Done
-    private Long saveSuggestedParamMetadata(JobExecution jobExecution){
+    public Long saveSuggestedParamMetadata(JobExecution jobExecution){
         jobExecution.save();
         return jobExecution.paramSetId;
     }
@@ -228,7 +247,6 @@ public abstract class ParamGenerator {
             updatedJobTunerStateList.add(newJobTunerState);
         }
         updateDatabase(updatedJobTunerStateList);
-
     }
 
 }
