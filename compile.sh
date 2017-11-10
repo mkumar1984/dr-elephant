@@ -126,7 +126,7 @@ app_conf=${project_root}/app-conf
 rm -rf ${project_root}/dist
 mkdir dist
 
-play_command $OPTS clean test compile dist
+play_command $OPTS clean compile dist
 
 cd target/universal
 
