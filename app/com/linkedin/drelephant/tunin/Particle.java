@@ -7,18 +7,18 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Particle {
 
-    private List<Float> _candidate;
+    private List<Double> _candidate;
     private float _fitness;
     private double _birthdate;
     private boolean _maximize;
 
     private Long _paramSetId;
 
-    public void setCandidate(List<Float> candidate){
+    public void setCandidate(List<Double> candidate){
         this._candidate = candidate;
     }
 
-    public List<Float> getCandidate(){
+    public List<Double> getCandidate(){
         return _candidate;
     }
 
