@@ -16,6 +16,7 @@ public abstract class ParamGenerator {
     abstract TunerState generateParamSet(TunerState jobTunerState);
 
     // Done
+    // Todo: This can be simplified using the json property annotation
     public List<Particle> jsonToParticleList(JsonNode jsonParticleList){
 
         List<Particle> particleList = new ArrayList<Particle>();
@@ -73,7 +74,22 @@ public abstract class ParamGenerator {
         for (Job job: tuninJobs){
             JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
             String savedState = new String(jobSavedState.savedState);
-            // Todo: Need to add fitness to the current population
+
+            ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
+            JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
+            List<Particle> currentPopulation = jsonToParticleList(jsonCurrentPopulation);
+            for( Particle particle: currentPopulation){
+                Long paramSetId = particle.getParamSetId();
+                JobExecution jobExecution = JobExecution.find.byId(paramSetId);
+                particle.setFitness(jobExecution.costMetric);
+            }
+
+            JsonNode updatedJsonCurrentPopulation = particleListToJson(currentPopulation);
+            jsonSavedState.set("current_population", updatedJsonCurrentPopulation);
+
+            savedState = Json.stringify(jsonSavedState);
+
+
             List<AlgoParam> algoParamList = AlgoParam.find.where().eq("algo", job.algo).findList();
             TunerState tunerState = new TunerState();
             tunerState.setTuningJob(job);
@@ -108,6 +124,7 @@ public abstract class ParamGenerator {
     }
 
 
+    //Done
     public void updateDatabase(List<TunerState> jobTunerStateList){
         /**
          * For every tuner state:
@@ -225,6 +242,7 @@ public abstract class ParamGenerator {
     }
 
 
+    //Done
     public void saveSuggestedParams(List<JobSuggestedParamValue> jobSuggestedParamValueList){
         for(JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
             jobSuggestedParamValue.save();
