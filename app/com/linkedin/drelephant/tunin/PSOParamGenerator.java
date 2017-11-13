@@ -11,8 +11,8 @@ public class PSOParamGenerator extends ParamGenerator{
 
     public TunerState generateParamSet(TunerState tunerState){
         JsonNode jsonTunerState = Json.toJson(tunerState);
-        String stringTunerState = jsonTunerState.get("_stringTunerState").toString();
-        String parametersToTune = jsonTunerState.get("_parametersToTune").toString();
+        String stringTunerState = jsonTunerState.get("stringTunerState").toString();
+        String parametersToTune = jsonTunerState.get("parametersToTune").toString();
         try{
             Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python pso_param_generation.py " +stringTunerState+" "+parametersToTune);
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -23,4 +23,5 @@ public class PSOParamGenerator extends ParamGenerator{
         }
         return tunerState;
     }
+
 }

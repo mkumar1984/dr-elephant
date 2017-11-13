@@ -8,7 +8,7 @@ import java.util.List;
 public class TunerState {
 
     private Job _tuningJob;
-    private String _stringTunerState; //archive, prev_population, current_population
+    private String _stringTunerState; //archive, prev_population, current_population, rnd_state
     private List<AlgoParam> _parametersToTune;
 
     public void setTuningJob(Job tuningJob){

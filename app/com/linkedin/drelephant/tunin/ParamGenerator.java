@@ -72,29 +72,34 @@ public abstract class ParamGenerator {
     public List<TunerState> getJobsTunerState(List<Job> tuninJobs){
         List<TunerState> tunerStateList = new ArrayList<TunerState>();
         for (Job job: tuninJobs){
-            JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
-            String savedState = new String(jobSavedState.savedState);
-
-            ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
-            JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
-            List<Particle> currentPopulation = jsonToParticleList(jsonCurrentPopulation);
-            for( Particle particle: currentPopulation){
-                Long paramSetId = particle.getParamSetId();
-                JobExecution jobExecution = JobExecution.find.byId(paramSetId);
-                particle.setFitness(jobExecution.costMetric);
-            }
-
-            JsonNode updatedJsonCurrentPopulation = particleListToJson(currentPopulation);
-            jsonSavedState.set("current_population", updatedJsonCurrentPopulation);
-
-            savedState = Json.stringify(jsonSavedState);
-
 
             List<AlgoParam> algoParamList = AlgoParam.find.where().eq("algo", job.algo).findList();
             TunerState tunerState = new TunerState();
             tunerState.setTuningJob(job);
-            tunerState.setStringTunerState(savedState);
             tunerState.setParametersToTune(algoParamList);
+
+            JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
+            if(jobSavedState!=null){
+
+                String savedState = new String(jobSavedState.savedState);
+                ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
+                JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
+                List<Particle> currentPopulation = jsonToParticleList(jsonCurrentPopulation);
+                for( Particle particle: currentPopulation){
+                    Long paramSetId = particle.getParamSetId();
+                    JobExecution jobExecution = JobExecution.find.byId(paramSetId);
+                    particle.setFitness(jobExecution.costMetric);
+                }
+
+                JsonNode updatedJsonCurrentPopulation = particleListToJson(currentPopulation);
+                jsonSavedState.set("current_population", updatedJsonCurrentPopulation);
+                savedState = Json.stringify(jsonSavedState);
+                tunerState.setStringTunerState(savedState);
+
+            }
+            else{
+                tunerState.setStringTunerState("{}");
+            }
             tunerStateList.add(tunerState);
         }
         return tunerStateList;
