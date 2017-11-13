@@ -24,7 +24,8 @@ public class JobExecution extends Model {
     NOT_STARTED,
     IN_PROGRESS,
     SUCCEDED,
-    FAILED
+    FAILED,
+    CANCELLED
   }
 
   public static class TABLE {
@@ -70,6 +71,7 @@ public class JobExecution extends Model {
 
   @Enumerated(EnumType.STRING)
   public ExecutionState executionState;
+
   public Double resourceUsage;
   public Double executionTime;
   public Long inputSizeInMb;
