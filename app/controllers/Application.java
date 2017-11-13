@@ -19,6 +19,7 @@ package controllers;
 import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.linkedin.drelephant.ElephantContext;
@@ -884,57 +885,97 @@ public class Application extends Controller {
 
   public static Result restParam(){
     ParamGenerator paramGenerator = new PSOParamGenerator();
-    List<Job> jobList = paramGenerator.fetchJobsForParamSuggestion();
-    List<TunerState> tunerStateList= paramGenerator.getJobsTunerState(jobList);
-    TunerState tunerState = tunerStateList.get(0);
+    List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
+    List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
 
-    List<AlgoParam> paramList = tunerState.getParametersToTune();
-
-    String state = "{\"current_population\": [{\"_candidate\": [35.08818788666294, 7.749754445944973], \"maximize\": false, \"birthdate\": 1510288289.837573, \"fitness\": 1291.239623142204}, {\"_candidate\": [3.199917189984381, -10.769648835738517], \"maximize\": false, \"birthdate\": 1510288289.837574, \"fitness\": 126.22480606788152}, {\"_candidate\": [1.9565303311484934, 7.447017820592105], \"maximize\": false, \"birthdate\": 1510288289.837575, \"fitness\": 59.28608535692042}], \"prev_population\": [{\"_candidate\": [-19.27348244949365, -13.757291957914351], \"maximize\": false, \"birthdate\": 1510288289.837448, \"fitness\": 560.7302077462346}, {\"_candidate\": [6.476813168476025, 10.655249883797493], \"maximize\": false, \"birthdate\": 1510288289.837449, \"fitness\": 155.48345890551093}, {\"_candidate\": [1.8237963003244935, 7.897503085567713], \"maximize\": false, \"birthdate\": 1510288289.83745, \"fitness\": 65.69678793162886}], \"archive\": [{\"_candidate\": [13.222154663549407, -17.453153020563732], \"maximize\": false, \"birthdate\": 1510288289.837319, \"fitness\": 479.4379243060343}, {\"_candidate\": [1.6702614733455174, -0.9326084010362266], \"maximize\": false, \"birthdate\": 1510288289.837321, \"fitness\": 3.659531819025686}, {\"_candidate\": [1.9565303311484934, 7.447017820592105], \"maximize\": false, \"birthdate\": 1510288289.837575, \"fitness\": 59.28608535692042}]}";
-    tunerState.setStringTunerState(state);
-    tunerStateList.set(0, tunerState);
+    TunerState tunerState = jobTunerStateList.get(0);
 
 
-    String stringTunerState = tunerState.getStringTunerState();
-    JsonNode jsonTunerState = Json.parse(stringTunerState);
-    JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
+//    Particle particle = new Particle();
+//
+//    particle.setBirthdate(1);
+//    particle.setFitness(2);
+//    particle.setMaximize(false);
+//    particle.setPramSetId((long)3);
+//    List<Double> candidate = new ArrayList<Double>();
+//    candidate.add((double)4);
+//    particle.setCandidate(candidate);
+//
+//    JsonNode jsonParticle = Json.toJson(particle);
+//
+//    Particle newparticle = Json.fromJson(jsonParticle, Particle.class);
 
-    List<Particle> suggestedPopulation =  paramGenerator.jsonToParticleList(jsonSuggestedPopulation);
-    Particle particle = suggestedPopulation.get(0);
+//    List<Job> jobList = paramGenerator.fetchJobsForParamSuggestion();
+//    Job job = jobList.get(0);
+//    JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
+//    String savedState = new String(jobSavedState.savedState);
+//
+//    ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
+//    JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
+//
+//    return ok(jsonParticle + "\n\n" + Json.toJson(newparticle));
+//    List<Particle> currentPopulation = paramGenerator.jsonToParticleList(jsonCurrentPopulation);
+//
+//
+//    return ok(jsonCurrentPopulation + "\n\n" + Json.toJson(currentPopulation));
+//    List<TunerState> tunerStateList= paramGenerator.getJobsTunerState(jobList);
+//    if(tunerStateList!= null){
+//      TunerState tunerState = tunerStateList.get(0);
+//      String state =tunerState.getStringTunerState();
+//      return ok(Json.parse(state));
+//    }
+//    else{
+//      return notFound(Json.toJson(jobList));
+//    }
 
-    List<JobSuggestedParamValue> jobSuggestedParamValueList = paramGenerator.getParamValueList(particle, paramList);
 
-    Job job = tunerState.getTuningJob();
-    JobExecution jobExecution = new JobExecution();
-    jobExecution.job = job;
-    jobExecution.algo = job.algo;
-    jobExecution.isDefaultExecution = false;
-    if (paramGenerator.isParamConstraintViolated(jobSuggestedParamValueList)){
-      jobExecution.paramSetState = JobExecution.ParamSetStatus.FITNESS_COMPUTED;
-      jobExecution.resourceUsage = (double) -1;
-      jobExecution.executionTime = (double) -1;
-      jobExecution.costMetric = 3 * job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100;
-    }
-    else{
-      jobExecution.paramSetState = JobExecution.ParamSetStatus.CREATED;
-    }
-    Long paramSetId = paramGenerator.saveSuggestedParamMetadata(jobExecution);
+//    List<AlgoParam> paramList = tunerState.getParametersToTune();
+//
+//    String state = "{\"current_population\": [{\"_candidate\": [35.08818788666294, 7.749754445944973], \"maximize\": false, \"birthdate\": 1510288289.837573, \"fitness\": 1291.239623142204}, {\"_candidate\": [3.199917189984381, -10.769648835738517], \"maximize\": false, \"birthdate\": 1510288289.837574, \"fitness\": 126.22480606788152}, {\"_candidate\": [1.9565303311484934, 7.447017820592105], \"maximize\": false, \"birthdate\": 1510288289.837575, \"fitness\": 59.28608535692042}], \"prev_population\": [{\"_candidate\": [-19.27348244949365, -13.757291957914351], \"maximize\": false, \"birthdate\": 1510288289.837448, \"fitness\": 560.7302077462346}, {\"_candidate\": [6.476813168476025, 10.655249883797493], \"maximize\": false, \"birthdate\": 1510288289.837449, \"fitness\": 155.48345890551093}, {\"_candidate\": [1.8237963003244935, 7.897503085567713], \"maximize\": false, \"birthdate\": 1510288289.83745, \"fitness\": 65.69678793162886}], \"archive\": [{\"_candidate\": [13.222154663549407, -17.453153020563732], \"maximize\": false, \"birthdate\": 1510288289.837319, \"fitness\": 479.4379243060343}, {\"_candidate\": [1.6702614733455174, -0.9326084010362266], \"maximize\": false, \"birthdate\": 1510288289.837321, \"fitness\": 3.659531819025686}, {\"_candidate\": [1.9565303311484934, 7.447017820592105], \"maximize\": false, \"birthdate\": 1510288289.837575, \"fitness\": 59.28608535692042}]}";
+//    tunerState.setStringTunerState(state);
+//    tunerStateList.set(0, tunerState);
 
-    for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
-      jobSuggestedParamValue.jobExecution = jobExecution;
-      jobSuggestedParamValue.paramValuePK.primaryKeyParamSetId = paramSetId;
-    }
 
-    particle.setPramSetId(paramSetId);
-    paramGenerator.saveSuggestedParams(jobSuggestedParamValueList);
+//    String stringTunerState = tunerState.getStringTunerState();
+//    JsonNode jsonTunerState = Json.parse(stringTunerState);
+//    JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
+//
+//    List<Particle> suggestedPopulation =  paramGenerator.jsonToParticleList(jsonSuggestedPopulation);
+//    Particle particle = suggestedPopulation.get(0);
+//
+//    List<JobSuggestedParamValue> jobSuggestedParamValueList = paramGenerator.getParamValueList(particle, paramList);
+//
+//    Job job = tunerState.getTuningJob();
+//    JobExecution jobExecution = new JobExecution();
+//    jobExecution.job = job;
+//    jobExecution.algo = job.algo;
+//    jobExecution.isDefaultExecution = false;
+//    if (paramGenerator.isParamConstraintViolated(jobSuggestedParamValueList)){
+//      jobExecution.paramSetState = JobExecution.ParamSetStatus.FITNESS_COMPUTED;
+//      jobExecution.resourceUsage = (double) -1;
+//      jobExecution.executionTime = (double) -1;
+//      jobExecution.costMetric = 3 * job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100;
+//    }
+//    else{
+//      jobExecution.paramSetState = JobExecution.ParamSetStatus.CREATED;
+//    }
+//    Long paramSetId = paramGenerator.saveSuggestedParamMetadata(jobExecution);
+//
+//    for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
+//      jobSuggestedParamValue.jobExecution = jobExecution;
+//      jobSuggestedParamValue.paramValuePK.primaryKeyParamSetId = paramSetId;
+//    }
+//
+//    particle.setPramSetId(paramSetId);
+//    paramGenerator.saveSuggestedParams(jobSuggestedParamValueList);
 
 //    Boolean penalty =  paramGenerator.isParamConstraintViolated(jobSuggestedParamValueList);
 
-    if(paramSetId != null){
-      return ok(Json.toJson(particle) + "\n\n" + Json.toJson(jobSuggestedParamValueList));
-    } else{
-      return ok(Json.toJson(jobExecution));
-    }
+//    if(paramSetId != null){
+//      return ok(Json.toJson(particle) + "\n\n" + Json.toJson(jobSuggestedParamValueList));
+//    } else{
+//      return ok(Json.toJson(jobExecution));
+//    }
 
 //    paramGenerator.updateDatabase(tunerStateList);
 //    return ok("Check");
