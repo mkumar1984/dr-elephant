@@ -56,12 +56,8 @@ public class JobSuggestedParamValue extends Model{
               if(((PrimaryKey)obj).primaryKeyParamId == primaryKeyParamId && ((PrimaryKey)obj).primaryKeyParamSetId == primaryKeyParamSetId){
                   return true;
                 }
-                else{
-                    return false;
-                }
-          } else{
-                return false;
           }
+          return false;
       }
   }
 
