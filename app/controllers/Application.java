@@ -31,6 +31,9 @@ import com.linkedin.drelephant.tunin.Particle;
 import com.linkedin.drelephant.tunin.TunerState;
 import com.linkedin.drelephant.util.Utils;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -889,6 +892,36 @@ public class Application extends Controller {
     List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
 
     TunerState tunerState = jobTunerStateList.get(0);
+
+    JsonNode jsonTunerState = Json.toJson(tunerState);
+    String stringTunerState = jsonTunerState.get("stringTunerState").toString();
+    String parametersToTune = jsonTunerState.get("parametersToTune").toString();
+
+
+    try{
+      Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/aragrawas-hadoop-tuning/hadoop-tuning/src/linkedin/restartable/pso_param_generation.py " +stringTunerState+ " " +parametersToTune);
+      BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+      String updatedStringTunerState = in.readLine();
+      tunerState.setStringTunerState(updatedStringTunerState);
+      if(updatedStringTunerState != null) {
+        return ok(Json.toJson(updatedStringTunerState));
+      }else{
+        return ok(stringTunerState + "\n\n" + parametersToTune);
+      }
+    } catch (IOException e){
+      System.out.println(e);
+      return notFound(e.toString());
+    }
+
+
+//    return notFound("Not found");
+
+
+//    if(stringTunerState!=null){
+//      return ok(jsonTunerState + "\n\n" + stringTunerState + "\n\n" + parametersToTune);
+//    }else{
+//      return ok(jsonTunerState);
+//    }
 
 
 //    Particle particle = new Particle();
