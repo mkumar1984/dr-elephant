@@ -55,8 +55,9 @@ GET        /rest/resourceusagedatabyuser        controllers.Application.restReso
 GET        /rest/user-details                   controllers.api.v1.Web.restGetUsersSummaryStats()
 GET        /rest/workflow-exceptions            controllers.api.v1.Web.restExceptions()
 GET        /rest/exception-statuses             controllers.api.v1.Web.restExceptionStatuses()
-GET        /rest/tuningJob                      controllers.Application.getTuningJob(id: String, token: String)
-#GET        /rest/getCurrentRunParameters        controllers.Application.getCurrentRunParameters(String projectName, String flowDefId, String jobDefId, String flowExecId, String jobExecId, String defaultParams, String client, String userName, Boolean isRetry, Boolean skipExecutionForOptimization)
+POST       /rest/getCurrentRunParameters        controllers.Application.getCurrentRunParametersNew()
+GET        /rest/tuningJob                      controllers.Application.getTuningJob(id: String)
+GET        /rest/param                          controllers.Application.restParam()
 
 
 # Metrics calls

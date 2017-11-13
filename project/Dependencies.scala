@@ -61,7 +61,6 @@ object Dependencies {
 
   // Dependency coordinates
   var requiredDep = Seq(
-    "org.python" % "jython-standalone" % "2.5.2",
     "com.google.code.gson" % "gson" % gsonVersion,
     "com.google.guava" % "guava" % guavaVersion,
     "com.jsuereth" %% "scala-arm" % "1.4",

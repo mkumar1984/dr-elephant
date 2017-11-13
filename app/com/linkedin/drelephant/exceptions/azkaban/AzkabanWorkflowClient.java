@@ -110,6 +110,16 @@ public class AzkabanWorkflowClient implements WorkflowClient {
     this.jobIdToLog = new HashMap<String, AzkabanJobLogAnalyzer>();
   }
 
+  public void setURL(String url)
+      throws URISyntaxException, MalformedURLException {
+    if (url == null || url.isEmpty()) {
+      throw new MalformedURLException("The Azkaban url is malformed");
+    }
+    this.setAzkabanServerUrl(url);
+    this.setExecutionId(url);
+    this._workflowExecutionUrl = url;
+  }
+
   /**
    * Sets the azkaban server url given the azkaban workflow url
    * @param azkabanWorkflowUrl The azkaban workflow url
@@ -150,8 +160,7 @@ public class AzkabanWorkflowClient implements WorkflowClient {
       headlessChallenge = getHeadlessChallenge(username);
       decodedPwd = decodeHeadlessChallenge(headlessChallenge, _privateKey);
     } catch (Exception e) {
-      logger
-          .error("Unexpected error encountered while decoding headless challenge " + headlessChallenge + e.toString());
+      logger.error("Unexpected error encountered while decoding headless challenge " + headlessChallenge + e.toString());
     }
     login(username, decodedPwd);
   }
@@ -177,6 +186,7 @@ public class AzkabanWorkflowClient implements WorkflowClient {
         throw new RuntimeException("Login attempt failed. The session ID could not be obtained.");
       }
       this._sessionId = jsonObject.get("session.id").toString();
+      logger.error("Session ID is " + this._sessionId);
     } catch (JSONException e) {
       e.printStackTrace();
     }
@@ -286,12 +296,15 @@ public class AzkabanWorkflowClient implements WorkflowClient {
     String encodedPassword = null;
 
     try {
+      logger.error("Azkaban URL is " + _azkabanUrl);
+      logger.error("Username  " + username);
       String userUrl = _azkabanUrl + "/restli/liuser?action=headlessChallenge";
       HttpPost request = new HttpPost(userUrl);
       StringEntity params = new StringEntity("{\"username\":\"" + username + "\"}");
       request.addHeader("content-type", "application/json");
       request.setEntity(params);
       HttpResponse response = httpClient.execute(request);
+      System.out.println("Response is " + response);
       String responseString = EntityUtils.toString(response.getEntity());
       JSONObject jobject = new JSONObject(responseString);
       encodedPassword = jobject.getString("value");

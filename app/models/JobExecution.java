@@ -1,7 +1,6 @@
 package models;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -42,7 +41,7 @@ public class JobExecution extends Model {
 
   public static class TABLE {
     public static final String TABLE_NAME = "job_execution";
-    public static final String paramSetId = "paramSetId";
+    public static final String paramSetId = "primaryKeyParamSetId";
     public static final String jobId = "jobId";
     public static final String algoId = "algoId";
     public static final String paramSetState = "paramSetState";
@@ -72,6 +71,7 @@ public class JobExecution extends Model {
   public Algo algo;
 
   @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   public ParamSetStatus paramSetState;
 
   public Boolean isDefaultExecution;

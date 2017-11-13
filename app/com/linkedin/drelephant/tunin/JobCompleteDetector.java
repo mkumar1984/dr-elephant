@@ -23,10 +23,10 @@ public class JobCompleteDetector {
     SUCCEEDED
   }
 
-  public List<JobExecution> updateCompletedJobs(String token) throws MalformedURLException, URISyntaxException {
+  public List<JobExecution> updateCompletedJobs() throws MalformedURLException, URISyntaxException {
     logger.error("100 Inside completed jobs");
     List<JobExecution> sentJobs = getJobExecution();
-    List<JobExecution> completedJobs = getCompletedJob(sentJobs, token);
+    List<JobExecution> completedJobs = getCompletedJob(sentJobs);
     updateJobStatus(completedJobs);
     logger.error("Finished completed jobs");
     return completedJobs;
@@ -40,7 +40,7 @@ public class JobCompleteDetector {
     return jobExecutions;
   }
 
-  public List<JobExecution> getCompletedJob(List<JobExecution> jobExecutions, String token) throws MalformedURLException,
+  public List<JobExecution> getCompletedJob(List<JobExecution> jobExecutions) throws MalformedURLException,
       URISyntaxException {
 
     logger.error("100 Inside getCompletedJob jobs");
@@ -50,7 +50,7 @@ public class JobCompleteDetector {
     for (JobExecution jobExecution : jobExecutions) {
       if (azkabanJobStatusUtil == null) {
         logger.error("Initializing  AzkabanJobStatusUtil");
-        azkabanJobStatusUtil = new AzkabanJobStatusUtil(jobExecution.flowExecutionId, token);
+        azkabanJobStatusUtil = new AzkabanJobStatusUtil(jobExecution.flowExecutionId);
       }
       logger.error("Calling  getJobsFromFlow");
       Map<String, String> jobStatus = azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecutionId);

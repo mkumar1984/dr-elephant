@@ -18,7 +18,7 @@ public class AzkabanJobStatusUtil {
   private static String PASSWORD = "password";
 
 
-  public AzkabanJobStatusUtil(String url, String token)
+  public AzkabanJobStatusUtil(String url)
   {
     // create a new workflow client
     _workflowClient = (AzkabanWorkflowClient)InfoExtractor.getWorkflowClientInstance(scheduler, url);
@@ -38,7 +38,7 @@ public class AzkabanJobStatusUtil {
     if(schedulerData.getParamMap().containsKey(PRIVATE_KEY)) {
       _workflowClient.login(username, new File(schedulerData.getParamMap().get(PRIVATE_KEY)));
     } else if (schedulerData.getParamMap().containsKey(PASSWORD)) {
-      _workflowClient.login(username, schedulerData.getParamMap().get(PASSWORD + token));
+      _workflowClient.login(username, schedulerData.getParamMap().get(PASSWORD));
     } else {
       throw new RuntimeException("Neither private key nor password was specified");
     }

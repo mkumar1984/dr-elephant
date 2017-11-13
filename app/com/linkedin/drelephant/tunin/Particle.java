@@ -1,39 +1,43 @@
 package com.linkedin.drelephant.tunin;
 
-import models.JobExecution;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Particle {
 
-    private List<Float> _candidate;
-    private float _fitness;
-    private double _birthDate;
+    private List<Double> _candidate;
+    private double _fitness;
+    private double _birthdate;
     private boolean _maximize;
+
+    @JsonProperty("paramSetId")
     private Long _paramSetId;
 
-    public void setCandidate(List<Float> candidate){
+    public void setCandidate(List<Double> candidate){
         this._candidate = candidate;
     }
 
-    public List<Float> getCandidate(){
+    public List<Double> getCandidate(){
         return _candidate;
     }
 
-    public void setFitness(float fitness){
+    public void setFitness(double fitness){
         this._fitness = fitness;
     }
 
-    public float getFitness(){
+    public double getFitness(){
         return _fitness;
     }
 
-    public void setBirthDate(double birthDate){
-        this._birthDate = birthDate;
+    public void setBirthdate(double birthDate){
+        this._birthdate = birthDate;
     }
 
-    public double getBirthDate(){
-        return _birthDate;
+    public double getBirthdate(){
+        return _birthdate;
     }
 
     public void setMaximize(boolean maximize){
