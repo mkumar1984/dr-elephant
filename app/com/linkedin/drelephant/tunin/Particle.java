@@ -8,6 +8,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Particle {
 
+    @JsonProperty("_candidate")
     private List<Double> _candidate;
     private double _fitness;
     private double _birthdate;
