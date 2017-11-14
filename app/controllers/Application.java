@@ -51,6 +51,7 @@ import play.data.Form;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
+import scala.xml.PrettyPrinter;
 import views.html.help.metrics.helpRuntime;
 import views.html.help.metrics.helpWaittime;
 import views.html.help.metrics.helpUsedResources;
@@ -887,31 +888,170 @@ public class Application extends Controller {
   }
 
   public static Result restParam(){
-    ParamGenerator paramGenerator = new PSOParamGenerator();
-    List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-    List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
+      ParamGenerator paramGenerator = new PSOParamGenerator();
+//      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
+//      List<TunerState> tunerStateList = paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
+//      TunerState tunerState = tunerStateList.get(0);
+//
+//      TunerState newTunerState = new TunerState();
+//      newTunerState.setTuningJob(tunerState.getTuningJob());
+//      newTunerState.setParametersToTune(tunerState.getParametersToTune());
+//      newTunerState.setStringTunerState("temp");
+//
+//
+//      JsonNode jsonTmp = Json.parse(tmp);
+//      JsonNode jsonTunerState = Json.toJson(tunerState);
+//      JsonNode stringTunerState = jsonTunerState.get("stringTunerState");
+//
+//      String parametersToTune = jsonTunerState.get("parametersToTune").toString();
+//      String errorString = "Error string";
+//      try{
+//          Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/pso_param_generation.py " +tmp+" "+parametersToTune);
+//          BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//          BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+//          String updatedStringTunerState = in.readLine();
+//          errorString = error.readLine();
+//          newTunerState.setStringTunerState(updatedStringTunerState);
+//      } catch (IOException e){
+//          return ok("Error:\n\n" + e.toString());
+//      }
+//
+//      return ok(errorString+ "\n\n" + tmp + "\n\n" + jsonTmp + "\n\n" + stringTunerState + "\n\n" + parametersToTune + "\n\n" + Json.toJson(newTunerState));
 
-    TunerState tunerState = jobTunerStateList.get(0);
-
-    JsonNode jsonTunerState = Json.toJson(tunerState);
-    String stringTunerState = jsonTunerState.get("stringTunerState").toString();
-    String parametersToTune = jsonTunerState.get("parametersToTune").toString();
+    paramGenerator.getParams();
+    return ok("check");
 
 
-    try{
-      Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/aragrawas-hadoop-tuning/hadoop-tuning/src/linkedin/restartable/pso_param_generation.py " +stringTunerState+ " " +parametersToTune);
-      BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-      String updatedStringTunerState = in.readLine();
-      tunerState.setStringTunerState(updatedStringTunerState);
-      if(updatedStringTunerState != null) {
-        return ok(Json.toJson(updatedStringTunerState));
-      }else{
-        return ok(stringTunerState + "\n\n" + parametersToTune);
-      }
-    } catch (IOException e){
-      System.out.println(e);
-      return notFound(e.toString());
-    }
+      ////      TunerState newTunerState = paramGenerator.generateParamSet(tunerState);
+//      return ok(Json.toJson(tunerState));
+
+//      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
+//      Job job = jobsForSwarmSuggestion.get(0);
+//      List<AlgoParam> algoParamList = AlgoParam.find.where().eq("algo", job.algo).findList();
+//      TunerState tunerState = new TunerState();
+//      tunerState.setTuningJob(job);
+//      tunerState.setParametersToTune(algoParamList);
+//
+//      JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
+//      if(jobSavedState!=null){
+//
+//          String savedState = new String(jobSavedState.savedState);
+//          ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
+//          JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
+//          List<Particle> currentPopulation = paramGenerator.jsonToParticleList(jsonCurrentPopulation);
+//          for( Particle particle: currentPopulation){
+//              Long paramSetId = particle.getParamSetId();
+//              JobExecution jobExecution = JobExecution.find.byId(paramSetId);
+//              particle.setFitness(jobExecution.costMetric);
+//          }
+//
+//          JsonNode updatedJsonCurrentPopulation = paramGenerator.particleListToJson(currentPopulation);
+//          jsonSavedState.set("current_population", updatedJsonCurrentPopulation);
+//          savedState = Json.stringify(jsonSavedState);
+//          tunerState.setStringTunerState(savedState);
+//
+//      }
+//      else{
+//          tunerState.setStringTunerState("{}");
+//      }
+//
+//      return ok(Json.toJson(jobSavedState) + "\n\n");
+
+
+
+//      List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
+//      TunerState tunerState = jobTunerStateList.get(0);
+//      TunerState newTunerState = paramGenerator.generateParamSet(tunerState);
+//      return ok(Json.toJson(tunerState) + "\n\n" + Json.toJson(newTunerState) );
+
+      //      JsonNode jsonTunerState = Json.toJson(tunerState);
+//      JsonNode stringTunerState = jsonTunerState.get("stringTunerState");
+////      String stringTunerState = jsonTunerState.get("stringTunerState").toString();
+//      String parametersToTune = jsonTunerState.get("parametersToTune").toString();
+//      return ok(stringTunerState + "\n\n" + parametersToTune);
+
+      //      TunerState newTunerState = paramGenerator.generateParamSet(tunerState);
+
+//      Job job = newTunerState.getTuningJob();
+//      List<AlgoParam> paramList = newTunerState.getParametersToTune();
+//      String stringTunerState = newTunerState.getStringTunerState();
+//      return ok(Json.toJson(newTunerState));
+      //      JsonNode jsonTunerState = Json.parse(stringTunerState);
+
+//      if (jsonTunerState == null){
+//          return ok("String tuner state\n\n" + stringTunerState);
+//      } else{
+//          return ok(jsonTunerState);
+//      }
+
+
+
+//      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
+//      List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
+//      TunerState tunerState = jobTunerStateList.get(0);
+//      TunerState jobTunerState = paramGenerator.generateParamSet(tunerState);
+//
+//      Job job = jobTunerState.getTuningJob();
+//      List<AlgoParam> paramList = jobTunerState.getParametersToTune();
+//      String stringTunerState = jobTunerState.getStringTunerState();
+//      JsonNode jsonTunerState = Json.parse(stringTunerState);
+//      JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
+
+//      String tmp = "[{\"_candidate\":[1000,1000,5,0.8,4096.0,512.0],\"maximize\":false,\"birthdate\":1.510632948412705E9,\"fitness\":0},{\"_candidate\":[377.649000415422,500.1012005037423,120.9206674491925,0.7929829408557095,2621.991988445575,512.0],\"maximize\":false,\"birthdate\":1.510632948412707E9,\"fitness\":0},{\"_candidate\":[244.18253123845352,1247.5360424531382,113.20897919691934,0.8265120097448186,5660.186827441222,512.0],\"maximize\":false,\"birthdate\":1.510632948412708E9,\"fitness\":0}]";
+//      JsonNode jsonSuggestedPopulation = Json.parse(tmp);
+//      List<Particle> suggestedPopulation = paramGenerator.jsonToParticleList(jsonSuggestedPopulation);
+//
+//      return ok(Json.toJson(suggestedPopulation) + "\n\n" + Json.toJson(jsonSuggestedPopulation));
+//    List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
+//    List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
+//    TunerState tunerState = jobTunerStateList.get(0);
+//    JsonNode jsonTunerState = Json.toJson(tunerState);
+//    String stringTunerState = jsonTunerState.get("stringTunerState").toString();
+//    String parametersToTune = jsonTunerState.get("parametersToTune").toString();
+//    try{
+//      Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/pso_param_generation.py " +stringTunerState+" "+parametersToTune);
+//      BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//      String updatedStringTunerState = in.readLine();
+//      tunerState.setStringTunerState(updatedStringTunerState);
+//      if(updatedStringTunerState!=null){
+//        return ok(updatedStringTunerState);
+//      }
+//    } catch (IOException e){
+//      System.out.println(e);
+//    }
+//    return ok(stringTunerState + "\n\n" + parametersToTune);
+
+
+
+//    List<TunerState> tunerStateList = paramGenerator.ParamGenerator();
+//    if(tunerStateList != null){
+//      return ok(Json.toJson(tunerStateList));
+//    }
+//    return notFound("Tuner state list is null");
+//    List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
+//    List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
+//
+//    TunerState tunerState = jobTunerStateList.get(0);
+//
+//    JsonNode jsonTunerState = Json.toJson(tunerState);
+//    String stringTunerState = jsonTunerState.get("stringTunerState").toString();
+//    String parametersToTune = jsonTunerState.get("parametersToTune").toString();
+//
+//
+//    try{
+//      Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/aragrawas-hadoop-tuning/hadoop-tuning/src/linkedin/restartable/pso_param_generation.py " +stringTunerState+ " " +parametersToTune);
+//      BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//      String updatedStringTunerState = in.readLine();
+//      tunerState.setStringTunerState(updatedStringTunerState);
+//      if(updatedStringTunerState != null) {
+//        return ok(Json.toJson(updatedStringTunerState));
+//      }else{
+//        return ok(stringTunerState + "\n\n" + parametersToTune);
+//      }
+//    } catch (IOException e){
+//      System.out.println(e);
+//      return notFound(e.toString());
+//    }
 
 
 //    return notFound("Not found");
