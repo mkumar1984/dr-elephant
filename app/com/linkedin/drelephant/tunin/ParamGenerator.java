@@ -116,13 +116,14 @@ public abstract class ParamGenerator {
         for (int i=0; i< candidate.size() && i<paramList.size(); i++){
             LogUtility.log("Candidate is " + candidate);
             JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
-            JobSuggestedParamValue.PrimaryKey primaryKey = new JobSuggestedParamValue.PrimaryKey();
+          //TODO check once
+            //JobSuggestedParamValue.PrimaryKey primaryKey = new JobSuggestedParamValue.PrimaryKey();
 
             int paramId = paramList.get(i).paramId;
-            primaryKey.primaryKeyParamId = paramId;
+            //primaryKey.primaryKeyParamId = paramId;
             AlgoParam algoParam = AlgoParam.find.byId(paramId);
 
-            jobSuggestedParamValue.paramValuePK = primaryKey;
+            //jobSuggestedParamValue.paramValuePK = primaryKey;
             jobSuggestedParamValue.algoParam = algoParam;
             double tmpParamValue = candidate.get(i);
             jobSuggestedParamValue.paramValue = String.valueOf(tmpParamValue);
@@ -182,7 +183,8 @@ public abstract class ParamGenerator {
 
                 for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
                     jobSuggestedParamValue.jobExecution = jobExecution;
-                    jobSuggestedParamValue.paramValuePK.primaryKeyParamSetId = paramSetId;
+                    //TODO check once
+                    //jobSuggestedParamValue.paramValuePK.primaryKeyParamSetId = paramSetId;
                 }
                 suggestedParticle.setPramSetId(paramSetId);
                 saveSuggestedParams(jobSuggestedParamValueList);

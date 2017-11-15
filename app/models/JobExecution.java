@@ -17,7 +17,6 @@ import javax.persistence.Table;
 
 import play.db.ebean.Model;
 
-
 @Entity
 @Table(name = "job_execution")
 public class JobExecution extends Model {
@@ -41,7 +40,7 @@ public class JobExecution extends Model {
 
   public static class TABLE {
     public static final String TABLE_NAME = "job_execution";
-    public static final String paramSetId = "primaryKeyParamSetId";
+    public static final String paramSetId = "paramSetId";
     public static final String jobId = "jobId";
     public static final String algoId = "algoId";
     public static final String paramSetState = "paramSetState";

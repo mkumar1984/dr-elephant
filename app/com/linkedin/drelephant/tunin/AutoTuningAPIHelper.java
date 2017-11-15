@@ -41,10 +41,13 @@ public class AutoTuningAPIHelper {
               isRetry, skipExecutionForOptimization);
     }
 
+    logger.error("Finding execution for job ID " + job.jobId);
+
     JobExecution jobExecution =
         JobExecution.find.select("*").fetch(JobExecution.TABLE.job, "*").where()
             .eq(JobExecution.TABLE.job + "." + JobExecution.TABLE.jobId, job.jobId).eq(JobExecution.TABLE.paramSetState, ParamSetStatus.CREATED)
             .order().asc(JobExecution.TABLE.createdTs).setMaxRows(1).findUnique();
+
 
     if (jobExecution == null) {
       jobExecution =
@@ -52,12 +55,16 @@ public class AutoTuningAPIHelper {
               .eq(JobExecution.TABLE.isDefaultExecution, true).setMaxRows(1).findUnique();
     }
 
-    List<JobSuggestedParamValue> jobSuggestedParamValues =
-        JobSuggestedParamValue.find.where().eq(JobExecution.TABLE.paramSetId, jobExecution.paramSetId).findList();
+    logger.error("Finding parameters for param set ID " + jobExecution.paramSetId);
 
+    List<JobSuggestedParamValue> jobSuggestedParamValues =
+        JobSuggestedParamValue.find.where().eq(JobSuggestedParamValue.TABLE.paramSetId, jobExecution.paramSetId).findList();
+
+    logger.error("Number of output parameters : " + jobSuggestedParamValues.size());
     Map<String, String> paramValues = new HashMap<String, String>();
     if (jobSuggestedParamValues != null) {
       for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValues) {
+        logger.error("Param Name is " + jobSuggestedParamValue.algoParam.paramName + " And value is " + jobSuggestedParamValue.paramValue);
         paramValues.put(jobSuggestedParamValue.algoParam.paramName, jobSuggestedParamValue.paramValue);
       }
     }
