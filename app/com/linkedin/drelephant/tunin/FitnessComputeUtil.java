@@ -14,6 +14,12 @@ import org.apache.log4j.Logger;
 public class FitnessComputeUtil {
   private static final Logger logger = Logger.getLogger(JobCompleteDetector.class);
 
+  public List<JobExecution> updateFitness()
+  {
+    List<JobExecution> executedJobs=getJobExecution();
+    updateJobMetrics(executedJobs);
+    return executedJobs;
+  }
   public List<JobExecution> getJobExecution() {
     logger.error("100 Inside getJobExecution jobs");
     List<JobExecution> jobExecutions =

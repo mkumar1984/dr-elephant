@@ -16,7 +16,7 @@ public class JobCompleteDetector {
 
   private AzkabanJobStatusUtil azkabanJobStatusUtil;
 
-  public enum JobStatus {
+  public enum AzkabanJobStatus {
     FAILED,
     CANCELLED,
     KILLED,
@@ -57,15 +57,15 @@ public class JobCompleteDetector {
       for (Map.Entry<String, String> job : jobStatus.entrySet()) {
         logger.error("Job Found + " + job.getKey() + ". Status: " + job.getValue());
         if (job.getKey().equals(jobExecution.jobExecutionId)) {
-          if (job.getValue().equals(JobStatus.FAILED.toString())) {
+          if (job.getValue().equals(AzkabanJobStatus.FAILED.toString())) {
             jobExecution.paramSetState = ParamSetStatus.EXECUTED;
             jobExecution.executionState = ExecutionState.FAILED;
           }
-          if (job.getValue().equals(JobStatus.CANCELLED.toString()) || job.getValue().equals(JobStatus.KILLED.toString())) {
+          if (job.getValue().equals(AzkabanJobStatus.CANCELLED.toString()) || job.getValue().equals(AzkabanJobStatus.KILLED.toString())) {
             jobExecution.paramSetState = ParamSetStatus.EXECUTED;
             jobExecution.executionState = ExecutionState.CANCELLED;
           }
-          if (job.getValue().equals(JobStatus.SUCCEEDED.toString())) {
+          if (job.getValue().equals(AzkabanJobStatus.SUCCEEDED.toString())) {
             jobExecution.paramSetState = ParamSetStatus.EXECUTED;
             jobExecution.executionState = ExecutionState.SUCCEDED;
           }
