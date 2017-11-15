@@ -5,17 +5,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import models.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import play.libs.Json;
-
 import java.util.ArrayList;
 import java.util.List;
 
 
 
 public abstract class ParamGenerator {
+    public  abstract TunerState generateParamSet(TunerState jobTunerState);
 
-    abstract TunerState generateParamSet(TunerState jobTunerState);
-
-    // Done
+   // Done
     // Todo: This can be simplified using the json property annotation
     public List<Particle> jsonToParticleList(JsonNode jsonParticleList){
 
@@ -25,14 +23,14 @@ public abstract class ParamGenerator {
 
             Particle particle = Json.fromJson(jsonParticle, Particle.class);
             if(particle!=null){
-                if(particle.getCandidate()==null){
-                    JsonNode jsonCandidate = jsonParticle.get("_candidate");
-                    if(jsonCandidate!=null){
-                        List<Double> candidate = new ArrayList<Double>();
-                        candidate = Json.fromJson(jsonCandidate, candidate.getClass());
-                        particle.setCandidate(candidate);
-                    }
-                }
+//                if(particle.getCandidate()==null){
+//                    JsonNode jsonCandidate = jsonParticle.get("_candidate");
+//                    if(jsonCandidate!=null){
+//                        List<Double> candidate = new ArrayList<Double>();
+//                        candidate = Json.fromJson(jsonCandidate, candidate.getClass());
+//                        particle.setCandidate(candidate);
+//                    }
+//                }
                 particleList.add(particle);
             }
         }
@@ -107,11 +105,16 @@ public abstract class ParamGenerator {
 
     // Done
     public List<JobSuggestedParamValue> getParamValueList(Particle particle, List<AlgoParam> paramList){
+        LogUtility.log("Particle is: " + Json.toJson(particle));
         List<JobSuggestedParamValue> jobSuggestedParamValueList = new ArrayList<JobSuggestedParamValue>();
 
         List<Double> candidate = particle.getCandidate();
+        LogUtility.log("Candidate is:" + Json.toJson(candidate));
+
+
 
         for (int i=0; i< candidate.size() && i<paramList.size(); i++){
+            LogUtility.log("Candidate is " + candidate);
             JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
             JobSuggestedParamValue.PrimaryKey primaryKey = new JobSuggestedParamValue.PrimaryKey();
 
@@ -121,7 +124,8 @@ public abstract class ParamGenerator {
 
             jobSuggestedParamValue.paramValuePK = primaryKey;
             jobSuggestedParamValue.algoParam = algoParam;
-            jobSuggestedParamValue.paramValue = Double.toString(candidate.get(i));
+            double tmpParamValue = candidate.get(i);
+            jobSuggestedParamValue.paramValue = String.valueOf(tmpParamValue);
             jobSuggestedParamValueList.add(jobSuggestedParamValue);
         }
 
@@ -239,10 +243,13 @@ public abstract class ParamGenerator {
     //Done
     public void saveTunerState(List<TunerState> tunerStateList){
         for (TunerState tunerState: tunerStateList){
-            JobSavedState jobSavedState = new JobSavedState();
-            jobSavedState.jobId = tunerState.getTuningJob().jobId;
+            JobSavedState jobSavedState = JobSavedState.find.byId(tunerState.getTuningJob().jobId);
+            if(jobSavedState==null){
+                jobSavedState = new JobSavedState();
+                jobSavedState.jobId = tunerState.getTuningJob().jobId;
+            }
             jobSavedState.savedState = tunerState.getStringTunerState().getBytes();
-            jobSavedState.update();
+            jobSavedState.save();
         }
     }
 
@@ -261,7 +268,7 @@ public abstract class ParamGenerator {
     }
 
 
-    public void ParamGenerator(){
+    public void getParams(){
         List<Job> jobsForSwarmSuggestion = fetchJobsForParamSuggestion();
         List<TunerState> jobTunerStateList= getJobsTunerState(jobsForSwarmSuggestion);
         List<TunerState> updatedJobTunerStateList = new ArrayList<TunerState>();
