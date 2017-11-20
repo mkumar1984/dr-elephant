@@ -17,7 +17,7 @@ import play.db.ebean.Model;
 
 
 @Entity
-@Table(name = "job")
+@Table(name = "job_definition")
 public class Job extends Model {
 
   private static final long serialVersionUID = 1L;
@@ -31,9 +31,12 @@ public class Job extends Model {
     public static final String hostName = "hostName";
     public static final String flowDefId = "flowDefId";
     public static final String jobDefId = "jobDefId";
+    public static final String flowDefUrl = "flowDefUrl";
+    public static final String jobDefUrl = "jobDefUrl";
     public static final String algoId = "algoId";
     public static final String scheduler = "scheduler";
-    public static final String user = "user";
+    public static final String username = "username";
+    public static final String client = "client";
     public static final String tuningEnabled = "tuningEnabled";
     public static final String averageResourceUsage = "averageResourceUsage";
     public static final String averageExecutionTime = "averageExecutionTime";
@@ -60,6 +63,15 @@ public class Job extends Model {
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String jobDefId;
 
+  @Column(length = JOB_NAME_LIMIT, nullable = false)
+  public String flowDefUrl;
+
+  @Column(length = JOB_NAME_LIMIT, nullable = false)
+  public String jobDefUrl;
+
+  @Column(length = JOB_NAME_LIMIT, nullable = false)
+  public String client;
+
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
   public Algo algo;
@@ -68,7 +80,7 @@ public class Job extends Model {
   public String scheduler;
 
   @Column(length = USERNAME_LIMIT, nullable = false)
-  public String user;
+  public String username;
 
   @Column(nullable = false)
   public Boolean tuningEnabled;
