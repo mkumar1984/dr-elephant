@@ -46,8 +46,10 @@ public class JobExecution extends Model {
     public static final String algoId = "algoId";
     public static final String paramSetState = "paramSetState";
     public static final String isDefaultExecution = "isDefaultExecution";
-    public static final String jobExecutionId = "jobExecutionId";
-    public static final String flowExecutionId = "flowExecutionId";
+    public static final String jobExecId = "jobExecId";
+    public static final String flowExecId = "flowExecId";
+    public static final String jobExecUrl = "jobExecUrl";
+    public static final String flowExecUrl = "flowExecUrl";
     public static final String executionState = "executionState";
     public static final String resourceUsage = "resourceUsage";
     public static final String executionTime = "executionTime";
@@ -76,8 +78,11 @@ public class JobExecution extends Model {
 
   public Boolean isDefaultExecution;
 
-  public String jobExecutionId;
-  public String flowExecutionId;
+  public String jobExecId;
+  public String flowExecId;
+
+  public String jobExecUrl;
+  public String flowExecUrl;
 
   @Enumerated(EnumType.STRING)
   public ExecutionState executionState;
