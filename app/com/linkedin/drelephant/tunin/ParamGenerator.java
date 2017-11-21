@@ -1,36 +1,54 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.linkedin.drelephant.tunin;
 
 import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.linkedin.drelephant.analysis.AnalyticJob;
 import models.*;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.log4j.Logger;
 import play.libs.Json;
 import java.util.ArrayList;
 import java.util.List;
 
 
-
 public abstract class ParamGenerator {
+
+    private final Logger logger = Logger.getLogger(getClass());
+
+    private static  final String PARAM_SET_STATE_FIELD_NAME = "paramSetState";
+    private static final String JSON_CURRENT_POPULATION_KEY = "current_population";
+    private static final String ALGO_FIELD_NAME = "algo";
+
+
+
     public  abstract TunerState generateParamSet(TunerState jobTunerState);
 
    // Done
-    // Todo: This can be simplified using the json property annotation
     public List<Particle> jsonToParticleList(JsonNode jsonParticleList){
 
         List<Particle> particleList = new ArrayList<Particle>();
+
 
         for (JsonNode jsonParticle: jsonParticleList ){
 
             Particle particle = Json.fromJson(jsonParticle, Particle.class);
             if(particle!=null){
-//                if(particle.getCandidate()==null){
-//                    JsonNode jsonCandidate = jsonParticle.get("_candidate");
-//                    if(jsonCandidate!=null){
-//                        List<Double> candidate = new ArrayList<Double>();
-//                        candidate = Json.fromJson(jsonCandidate, candidate.getClass());
-//                        particle.setCandidate(candidate);
-//                    }
-//                }
                 particleList.add(particle);
             }
         }
@@ -42,9 +60,9 @@ public abstract class ParamGenerator {
         List<Job> jobsForSwarmSuggestion = new ArrayList<Job>();
 
         List<JobExecution> pendingParamExecutionList = JobExecution.find.where().or(
-                Expr.or(Expr.eq("paramSetState", JobExecution.ParamSetStatus.CREATED),
-                Expr.eq("paramSetState", JobExecution.ParamSetStatus.SENT)),
-                Expr.eq("paramSetState", JobExecution.ParamSetStatus.EXECUTED)).findList();
+                Expr.or(Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.CREATED),
+                Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.SENT)),
+                Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.EXECUTED)).findList();
 
         List<Job> pendingParamJobList = new ArrayList<Job>();
         for (JobExecution pendingParamExecution: pendingParamExecutionList){
@@ -52,7 +70,6 @@ public abstract class ParamGenerator {
         }
 
         for (Job job: Job.find.all()){
-
             if (!pendingParamJobList.contains(job)){
                     jobsForSwarmSuggestion.add(job);
             }
@@ -71,7 +88,7 @@ public abstract class ParamGenerator {
         List<TunerState> tunerStateList = new ArrayList<TunerState>();
         for (Job job: tuninJobs){
 
-            List<AlgoParam> algoParamList = AlgoParam.find.where().eq("algo", job.algo).findList();
+            List<AlgoParam> algoParamList = AlgoParam.find.where().eq(ALGO_FIELD_NAME, job.algo).findList();
             TunerState tunerState = new TunerState();
             tunerState.setTuningJob(job);
             tunerState.setParametersToTune(algoParamList);
@@ -81,7 +98,7 @@ public abstract class ParamGenerator {
 
                 String savedState = new String(jobSavedState.savedState);
                 ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
-                JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
+                JsonNode jsonCurrentPopulation = jsonSavedState.get(JSON_CURRENT_POPULATION_KEY);
                 List<Particle> currentPopulation = jsonToParticleList(jsonCurrentPopulation);
                 for( Particle particle: currentPopulation){
                     Long paramSetId = particle.getParamSetId();
@@ -90,7 +107,7 @@ public abstract class ParamGenerator {
                 }
 
                 JsonNode updatedJsonCurrentPopulation = particleListToJson(currentPopulation);
-                jsonSavedState.set("current_population", updatedJsonCurrentPopulation);
+                jsonSavedState.set(JSON_CURRENT_POPULATION_KEY, updatedJsonCurrentPopulation);
                 savedState = Json.stringify(jsonSavedState);
                 tunerState.setStringTunerState(savedState);
 
@@ -155,7 +172,7 @@ public abstract class ParamGenerator {
             String stringTunerState = jobTunerState.getStringTunerState();
 
             JsonNode jsonTunerState = Json.parse(stringTunerState);
-            JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
+            JsonNode jsonSuggestedPopulation = jsonTunerState.get(JSON_CURRENT_POPULATION_KEY);
 
             if(jsonSuggestedPopulation == null){
                 break;
@@ -171,8 +188,8 @@ public abstract class ParamGenerator {
                 jobExecution.isDefaultExecution = false;
                 if (isParamConstraintViolated(jobSuggestedParamValueList)){
                     jobExecution.paramSetState = JobExecution.ParamSetStatus.FITNESS_COMPUTED;
-                    jobExecution.resourceUsage = (double) -1;
-                    jobExecution.executionTime = (double) -1;
+//                    jobExecution.resourceUsage = (double) -1;
+//                    jobExecution.executionTime = (double) -1;
                     jobExecution.costMetric = 3 * job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100.0;
                 }
                 else{
@@ -191,7 +208,7 @@ public abstract class ParamGenerator {
             JsonNode updatedJsonSuggestedPopulation = particleListToJson(suggestedPopulation);
 
             ObjectNode updatedJsonTunerState = (ObjectNode) jsonTunerState;
-            updatedJsonTunerState.put("current_population", updatedJsonSuggestedPopulation);
+            updatedJsonTunerState.put(JSON_CURRENT_POPULATION_KEY, updatedJsonSuggestedPopulation);
             String updatedStringTunerState = Json.stringify(updatedJsonTunerState);
             jobTunerState.setStringTunerState(updatedStringTunerState);
         }
@@ -204,10 +221,10 @@ public abstract class ParamGenerator {
         //[2] map.memory - sort.mb < 768: To avoid heap memory failure
         //[3] pig.maxCombinedSplitSize > 1.8*mapreduce.map.memory.mb
 
-        int violations = 0;
-        double mrSortMemory = -1;
-        double mrMapMemory = -1;
-        double pigMaxCombinedSplitSize = -1;
+        Integer violations = 0;
+        Double mrSortMemory = null;
+        Double mrMapMemory = null;
+        Double pigMaxCombinedSplitSize = null;
 
         for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
             if(jobSuggestedParamValue.algoParam.paramName.equals("mapreduce.task.io.sort.mb")){
@@ -219,7 +236,7 @@ public abstract class ParamGenerator {
             }
         }
 
-        if (mrSortMemory!=-1 && mrMapMemory!=-1){
+        if (mrSortMemory!= null && mrMapMemory!= null){
             if (mrSortMemory>0.6*mrMapMemory){
                 violations++;
             }
@@ -228,14 +245,13 @@ public abstract class ParamGenerator {
             }
         }
 
-        if(pigMaxCombinedSplitSize!=-1 && mrMapMemory!=-1 && (pigMaxCombinedSplitSize > 1.8*mrMapMemory)){
+        if(pigMaxCombinedSplitSize!= null && mrMapMemory!=null && (pigMaxCombinedSplitSize > 1.8*mrMapMemory)){
             violations++;
         }
 
         if(violations==0){
             return false;
-        }
-        else{
+        } else{
             return true;
         }
     }
