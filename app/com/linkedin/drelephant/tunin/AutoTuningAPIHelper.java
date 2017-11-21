@@ -25,19 +25,19 @@ public class AutoTuningAPIHelper {
   private static final Logger logger = Logger.getLogger(AutoTuningAPIHelper.class);
   Algo algo = Algo.find.where().idEq(1).findUnique();
 
-  public Map<String, String> getCurrentRunParameters(String projectName, String flowDefId, String jobDefId,
+  public Map<String, String> getCurrentRunParameters(String flowDefId, String jobDefId,
       String flowExecId, String jobExecId, String defaultParams, String client, String userName, Boolean isRetry,
       Boolean skipExecutionForOptimization) {
 
     logger.error("Starting getCurrentRunParameters");
     Job job =
-        Job.find.select("*").where().eq(Job.TABLE.projectName, projectName).eq(Job.TABLE.jobDefId, jobDefId)
+        Job.find.select("*").where().eq(Job.TABLE.jobDefId, jobDefId)
             .eq(Job.TABLE.flowDefId, flowDefId).findUnique();
 
     if (job == null) {
       logger.error("Job Not found. Creating new job. ");
       job =
-          addNewJobForTuning(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName,
+          addNewJobForTuning(flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName,
               isRetry, skipExecutionForOptimization);
     }
 
@@ -83,24 +83,22 @@ public class AutoTuningAPIHelper {
     jobExecution.update();
   }
 
-  public Job addNewJobForTuning(String projectName, String flowDefId, String jobDefId, String flowExecId,
+  public Job addNewJobForTuning(String flowDefId, String jobDefId, String flowExecId,
       String jobExecId, String defaultParams, String client, String userName, Boolean isRetry,
       Boolean skipExecutionForOptimization) {
 
     logger.error("Starting addNewJobForTuning");
-    Job job = insertJob(projectName, flowDefId, jobDefId, client, userName);
+    Job job = insertJob(flowDefId, jobDefId, client, userName);
     JobExecution jobExecution = insertDefaultJobExecution(job, flowExecId, jobExecId);
     insertDefaultParameters(jobExecution, defaultParams);
     logger.error("Finishing addNewJobForTuning");
     return job;
   }
 
-  public Job insertJob(String projectName, String flowDefId, String jobDefId, String client, String userName) {
+  public Job insertJob(String flowDefId, String jobDefId, String client, String userName) {
     logger.error("Starting insertJob");
     Job job = new Job();
     job.algo = algo;
-    job.projectName = projectName;
-    job.hostName = "holdem";
     job.flowDefId = flowDefId;
     job.jobDefId = jobDefId;
     job.scheduler = client;

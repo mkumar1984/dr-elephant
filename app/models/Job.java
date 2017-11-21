@@ -27,8 +27,6 @@ public class Job extends Model {
   public static class TABLE {
     public static final String TABLE_NAME = "job";
     public static final String jobId = "jobId";
-    public static final String projectName = "projectName";
-    public static final String hostName = "hostName";
     public static final String flowDefId = "flowDefId";
     public static final String jobDefId = "jobDefId";
     public static final String flowDefUrl = "flowDefUrl";
@@ -51,12 +49,6 @@ public class Job extends Model {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   public Integer jobId;
-
-  @Column(length = JOB_NAME_LIMIT, nullable = false)
-  public String projectName;
-
-  @Column(length = JOB_NAME_LIMIT, nullable = false)
-  public String hostName;
 
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String flowDefId;
