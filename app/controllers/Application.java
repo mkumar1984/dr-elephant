@@ -80,7 +80,10 @@ import views.html.results.searchResults;
 
 import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
@@ -1021,16 +1024,32 @@ public class Application extends Controller {
 
   public static Result getCurrentRunParametersNew()
   {
-    final Map<String, String[]> values = request().body().asFormUrlEncoded();
-    if(values!=null)
-    {
-      logger.error("Input values are " + values.toString());
-      return ok(Json.toJson(values));
-    }else
-    {
-      return notFound("Unable to find parameters for given job");
+    String jsonString = request().body().asJson().toString();
+
+    ObjectMapper mapper = new ObjectMapper();
+    Map<String, String> paramValueMap = null;
+    try {
+      paramValueMap = (Map<String, String>) mapper.readValue(jsonString, Map.class);
+    } catch (JsonParseException e) {
+      logger.error("Error is " + e);
+    } catch (JsonMappingException e) {
+      logger.error("Error is " + e);
+    } catch (IOException e) {
+      logger.error("Error is " + e);
     }
 
+    String defaultParams=paramValueMap.get("defaultParams");
+    String projectName=paramValueMap.get("projectName");;
+    String flowDefId= paramValueMap.get("flowDefId");
+    String jobDefId=paramValueMap.get("jobDefId");
+    String flowExecId=paramValueMap.get("flowExecId");
+    String jobExecId=paramValueMap.get("jobExecId");
+    String client=paramValueMap.get("client");
+    String userName=paramValueMap.get("userName");
+    Boolean isRetry=Boolean.parseBoolean(paramValueMap.get("isRetry"));
+    Boolean skipExecutionForOptimization=Boolean.parseBoolean(paramValueMap.get("skipExecutionForOptimization"));
+
+    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
   }
 
   public static Result getCurrentRunParameters(String projectName, String flowDefId, String jobDefId, String flowExecId, String jobExecId, String defaultParams, String client, String userName, Boolean isRetry, Boolean skipExecutionForOptimization)
@@ -1039,6 +1058,7 @@ public class Application extends Controller {
     Map<String, String> outputParams=autoTuningAPIHelper.getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
     if(outputParams!=null)
     {
+      logger.error("Outupt params " + outputParams);
       return ok(Json.toJson(outputParams));
     }else
     {
