@@ -24,19 +24,27 @@ import java.io.IOException;
  */
 public class DrElephant extends Thread {
   private ElephantRunner _elephant;
+  private AutoTuner _autoTuner;
+  private Thread _autoTunerThread;
 
   public DrElephant() throws IOException {
     _elephant = new ElephantRunner();
+    _autoTuner = new AutoTuner();
+    _autoTunerThread = new Thread(_autoTuner, "Auto Tuner Thread");
   }
 
   @Override
   public void run() {
+    _autoTunerThread.start();
     _elephant.run();
   }
 
   public void kill() {
     if (_elephant != null) {
       _elephant.kill();
+    }
+    if(_autoTunerThread!=null){
+      _autoTunerThread.interrupt();
     }
   }
 }
