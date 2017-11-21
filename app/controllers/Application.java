@@ -896,74 +896,87 @@ public class Application extends Controller {
    * E.g, localhost:8080/rest/job?id=xyz
    */
   public static Result getTuningJob(String id) {
-
-    if (id == null || id.isEmpty()) {
-      return badRequest("No job id provided.");
-    }
-
-    //    try{
-    //      AzkabanWorkflowClient azkabanWorkflowClient=new AzkabanWorkflowClient("https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=4567967");
-    //      azkabanWorkflowClient.login("ro_elephant_az_svc", new File("/Users/mkumar1/hguest.private_key.der"));
-    //    }catch(Exception e)
-    //    {
-    //      logger.error("Error in log " , e);
-    //    }
-
-    JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
-    FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
-    List<JobExecution> jobExecutions = null;
-    try {
-      switch (id) {
-        case "1":
-          logger.error("100 ID value is " + id);
-          jobExecutions = jobCompleteDetector.getJobExecution();
-          break;
-        case "2":
-          logger.error("100 ID value is " + id);
-          jobExecutions = jobCompleteDetector.getJobExecution();
-          jobExecutions = jobCompleteDetector.getCompletedJob(jobExecutions);
-          break;
-        case "3":
-          logger.error("100 ID value is " + id);
-          jobExecutions = jobCompleteDetector.updateCompletedJobs();
-          break;
-        case "4":
-          logger.error("100 ID value is " + id);
-          jobExecutions = fitnessComputeUtil.getJobExecution();
-          break;
-        case "5":
-          logger.error("100 ID value is " + id);
-          jobExecutions = fitnessComputeUtil.getJobExecution();
-          fitnessComputeUtil.updateJobMetrics(jobExecutions);
-          break;
-        case "6":
-          logger.error("100 ID value is " + id);
-          return callGetCurrentRunParameters();
-        case "7":
-          logger.error("100 ID value is " + id);
-          return callGetCurrentRunParameters1();
-        default:
-          Job job = Job.find.select("*").where().idEq(id).findUnique();
-          if (job != null) {
-            return ok(Json.toJson(job));
-          } else {
-            return notFound("Unable to find job on id: " + id);
+          JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
+          try{
+              List<JobExecution> completedJobExecution = jobCompleteDetector.updateCompletedJobs();
+              if(completedJobExecution!=null) {
+                  return ok(Json.toJson(completedJobExecution));
+              }else{
+                  return notFound("Null response");
+              }
+          } catch (Exception e){
+              return notFound(e.toString());
           }
-      }
-    } catch (Exception e) {
-      logger.error("Error in log ", e);
-      e.printStackTrace();
-      logger.error("Error " + e.getStackTrace().toString());
-    }
 
-    //JobSuggestedParamValue jobSuggestedParamValue=JobSuggestedParamValue.find.select("*").where()
-
-    if (jobExecutions != null) {
-      return ok(Json.toJson(jobExecutions));
-    } else {
-      return notFound("Unable to find job on id: " + id);
-    }
   }
+
+//    if (id == null || id.isEmpty()) {
+//      return badRequest("No job id provided.");
+//    }
+//
+//    //    try{
+//    //      AzkabanWorkflowClient azkabanWorkflowClient=new AzkabanWorkflowClient("https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=4567967");
+//    //      azkabanWorkflowClient.login("ro_elephant_az_svc", new File("/Users/mkumar1/hguest.private_key.der"));
+//    //    }catch(Exception e)
+//    //    {
+//    //      logger.error("Error in log " , e);
+//    //    }
+//
+//    JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
+//    FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
+//    List<JobExecution> jobExecutions = null;
+//    try {
+//      switch (id) {
+//        case "1":
+//          logger.error("100 ID value is " + id);
+//          jobExecutions = jobCompleteDetector.getJobExecution();
+//          break;
+//        case "2":
+//          logger.error("100 ID value is " + id);
+//          jobExecutions = jobCompleteDetector.getJobExecution();
+//          jobExecutions = jobCompleteDetector.getCompletedJob(jobExecutions);
+//          break;
+//        case "3":
+//          logger.error("100 ID value is " + id);
+//          jobExecutions = jobCompleteDetector.updateCompletedJobs();
+//          break;
+//        case "4":
+//          logger.error("100 ID value is " + id);
+//          jobExecutions = fitnessComputeUtil.getJobExecution();
+//          break;
+//        case "5":
+//          logger.error("100 ID value is " + id);
+//          jobExecutions = fitnessComputeUtil.getJobExecution();
+//          fitnessComputeUtil.updateJobMetrics(jobExecutions);
+//          break;
+//        case "6":
+//          logger.error("100 ID value is " + id);
+//          return callGetCurrentRunParameters();
+//        case "7":
+//          logger.error("100 ID value is " + id);
+//          return callGetCurrentRunParameters1();
+//        default:
+//          Job job = Job.find.select("*").where().idEq(id).findUnique();
+//          if (job != null) {
+//            return ok(Json.toJson(job));
+//          } else {
+//            return notFound("Unable to find job on id: " + id);
+//          }
+//      }
+//    } catch (Exception e) {
+//      logger.error("Error in log ", e);
+//      e.printStackTrace();
+//      logger.error("Error " + e.getStackTrace().toString());
+//    }
+//
+//    //JobSuggestedParamValue jobSuggestedParamValue=JobSuggestedParamValue.find.select("*").where()
+//
+//    if (jobExecutions != null) {
+//      return ok(Json.toJson(jobExecutions));
+//    } else {
+//      return notFound("Unable to find job on id: " + id);
+//    }
+//  }
 
   public static Result callGetCurrentRunParameters()
   {
