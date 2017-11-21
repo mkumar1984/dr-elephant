@@ -38,7 +38,6 @@ public class AlgoParam extends Model{
     public static final String paramId = "primaryKeyParamId";
     public static final String paramName = "paramName";
     public static final String algoId = "algoId";
-    public static final String paramValueType = "paramValueType";
     public static final String defaultValue = "defaultValue";
     public static final String minValue = "minValue";
     public static final String maxValue = "maxValue";
@@ -55,24 +54,20 @@ public class AlgoParam extends Model{
   @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
   public Algo algo;
 
-  @Enumerated(EnumType.STRING)
-  public ParamValueType paramValueType;
+  @Column(nullable = false)
+  public Double defaultValue;
 
   @Column(nullable = false)
-  public String defaultValue;
+  public Double minValue;
 
   @Column(nullable = false)
-  public String minValue;
+  public Double maxValue;
 
   @Column(nullable = false)
-  public String maxValue;
-
-  @Column(nullable = false)
-  public String stepSize;
+  public Double stepSize;
 
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
   public static Finder<Integer, AlgoParam> find = new Finder<Integer, AlgoParam>(Integer.class, AlgoParam.class);
-
 }
