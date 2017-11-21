@@ -20,6 +20,7 @@ public class FitnessComputeUtil {
     updateJobMetrics(executedJobs);
     return executedJobs;
   }
+
   public List<JobExecution> getJobExecution() {
     logger.error("100 Inside getJobExecution jobs");
     List<JobExecution> jobExecutions =
@@ -31,7 +32,7 @@ public class FitnessComputeUtil {
   public void updateJobMetrics(List<JobExecution> executedJobs) {
     logger.error("Inside updateJobMetrics");
     for (JobExecution jobExecution : executedJobs) {
-      logger.error("Job Execution Update: Flow Execution ID " + jobExecution.flowExecutionId + " Job ID " + jobExecution.jobExecutionId);
+      logger.error("Job Execution Update: Flow Execution ID " + jobExecution.flowExecId + " Job ID " + jobExecution.jobExecId);
       List<AppResult> results =
           AppResult.find
               .select("*")
@@ -40,7 +41,7 @@ public class FitnessComputeUtil {
                   AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS,
                   "*")
                .where()
-               .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecutionId)
+               .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecId)
               .eq(AppResult.TABLE.JOB_DEF_ID, jobExecution.job.jobDefId).findList();
       if (results != null) {
         Long totalExecutionTime = 0L;
