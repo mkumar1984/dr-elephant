@@ -69,8 +69,8 @@ public class AutoTuningAPIHelper {
   }
 
   public void updateJobExecutionParameter(JobExecution jobExecution, String flowExecId, String jobExecId) {
-    jobExecution.flowExecutionId = flowExecId;
-    jobExecution.jobExecutionId = jobExecId;
+    jobExecution.flowExecId = flowExecId;
+    jobExecution.jobExecId = jobExecId;
     jobExecution.paramSetState = ParamSetStatus.SENT;
     jobExecution.executionState = ExecutionState.IN_PROGRESS;
     jobExecution.update();
@@ -97,7 +97,7 @@ public class AutoTuningAPIHelper {
     job.flowDefId = flowDefId;
     job.jobDefId = jobDefId;
     job.scheduler = client;
-    job.user = userName;
+    job.username = userName;
     job.tuningEnabled = true;
     job.deleted = false;
 
@@ -114,10 +114,10 @@ public class AutoTuningAPIHelper {
     jobExecution.paramSetState = ParamSetStatus.CREATED;
     jobExecution.executionState = ExecutionState.NOT_STARTED;
     jobExecution.isDefaultExecution = true;
-    jobExecution.flowExecutionId = flowExecId;
-    jobExecution.jobExecutionId = jobExecId;
+    jobExecution.flowExecId = flowExecId;
+    jobExecution.jobExecId = jobExecId;
     jobExecution.save();
-    logger.error("Finishing insertDefaultJobExecution. Job Execution ID " + jobExecution.jobExecutionId);
+    logger.error("Finishing insertDefaultJobExecution. Job Execution ID " + jobExecution.jobExecId);
     return jobExecution;
   }
 
