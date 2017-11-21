@@ -2,10 +2,7 @@ package com.linkedin.drelephant.tunin;
 
 import java.util.List;
 
-import models.AppHeuristicResult;
-import models.AppHeuristicResultDetails;
-import models.AppResult;
-import models.JobExecution;
+import models.*;
 import models.JobExecution.ParamSetStatus;
 
 import org.apache.log4j.Logger;
@@ -47,22 +44,32 @@ public class FitnessComputeUtil {
         Long totalExecutionTime = 0L;
         Double totalResourceUsed = 0D;
         Double totalInputBytesInMB = 0D;
-        if (results != null) {
-          for (AppResult appResult : results) {
-            logger.error("Job Execution Update: ApplicationID " + appResult.id);
-            Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
-            totalExecutionTime += executionTime;
-            totalResourceUsed += appResult.resourceUsed;
-            totalInputBytesInMB += getTotalInputBytes(appResult);
-          }
+
+        for (AppResult appResult : results) {
+          logger.error("Job Execution Update: ApplicationID " + appResult.id);
+          Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
+          totalExecutionTime += executionTime;
+          totalResourceUsed += appResult.resourceUsed;
+          totalInputBytesInMB += getTotalInputBytes(appResult);
         }
+
         if (totalExecutionTime != 0) {
           jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
           jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
           jobExecution.inputSizeInMb = totalInputBytesInMB;
           logger.error("Job Execution Update: UpdatedValue " + totalExecutionTime +":" + totalResourceUsed + ":" + totalInputBytesInMB);
-          jobExecution.update();
         }
+
+        Job job = jobExecution.job;
+        if(jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)){
+          jobExecution.costMetric = 3*job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100.0;
+        } else if(jobExecution.resourceUsage>(job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100.0)){
+          jobExecution.costMetric = 3*job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100.0;
+        }else{
+          jobExecution.costMetric = jobExecution.resourceUsage;
+        }
+        jobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
+        jobExecution.update();
       }
     }
     logger.error("Finished updateJobMetrics");
