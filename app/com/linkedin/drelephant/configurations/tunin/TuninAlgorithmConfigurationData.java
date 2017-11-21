@@ -19,13 +19,13 @@ package com.linkedin.drelephant.configurations.tunin;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TuninConfigurationData {
+public class TuninAlgorithmConfigurationData {
 
     private final String _className;
     private final String _algoName;
     private final Map<String, String> _paramMap;
 
-    public TuninConfigurationData(String className, String algoName, Map<String, String> paramMap){
+    public TuninAlgorithmConfigurationData(String className, String algoName, Map<String, String> paramMap){
         _className = className;
         _algoName = algoName;
         _paramMap = paramMap == null ? new HashMap<String, String>() : paramMap;
