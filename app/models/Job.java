@@ -33,6 +33,7 @@ public class Job extends Model {
     public static final String jobDefId = "jobDefId";
     public static final String flowDefUrl = "flowDefUrl";
     public static final String jobDefUrl = "jobDefUrl";
+    public static final String jobName = "jobName";
     public static final String algoId = "algoId";
     public static final String scheduler = "scheduler";
     public static final String username = "username";
@@ -68,6 +69,9 @@ public class Job extends Model {
 
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String jobDefUrl;
+
+  @Column(length = JOB_NAME_LIMIT, nullable = false)
+  public String jobName;
 
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String client;
