@@ -143,7 +143,7 @@ public abstract class ParamGenerator {
             //jobSuggestedParamValue.paramValuePK = primaryKey;
             jobSuggestedParamValue.algoParam = algoParam;
             double tmpParamValue = candidate.get(i);
-            jobSuggestedParamValue.paramValue = String.valueOf(tmpParamValue);
+            jobSuggestedParamValue.paramValue = tmpParamValue;
             jobSuggestedParamValueList.add(jobSuggestedParamValue);
         }
 
@@ -230,11 +230,11 @@ public abstract class ParamGenerator {
 
         for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
             if(jobSuggestedParamValue.algoParam.paramName.equals("mapreduce.task.io.sort.mb")){
-                mrSortMemory = Double.parseDouble(jobSuggestedParamValue.paramValue);
+                mrSortMemory = jobSuggestedParamValue.paramValue;
             } else if(jobSuggestedParamValue.algoParam.paramName.equals("mapreduce.map.memory.mb")){
-                mrMapMemory = Double.parseDouble(jobSuggestedParamValue.paramValue);
+                mrMapMemory = jobSuggestedParamValue.paramValue;
             }else if(jobSuggestedParamValue.algoParam.paramName.equals("pig.maxCombinedSplitSize")){
-                pigMaxCombinedSplitSize = Double.parseDouble(jobSuggestedParamValue.paramValue);
+                pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue;
             }
         }
 
