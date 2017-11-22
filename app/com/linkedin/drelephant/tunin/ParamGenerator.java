@@ -57,13 +57,16 @@ public abstract class ParamGenerator {
 
     //Done
     public List<Job> fetchJobsForParamSuggestion(){
+        logger.error("Inside fetchJobsForParamSuggestion ");
         List<Job> jobsForSwarmSuggestion = new ArrayList<Job>();
 
         List<JobExecution> pendingParamExecutionList = JobExecution.find.where().or(
                 Expr.or(Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.CREATED),
                 Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.SENT)),
-                Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.EXECUTED)).findList();
+                Expr.or(Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.EXECUTED),
+                    Expr.eq(PARAM_SET_STATE_FIELD_NAME, JobExecution.ParamSetStatus.DISCARDED))).findList();
 
+        logger.info("Total jobs for params :"+ Json.toJson(pendingParamExecutionList));
         List<Job> pendingParamJobList = new ArrayList<Job>();
         for (JobExecution pendingParamExecution: pendingParamExecutionList){
             pendingParamJobList.add(pendingParamExecution.job);
@@ -74,6 +77,8 @@ public abstract class ParamGenerator {
                     jobsForSwarmSuggestion.add(job);
             }
         }
+        logger.error("Final jobs for params"+ Json.toJson(jobsForSwarmSuggestion));
+
         return jobsForSwarmSuggestion;
     }
 
@@ -85,6 +90,8 @@ public abstract class ParamGenerator {
 
     //Done
     public List<TunerState> getJobsTunerState(List<Job> tuninJobs){
+      logger.error("Inside getJobsTunerState");
+
         List<TunerState> tunerStateList = new ArrayList<TunerState>();
         for (Job job: tuninJobs){
 
@@ -117,6 +124,8 @@ public abstract class ParamGenerator {
             }
             tunerStateList.add(tunerState);
         }
+        logger.error("Tuner States :"+ Json.toJson(tunerStateList));
+
         return tunerStateList;
     }
 

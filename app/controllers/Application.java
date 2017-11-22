@@ -981,46 +981,46 @@ public class Application extends Controller {
 //    }
 //  }
 
-  public static Result callGetCurrentRunParameters()
-  {
-
-    Map<String, String> paramValueMap=new HashMap<String, String>();
-    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
-    paramValueMap.put("mapreduce.map.memory.mb", "20000");
-    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
-
-    String defaultParams=Json.toJson(paramValueMap).toString();
-    String projectName="metricsV2";
-    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
-    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424";
-    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-    String client="UMP";
-    String userName="mkumar1";
-    Boolean isRetry=false;
-    Boolean skipExecutionForOptimization=false;
-    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
-  }
-  public static Result callGetCurrentRunParameters1()
-  {
-
-    Map<String, String> paramValueMap=new HashMap<String, String>();
-    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
-    paramValueMap.put("mapreduce.map.memory.mb", "20000");
-    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
-
-    String defaultParams=Json.toJson(paramValueMap).toString();
-    String projectName="metricsV2";
-    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
-    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426";
-    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-    String client="UMP";
-    String userName="mkumar1";
-    Boolean isRetry=false;
-    Boolean skipExecutionForOptimization=false;
-    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
-  }
+//  public static Result callGetCurrentRunParameters()
+//  {
+//
+//    Map<String, String> paramValueMap=new HashMap<String, String>();
+//    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
+//    paramValueMap.put("mapreduce.map.memory.mb", "20000");
+//    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
+//
+//    String defaultParams=Json.toJson(paramValueMap).toString();
+//    String projectName="metricsV2";
+//    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
+//    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+//    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424";
+//    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+//    String client="UMP";
+//    String userName="mkumar1";
+//    Boolean isRetry=false;
+//    Boolean skipExecutionForOptimization=false;
+//    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
+//  }
+//  public static Result callGetCurrentRunParameters1()
+//  {
+//
+//    Map<String, String> paramValueMap=new HashMap<String, String>();
+//    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
+//    paramValueMap.put("mapreduce.map.memory.mb", "20000");
+//    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
+//
+//    String defaultParams=Json.toJson(paramValueMap).toString();
+//    String projectName="metricsV2";
+//    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
+//    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+//    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426";
+//    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
+//    String client="UMP";
+//    String userName="mkumar1";
+//    Boolean isRetry=false;
+//    Boolean skipExecutionForOptimization=false;
+//    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
+//  }
 
   public static Result getCurrentRunParametersNew()
   {
@@ -1048,37 +1048,49 @@ public class Application extends Controller {
     String userName=paramValueMap.get("userName");
     Boolean isRetry=Boolean.parseBoolean(paramValueMap.get("isRetry"));
     Boolean skipExecutionForOptimization=Boolean.parseBoolean(paramValueMap.get("skipExecutionForOptimization"));
+    String flowDefUrl=paramValueMap.get("flowDefUrl");
+    String jobDefUrl=paramValueMap.get("jobDefUrl");
+    String flowExecUrl=paramValueMap.get("flowExecUrl");
+    String jobExecUrl=paramValueMap.get("jobExecUrl");
+    String jobName=paramValueMap.get("jobName");
+    String scheduler = paramValueMap.get("scheduler");
 
-    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
+    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowDefUrl, jobDefUrl, flowExecId, jobExecId,
+        flowExecUrl, jobExecUrl, jobName, defaultParams, client, scheduler, userName, isRetry,
+        skipExecutionForOptimization);
   }
 
-  public static Result getCurrentRunParameters(String projectName, String flowDefId, String jobDefId, String flowExecId, String jobExecId, String defaultParams, String client, String userName, Boolean isRetry, Boolean skipExecutionForOptimization)
-  {
-    AutoTuningAPIHelper autoTuningAPIHelper=new AutoTuningAPIHelper();
-    Map<String, String> outputParams=autoTuningAPIHelper.getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
-    if(outputParams!=null)
-    {
+  public static Result getCurrentRunParameters(String projectName, String flowDefId, String jobDefId,
+      String flowDefUrl, String jobDefUrl, String flowExecId, String jobExecId, String flowExecUrl, String jobExecUrl,
+      String jobName, String defaultParams, String client, String scheduler, String userName, Boolean isRetry,
+      Boolean skipExecutionForOptimization) {
+    AutoTuningAPIHelper autoTuningAPIHelper = new AutoTuningAPIHelper();
+    Map<String, Double> outputParams =
+        autoTuningAPIHelper.getCurrentRunParameters(flowDefId, jobDefId, flowDefUrl, jobDefUrl, flowExecId, jobExecId,
+            flowExecUrl, jobExecUrl, jobName, userName, client, scheduler, defaultParams, isRetry,
+            skipExecutionForOptimization);
+    if (outputParams != null) {
       logger.error("Outupt params " + outputParams);
       return ok(Json.toJson(outputParams));
-    }else
-    {
+    } else {
       return notFound("Unable to find parameters for given job: " + jobDefId + " and flow: " + flowDefId);
     }
   }
-  public static Result restParam(){
-      ParamGenerator paramGenerator = new PSOParamGenerator();
-//      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-//      List<TunerState> tunerStateList = paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
-//      TunerState tunerState = tunerStateList.get(0);
-//
-//      TunerState newTunerState = new TunerState();
-//      newTunerState.setTuningJob(tunerState.getTuningJob());
-//      newTunerState.setParametersToTune(tunerState.getParametersToTune());
-//      newTunerState.setStringTunerState("temp");
-//
-//
-//      JsonNode jsonTmp = Json.parse(tmp);
-//      JsonNode jsonTunerState = Json.toJson(tunerState);
+
+  public static Result restParam() {
+    ParamGenerator paramGenerator = new PSOParamGenerator();
+    //      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
+    //      List<TunerState> tunerStateList = paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
+    //      TunerState tunerState = tunerStateList.get(0);
+    //
+    //      TunerState newTunerState = new TunerState();
+    //      newTunerState.setTuningJob(tunerState.getTuningJob());
+    //      newTunerState.setParametersToTune(tunerState.getParametersToTune());
+    //      newTunerState.setStringTunerState("temp");
+    //
+    //
+    //      JsonNode jsonTmp = Json.parse(tmp);
+    //      JsonNode jsonTunerState = Json.toJson(tunerState);
 //      JsonNode stringTunerState = jsonTunerState.get("stringTunerState");
 //
 //      String parametersToTune = jsonTunerState.get("parametersToTune").toString();

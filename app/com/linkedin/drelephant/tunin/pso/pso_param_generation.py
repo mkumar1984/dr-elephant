@@ -6,7 +6,7 @@ import time
 import json
 import imp
 
-restartable_pso = imp.load_source('restartable_pso', '/home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/restartable_pso.py')
+restartable_pso = imp.load_source('restartable_pso', '/Users/mkumar1/git/dr-elephant/app/com/linkedin/drelephant/tunin/pso/restartable_pso.py')
 
 
 param_value_type = []
@@ -52,7 +52,7 @@ def fix_data_type(params):
 
 def initialize_params(parameters_to_tune):
   for parameter in parameters_to_tune:
-    value_type = str(parameter['paramValueType'])
+    value_type = 'DOUBLE'
     name = str(parameter['paramName'])
 
     if value_type == 'INT':
@@ -65,7 +65,7 @@ def initialize_params(parameters_to_tune):
       default_value = float(parameter['defaultValue'])
       max_value = float(parameter['maxValue'])
       min_value = float(parameter['minValue'])
-    param_value_type.append(value_type)
+    param_value_type.append('DOUBLE')
     param_name.append(name)
     param_default_value.append(default_value)
     param_step_size.append(step_size)
@@ -230,6 +230,7 @@ if __name__ == '__main__':
   json_tuning_state = args.json_tuning_state
   parameters_to_tune = args.parameters_to_tune
   parameters_to_tune = json.loads(parameters_to_tune)  
+  #print parameters_to_tune
   initialize_params(parameters_to_tune)
   main(json_tuning_state)
 

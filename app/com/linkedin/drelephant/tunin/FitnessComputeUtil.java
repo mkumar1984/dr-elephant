@@ -21,7 +21,9 @@ public class FitnessComputeUtil {
   public List<JobExecution> getJobExecution() {
     logger.error("100 Inside getJobExecution jobs");
     List<JobExecution> jobExecutions =
-        JobExecution.find.select("*").where().eq(JobExecution.TABLE.paramSetState, ParamSetStatus.EXECUTED).findList();
+        JobExecution.find.select("*")
+          .fetch(Job.TABLE.TABLE_NAME, "*")
+          .where().eq(JobExecution.TABLE.paramSetState, ParamSetStatus.EXECUTED).findList();
     logger.error("Finished getJobExecution jobs");
     return jobExecutions;
   }
@@ -39,8 +41,8 @@ public class FitnessComputeUtil {
                   "*")
                .where()
                .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecId)
-              .eq(AppResult.TABLE.JOB_DEF_ID, jobExecution.job.jobDefId).findList();
-      if (results != null) {
+              .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId).findList();
+      if (results != null && results.size()>0) {
         Long totalExecutionTime = 0L;
         Double totalResourceUsed = 0D;
         Double totalInputBytesInMB = 0D;
@@ -61,6 +63,8 @@ public class FitnessComputeUtil {
         }
 
         Job job = jobExecution.job;
+        logger.error("Job execution " + jobExecution.resourceUsage);
+        logger.error("Job details: AvgResourceUsage " + job.averageResourceUsage + ", allowedMaxResourceUsagePercent: " + job.allowedMaxResourceUsagePercent);
         if(jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)){
           jobExecution.costMetric = 3*job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100.0;
         } else if(jobExecution.resourceUsage>(job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100.0)){
@@ -83,7 +87,7 @@ public class FitnessComputeUtil {
           if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
             for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
               if (appHeuristicResultDetails.name.equals("Total input size in MB")) {
-                totalInputBytes += Long.parseLong(appHeuristicResultDetails.value);
+                totalInputBytes += Math.round(Double.parseDouble(appHeuristicResultDetails.value) * 1024 * 1024);
               }
             }
           }

@@ -7,7 +7,9 @@ import com.linkedin.drelephant.tunin.JobCompleteDetector;
 import com.linkedin.drelephant.tunin.PSOParamGenerator;
 import com.linkedin.drelephant.tunin.ParamGenerator;
 import com.linkedin.drelephant.util.Utils;
+
 import models.JobExecution;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
@@ -67,20 +69,34 @@ public class AutoTuner implements Runnable{
 
        // loadTuninAlgorithm();
         try{
-            JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
-            List<JobExecution> completedJobExecution = jobCompleteDetector.updateCompletedJobs();
+          try
+          {
+            while(!Thread.currentThread().isInterrupted())
+            {
+              JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
+              List<JobExecution> completedJobExecution = jobCompleteDetector.updateCompletedJobs();
 
-            Thread.sleep(METRICS_COMPUTATION_INTERVAL);
+              FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
+              List<JobExecution> fitnessComputedExecution = fitnessComputeUtil.updateFitness();
 
-            FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
-            List<JobExecution> fitnessComputedExecution = fitnessComputeUtil.updateFitness();
-
-            ParamGenerator paramGenerator = new PSOParamGenerator();
-            paramGenerator.getParams();
-
-        }catch (Exception e){
+              ParamGenerator paramGenerator = new PSOParamGenerator();
+              paramGenerator.getParams();
+            }
+          }catch(Exception e)
+          {
             logger.error(e.getMessage());
             logger.error(ExceptionUtils.getStackTrace(e));
+          }
+          Thread.sleep(METRICS_COMPUTATION_INTERVAL);
+        }catch (Exception e){
+          logger.error(e.getMessage());
+          logger.error(ExceptionUtils.getStackTrace(e));
+
+            try {
+              Thread.sleep(METRICS_COMPUTATION_INTERVAL);
+            } catch (InterruptedException e1) {
+              // TODO Auto-generated catch block
+            }
         }
     }
 }
