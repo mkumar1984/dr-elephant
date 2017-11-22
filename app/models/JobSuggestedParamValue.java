@@ -49,7 +49,7 @@ public class JobSuggestedParamValue extends Model {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   public Long id;
-  public String paramValue;
+  public Double paramValue;
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
