@@ -73,15 +73,17 @@ public class AutoTuningAPIHelper {
       }
     }
 
-    updateJobExecutionParameter(jobExecution, flowExecId, jobExecId);
+    updateJobExecutionParameter(jobExecution, flowExecId, jobExecId, flowExecUrl, jobExecUrl);
 
     logger.error("Finishing getCurrentRunParameters");
     return paramValues;
   }
 
-  public void updateJobExecutionParameter(JobExecution jobExecution, String flowExecId, String jobExecId) {
+  public void updateJobExecutionParameter(JobExecution jobExecution, String flowExecId, String jobExecId, String flowExecUrl, String jobExecUrl) {
     jobExecution.flowExecId = flowExecId;
     jobExecution.jobExecId = jobExecId;
+    jobExecution.flowExecUrl = flowExecUrl;
+    jobExecution.jobExecUrl = jobExecUrl;
     jobExecution.paramSetState = ParamSetStatus.SENT;
     jobExecution.executionState = ExecutionState.IN_PROGRESS;
     jobExecution.update();
