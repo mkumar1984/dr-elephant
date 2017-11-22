@@ -25,9 +25,12 @@ public class AutoTuningAPIHelper {
   private static final Logger logger = Logger.getLogger(AutoTuningAPIHelper.class);
   Algo algo = Algo.find.where().idEq(1).findUnique();
 
-  public Map<String, String> getCurrentRunParameters(String flowDefId, String jobDefId,
-      String flowExecId, String jobExecId, String defaultParams, String client, String userName, Boolean isRetry,
-      Boolean skipExecutionForOptimization) {
+  public Map<String, Double> getCurrentRunParameters(String flowDefId, String jobDefId, String flowDefUrl,
+                                                     String  jobDefUrl, String flowExecId, String jobExecId,
+                                                     String flowExecUrl, String jobExecUrl, String jobName,
+                                                     String userName, String client, String scheduler,
+                                                     String defaultParams, Boolean isRetry,
+                                                     Boolean skipExecutionForOptimization) {
 
     logger.error("Starting getCurrentRunParameters");
     Job job =
@@ -37,8 +40,8 @@ public class AutoTuningAPIHelper {
     if (job == null) {
       logger.error("Job Not found. Creating new job. ");
       job =
-          addNewJobForTuning(flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName,
-              isRetry, skipExecutionForOptimization);
+          addNewJobForTuning(flowDefId, jobDefId, flowDefUrl, jobDefUrl, flowExecId, jobExecId, flowExecUrl, jobExecUrl,
+                  jobName, userName,  client, scheduler, defaultParams, isRetry, skipExecutionForOptimization);
     }
 
     logger.error("Finding execution for job ID " + job.jobId);
@@ -61,10 +64,11 @@ public class AutoTuningAPIHelper {
         JobSuggestedParamValue.find.where().eq(JobSuggestedParamValue.TABLE.paramSetId, jobExecution.paramSetId).findList();
 
     logger.error("Number of output parameters : " + jobSuggestedParamValues.size());
-    Map<String, String> paramValues = new HashMap<String, String>();
+    Map<String, Double> paramValues = new HashMap<String, Double>();
     if (jobSuggestedParamValues != null) {
       for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValues) {
-        logger.error("Param Name is " + jobSuggestedParamValue.algoParam.paramName + " And value is " + jobSuggestedParamValue.paramValue);
+        logger.error("Param Name is " + jobSuggestedParamValue.algoParam.paramName + " And value is " +
+                jobSuggestedParamValue.paramValue);
         paramValues.put(jobSuggestedParamValue.algoParam.paramName, jobSuggestedParamValue.paramValue);
       }
     }
@@ -83,35 +87,43 @@ public class AutoTuningAPIHelper {
     jobExecution.update();
   }
 
-  public Job addNewJobForTuning(String flowDefId, String jobDefId, String flowExecId,
-      String jobExecId, String defaultParams, String client, String userName, Boolean isRetry,
-      Boolean skipExecutionForOptimization) {
+  public Job addNewJobForTuning(String flowDefId, String jobDefId, String flowDefUrl,
+                                String  jobDefUrl, String flowExecId, String jobExecId,
+                                String flowExecUrl, String jobExecUrl, String jobName,
+                                String userName, String client, String scheduler,
+                                String defaultParams, Boolean isRetry,
+                                Boolean skipExecutionForOptimization) {
 
     logger.error("Starting addNewJobForTuning");
-    Job job = insertJob(flowDefId, jobDefId, client, userName);
-    JobExecution jobExecution = insertDefaultJobExecution(job, flowExecId, jobExecId);
+    Job job = insertJob(flowDefId, jobDefId, flowDefUrl, jobDefUrl, jobName, userName, client, scheduler);
+    JobExecution jobExecution = insertDefaultJobExecution(job, flowExecId, jobExecId, flowExecUrl, jobExecUrl);
     insertDefaultParameters(jobExecution, defaultParams);
     logger.error("Finishing addNewJobForTuning");
     return job;
   }
 
-  public Job insertJob(String flowDefId, String jobDefId, String client, String userName) {
+  public Job insertJob(String flowDefId, String jobDefId, String flowDefUrl, String jobDefUrl, String jobName,
+                       String userName, String client, String scheduler) {
     logger.error("Starting insertJob");
     Job job = new Job();
     job.algo = algo;
     job.flowDefId = flowDefId;
     job.jobDefId = jobDefId;
-    job.scheduler = client;
+    job.flowDefUrl = flowDefUrl;
+    job.jobDefUrl = jobDefUrl;
+    job.jobName = jobName;
     job.username = userName;
+    job.client = client;
+    job.scheduler = scheduler;
     job.tuningEnabled = true;
     job.deleted = false;
-
     job.save();
     logger.error("Finishing insertJob. JobID is " + job.jobId);
     return job;
   }
 
-  public JobExecution insertDefaultJobExecution(Job job, String flowExecId, String jobExecId) {
+  public JobExecution insertDefaultJobExecution(Job job, String flowExecId, String jobExecId, String flowExecUrl,
+                                                String jobExecUrl) {
     logger.error("Starting insertDefaultJobExecution");
     JobExecution jobExecution = new JobExecution();
     jobExecution.job = job;
@@ -121,6 +133,8 @@ public class AutoTuningAPIHelper {
     jobExecution.isDefaultExecution = true;
     jobExecution.flowExecId = flowExecId;
     jobExecution.jobExecId = jobExecId;
+    jobExecution.flowExecUrl = flowExecUrl;
+    jobExecution.jobExecUrl = jobExecUrl;
     jobExecution.save();
     logger.error("Finishing insertDefaultJobExecution. Job Execution ID " + jobExecution.jobExecId);
     return jobExecution;
@@ -129,9 +143,9 @@ public class AutoTuningAPIHelper {
   public void insertDefaultParameters(JobExecution jobExecution, String defaultParams) {
     @SuppressWarnings("unchecked")
     ObjectMapper mapper = new ObjectMapper();
-    Map<String, String> paramValueMap = null;
+    Map<String, Double> paramValueMap = null;
     try {
-      paramValueMap = (Map<String, String>) mapper.readValue(defaultParams, Map.class);
+      paramValueMap = (Map<String, Double>) mapper.readValue(defaultParams, Map.class);
     } catch (JsonParseException e) {
       logger.error("Error is " + e);
     } catch (JsonMappingException e) {
@@ -140,7 +154,7 @@ public class AutoTuningAPIHelper {
       logger.error("Error is " + e);
     }
     if (paramValueMap != null) {
-      for (Map.Entry<String, String> paramValue : paramValueMap.entrySet()) {
+      for (Map.Entry<String, Double> paramValue : paramValueMap.entrySet()) {
         insertJobParameter(jobExecution, paramValue.getKey(), paramValue.getValue());
       }
     }else
@@ -149,7 +163,7 @@ public class AutoTuningAPIHelper {
     }
   }
 
-  public void insertJobParameter(JobExecution jobExecution, String paramName, String paramValue) {
+  public void insertJobParameter(JobExecution jobExecution, String paramName, Double paramValue) {
     logger.error("Starting insertJobParameter");
     JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
     jobSuggestedParamValue.jobExecution = jobExecution;
