@@ -191,6 +191,7 @@ public abstract class ParamGenerator {
         for (Particle particle : currentPopulation) {
           Long paramSetId = particle.getParamSetId ();
 
+          logger.info("Param set id: " +  paramSetId.toString ());
           TuningJobExecution tuningJobExecution = TuningJobExecution.find.select("*")
               .fetch(TuningJobExecution.TABLE.jobExecution, "*")
               .where ()

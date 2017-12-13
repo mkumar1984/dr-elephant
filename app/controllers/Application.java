@@ -959,7 +959,7 @@ public class Application extends Controller {
       return getCurrentRunParameters(tuningInput);
 
     } catch (Exception e) {
-      logger.error("Exception while parsing input: " + e);
+      logger.error("Exception", e);
       // Todo: Incase of error: return default params
       return notFound("Error parsing input");
     }

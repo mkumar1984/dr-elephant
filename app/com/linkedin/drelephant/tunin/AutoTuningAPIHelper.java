@@ -32,6 +32,7 @@ import models.TuningJobExecution.ParamSetStatus;
 import models.JobSuggestedParamValue;
 import org.apache.log4j.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import play.libs.Json;
 
 
 /**
@@ -43,6 +44,48 @@ public class AutoTuningAPIHelper {
 
   //Todo: this will not be hard coded
   TuningAlgorithm _tuningAlgorithm = TuningAlgorithm.find.where ().idEq (1).findUnique ();
+
+
+
+  public TuningJobExecution createDefaultJobExecution(TuningJobDefinition tuningJobDefinition){
+    TuningJobExecution tuningJobExecutionDefault = TuningJobExecution.find.select ("*")
+        .where ()
+        .eq (TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + Job.TABLE.id, tuningJobDefinition.job.id)
+        .eq (TuningJobExecution.TABLE.isDefaultExecution, true)
+        .setMaxRows (1)
+        .findUnique ();
+
+    TuningJobExecution tuningJobExecution = new TuningJobExecution ();
+    JobExecution jobExecution = new JobExecution ();
+    jobExecution.id = 0L;
+    jobExecution.job = tuningJobExecutionDefault.jobExecution.job;
+    jobExecution.save();
+    tuningJobExecution.jobExecution = jobExecution;
+    tuningJobExecution.isDefaultExecution = tuningJobExecutionDefault.isDefaultExecution;
+    tuningJobExecution.tuningAlgorithm = tuningJobExecutionDefault.tuningAlgorithm;
+    tuningJobExecution.paramSetState = ParamSetStatus.CREATED;
+    tuningJobExecution.save();
+
+    logger.info("New Default tuning execution: " + Json.toJson (tuningJobExecution));
+
+
+//    JobExecution prevDefaultExecution = tuningJobExecutionDefault.jobExecution;
+//    Long id = prevDefaultExecution.id;
+
+    List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
+        .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id, tuningJobExecutionDefault.jobExecution.id)
+        .findList ();
+
+    for(JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
+      JobSuggestedParamValue jobSuggestedParamValue1 = new JobSuggestedParamValue ();
+      jobSuggestedParamValue1.id = 0;
+      jobSuggestedParamValue1.jobExecution = jobExecution;
+      jobSuggestedParamValue1.paramValue = jobSuggestedParamValue.paramValue;
+      jobSuggestedParamValue1.tuningParameter = jobSuggestedParamValue.tuningParameter;
+      jobSuggestedParamValue1.save();
+    }
+    return tuningJobExecution;
+  }
 
 
   /**
@@ -84,18 +127,14 @@ public class AutoTuningAPIHelper {
             tuningJobDefinition.job.id)
         .eq (TuningJobExecution.TABLE.paramSetState, ParamSetStatus.CREATED)
         .order ()
-        .asc (JobExecution.TABLE.createdTs)
+        .asc (TuningJobExecution.TABLE.jobExecution + "." +JobExecution.TABLE.createdTs)
         .setMaxRows (1)
         .findUnique ();
 
     if (tuningJobExecution == null) {
-      tuningJobExecution = TuningJobExecution.find.select ("*")
-          .where ()
-          .eq (TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + Job.TABLE.id, tuningJobDefinition.job.id)
-          .eq (TuningJobExecution.TABLE.isDefaultExecution, true)
-          .setMaxRows (1)
-          .findUnique ();
+        tuningJobExecution = createDefaultJobExecution(tuningJobDefinition);
     }
+
 
     //    JobExecution jobExecution = JobExecution.find.select ("*")
 //        .fetch (JobExecution.TABLE.job, "*")
@@ -119,7 +158,7 @@ public class AutoTuningAPIHelper {
     logger.debug ("Finding parameters for param set ID " + tuningJobExecution.jobExecution.id);
 
     List<JobSuggestedParamValue> jobSuggestedParamValues = JobSuggestedParamValue.find.where ()
-        .eq (JobSuggestedParamValue.TABLE.jobExecutionId, tuningJobExecution.jobExecution.id)
+        .eq (JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id, tuningJobExecution.jobExecution.id)
         .findList ();
 
     logger.debug ("Number of output parameters : " + jobSuggestedParamValues.size ());
@@ -136,7 +175,7 @@ public class AutoTuningAPIHelper {
 
     updateJobExecutionParameter (tuningJobExecution, tuningInput);
 
-    logger.error ("Finishing getCurrentRunParameters");
+    logger.info ("Finishing getCurrentRunParameters");
     return paramValues;
   }
 
@@ -165,12 +204,17 @@ public class AutoTuningAPIHelper {
     jobExecution.jobExecUrl = tuningInput.getJobExecUrl ();
     jobExecution.executionState = ExecutionState.IN_PROGRESS;
     jobExecution.flowExecution = flowExecution;
-    jobExecution.update ();
+
+    logger.info("Saving job execution" + Json.toJson (jobExecution));
+
+    jobExecution.save();
 
     tuningJobExecution.jobExecution = jobExecution; //todo: needed?
     tuningJobExecution.paramSetState = ParamSetStatus.SENT;
-    tuningJobExecution.update();
+    tuningJobExecution.save();
   }
+
+
 
   /**
    * Add new job for tuning

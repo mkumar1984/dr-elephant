@@ -78,7 +78,7 @@ public class JobCompleteDetector {
     List<TuningJobExecution> tuningJobExecutionList = new ArrayList<TuningJobExecution>();
     try {
       tuningJobExecutionList =
-          TuningJobExecution.find.select ("*").fetch (TuningJobExecution.TABLE.jobExecution, "*").where ().
+          TuningJobExecution.find.select ("*").where ().
               eq (TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT).findList ();
     } catch(NullPointerException e){
       logger.error("CompletionDetector: 0 started executions found");
@@ -104,6 +104,8 @@ public class JobCompleteDetector {
 
         JobExecution jobExecution = tuningJobExecution.jobExecution;
 
+        logger.info("Checking completion for job execution: " + Json.toJson (tuningJobExecution));
+
         if (_azkabanJobStatusUtil == null) {
           logger.info("Initializing  AzkabanJobStatusUtil");
           _azkabanJobStatusUtil = new AzkabanJobStatusUtil(jobExecution.flowExecution.flowExecId);
@@ -125,7 +127,7 @@ public class JobCompleteDetector {
                 }
                 if (job.getValue().equals(AzkabanJobStatus.SUCCEEDED.toString())) {
                   tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
-                  jobExecution.executionState = ExecutionState.SUCCEDED;
+                  jobExecution.executionState = ExecutionState.SUCCEEDED;
                 }
                 if (tuningJobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
                   completedExecutions.add(tuningJobExecution);
@@ -136,11 +138,13 @@ public class JobCompleteDetector {
             logger.info("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
           }
         } catch(Exception e){
-          logger.error(e);
+          logger.error("Error get status for execution with id: " + jobExecution.id + ".\nStack trace: " + e.getStackTrace ());
+
         }
       }
     } catch(Exception e) {
       logger.error(e);
+      e.printStackTrace ();
     }
     logger.debug("Completed executions fetched");
     return completedExecutions;
@@ -157,7 +161,7 @@ public class JobCompleteDetector {
     for (TuningJobExecution tuningJobExecution : jobExecutions) {
 
       JobExecution jobExecution = tuningJobExecution.jobExecution;
-      logger.debug ("Updating jobExecution: " + jobExecution.jobExecId);
+      logger.info ("Updating jobExecution: " + Json.toJson (jobExecution));
       jobExecution.update();
       tuningJobExecution.update();
     }

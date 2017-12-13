@@ -22,6 +22,7 @@ import models.*;
 import models.TuningJobExecution.ParamSetStatus;
 
 import org.apache.log4j.Logger;
+import play.libs.Json;
 
 // Todo: rename class to FitnessComputer
 // Todo: Exception handling. Difficulty in understanding logic
@@ -38,9 +39,12 @@ public class FitnessComputeUtil {
    * @return List of job execution
    */
   public List<TuningJobExecution> updateFitness() {
+    logger.info("Updating fitness");
     List<TuningJobExecution> completedExecutions= getCompletedExecutions();
     updateExecutionMetrics(completedExecutions);
+    logger.info("Fitness updated");
     return completedExecutions;
+
   }
 
   /**
@@ -54,12 +58,12 @@ public class FitnessComputeUtil {
     try{
       jobExecutions =
           TuningJobExecution.find.select("*")
-              .fetch(TuningJobExecution.TABLE.jobExecution, "*")
+              //.fetch(TuningJobExecution.TABLE.jobExecution, "*")
               //.fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")   //todo: required?
               //.fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.flowExecution, "*") //todo: required?
               .where().eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.EXECUTED).findList();
     } catch(NullPointerException e){
-      logger.info("No completed executions found for computing fitness");
+      logger.info("No completed executions found for computing fitness" , e);
     }
     logger.debug("Finished getCompletedExecutions jobs");
     return jobExecutions;
@@ -73,66 +77,75 @@ public class FitnessComputeUtil {
     logger.debug("Updating execution metrics");
     for (TuningJobExecution tuningJobExecution : completedExecutions) {
 
-      JobExecution jobExecution = tuningJobExecution.jobExecution;
+      logger.info("Completed executions before updating metric: " + Json.toJson (tuningJobExecution));
 
-      logger.debug("Job Execution Update: Flow Execution ID " + jobExecution.flowExecution.flowExecId + " Job ID " +
-          jobExecution.jobExecId);
-      List<AppResult> results =
-          AppResult.find
-              .select("*")
-              .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
-              .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." +
-                  AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
-              .where()
-              .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
-              .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId).findList();
-      if (results != null && results.size()>0) {
-        Long totalExecutionTime = 0L;
-        Double totalResourceUsed = 0D;
-        Double totalInputBytesInMB = 0D;
+      try {
+        JobExecution jobExecution = tuningJobExecution.jobExecution;
+        logger.info ("Job Execution Update: Flow Execution ID " + jobExecution.flowExecution.flowExecId + " Job ID "
+            + jobExecution.jobExecId);
+        List<AppResult> results = AppResult.find.select ("*")
+            .fetch (AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
+            .fetch (AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS,
+                "*")
+            .where ()
+            .eq (AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
+            .eq (AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId)
+            .findList ();
+        if (results != null && results.size () > 0) {
+          Long totalExecutionTime = 0L;
+          Double totalResourceUsed = 0D;
+          Double totalInputBytesInMB = 0D;
 
-        for (AppResult appResult : results) {
-          logger.debug("Job Execution Update: ApplicationID " + appResult.id);
-          Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
-          totalExecutionTime += executionTime;
-          totalResourceUsed += appResult.resourceUsed;
-          totalInputBytesInMB += getTotalInputBytes(appResult);
+          for (AppResult appResult : results) {
+            logger.info ("Job Execution Update: ApplicationID " + appResult.id);
+            Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
+            totalExecutionTime += executionTime;
+            totalResourceUsed += appResult.resourceUsed;
+            totalInputBytesInMB += getTotalInputBytes (appResult);
+          }
+
+          if (totalExecutionTime != 0) {
+            jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
+            jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
+            jobExecution.inputSizeInMb = totalInputBytesInMB;
+            logger.info ("Job Execution Update: UpdatedValue " + totalExecutionTime + ":" + totalResourceUsed + ":"
+                + totalInputBytesInMB);
+          }
+
+          Job job = jobExecution.job;
+
+          // job id match and tuning enabled
+          TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select ("*")
+              .fetch (TuningJobDefinition.TABLE.job, "*")
+              .where ()
+              .eq (TuningJobDefinition.TABLE.job + "." + Job.TABLE.id, job.id)
+              .eq (TuningJobDefinition.TABLE.tuningEnabled, 1)
+              .findUnique ();
+
+          // todo: what if tuningJobDefinition is unique?
+
+          logger.info ("Job execution " + jobExecution.resourceUsage);
+          logger.info ("Job details: AvgResourceUsage " + tuningJobDefinition.averageResourceUsage + ", allowedMaxResourceUsagePercent: "
+              + tuningJobDefinition.allowedMaxResourceUsagePercent);
+          if (jobExecution.executionState.equals (JobExecution.ExecutionState.FAILED) || jobExecution.executionState.equals (JobExecution.ExecutionState.CANCELLED)) {
+            // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
+            tuningJobExecution.fitness =
+                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+          } else if (jobExecution.resourceUsage > (tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
+            tuningJobExecution.fitness =
+                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+          } else {
+            tuningJobExecution.fitness = jobExecution.resourceUsage;
+          }
+          tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
+          jobExecution.update ();
+          tuningJobExecution.update ();
+
+          logger.info("Completed executions after updating metrics: " + Json.toJson (tuningJobExecution));
         }
-
-        if (totalExecutionTime != 0) {
-          jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
-          jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
-          jobExecution.inputSizeInMb = totalInputBytesInMB;
-          logger.debug("Job Execution Update: UpdatedValue " + totalExecutionTime +":" + totalResourceUsed + ":" +
-              totalInputBytesInMB);
-        }
-
-        Job job = jobExecution.job;
-
-        // job id match and tuning enabled
-        TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
-            .fetch(TuningJobDefinition.TABLE.job, "*")
-            .where()
-            .eq(TuningJobDefinition.TABLE.job + "." + Job.TABLE.id, job.id)
-            .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-            .findUnique ();
-
-        // todo: what if tuningJobDefinition is unique?
-
-        logger.debug ("Job execution " + jobExecution.resourceUsage);
-        logger.debug ("Job details: AvgResourceUsage " + tuningJobDefinition.averageResourceUsage + ", allowedMaxResourceUsagePercent: "
-            + tuningJobDefinition.allowedMaxResourceUsagePercent);
-        if(jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)){
-          // Todo: Check if the reason of failure is auto tuning
-          tuningJobExecution.fitness = 3*tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
-        } else if(jobExecution.resourceUsage>(tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)){
-          tuningJobExecution.fitness = 3*tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
-        }else{
-          tuningJobExecution.fitness = jobExecution.resourceUsage;
-        }
-        tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
-        jobExecution.update();
-        tuningJobExecution.update();
+      } catch(Exception e){
+        //String stackTrace = e.getStackTrace ().toString ();
+        logger.error ("Error updating fitness of job_exec_id: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: " , e);
       }
     }
     logger.debug("Execution metrics updated");

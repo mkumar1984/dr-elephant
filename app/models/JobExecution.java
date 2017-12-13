@@ -48,7 +48,7 @@ public class JobExecution extends Model {
   public enum ExecutionState {
     NOT_STARTED,
     IN_PROGRESS,
-    SUCCEDED,
+    SUCCEEDED,
     FAILED,
     CANCELLED
   }
