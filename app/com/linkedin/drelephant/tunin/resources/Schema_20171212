@@ -101,6 +101,8 @@ param_set_state enum ('CREATED', 'SENT', 'EXECUTED', 'FITNESS_COMPUTED', 'DISCAR
 is_default_execution TINYINT NOT NULL,
 fitness  DOUBLE,
 INDEX(job_execution_id),
+Unique(job_execution_id),
+Foreign key (job_execution_id) REFERENCES job_execution(id),
 FOREIGN KEY (tuning_algorithm_id) REFERENCES tuning_algorithm(id)
 ) ENGINE=InnoDB;
 
