@@ -56,11 +56,18 @@ public abstract class ParamGenerator {
 //        .eq(TuningJobDefinition.TABLE.job + "." + Job.TABLE.id, 0)
 //        .findList();
 //    return tuningJobDefinition;
+
     FlowDefinition flowDefinition = new FlowDefinition ();
-    flowDefinition.flowDefUrl = "flow_def_url_1";
-    flowDefinition.flowDefId = "flow_def_id_1";
-    flowDefinition.save ();
-    return Json.toJson (flowDefinition);
+    flowDefinition.flowDefUrl = "flow_def_url4";
+    flowDefinition.flowDefId = "flow_def_id4";
+    //flowDefinition.save ();
+
+    FlowExecution flowExecution = new FlowExecution ();
+    flowExecution.flowDefinition = flowDefinition;
+    flowExecution.flowExecUrl = "flow_exec_url4";
+    flowExecution.flowExecId = "flow_exec_id4";
+    flowExecution.save ();
+    return Json.toJson (flowExecution);
   }
 
 
@@ -424,11 +431,20 @@ public abstract class ParamGenerator {
   public Long saveSuggestedParamMetadata(TuningJobExecution tuningJobExecution) {
 
 //    JobExecution jobExecution = tuningJobExecution.jobExecution;
-    //TuningJobExecution
+//    jobExecution.save();
+//
+//    logger.info("Saved execution: " + Json.toJson (jobExecution));
+//
+//    TuningJobExecution tuningJobExecution1 = new TuningJobExecution ();
+//    tuningJobExecution1.jobExecution = jobExecution;
+//    tuningJobExecution1.fitness = tuningJobExecution.fitness;
+//    tuningJobExecution1.paramSetState = tuningJobExecution.paramSetState;
+//    tuningJobExecution1.tuningAlgorithm = tuningJobExecution.tuningAlgorithm;
+//    tuningJobExecution1.isDefaultExecution = tuningJobExecution.isDefaultExecution;
+//    logger.info(Json.toJson (tuningJobExecution1));
 
-    logger.info(Json.toJson (tuningJobExecution));
-//    jobExecution.save ();
-//    tuningJobExecution.jobExecution = jobExecution;
+    logger.info ("tuningExecution: " + Json.toJson (tuningJobExecution));
+
     tuningJobExecution.save();
     return tuningJobExecution.jobExecution.id;
   }

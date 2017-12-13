@@ -52,7 +52,7 @@ public class TuningJobExecution  extends Model  {
     public static final String jobExecution = "jobExecution";
   }
 
-  @Id
+
   @OneToOne(cascade = CascadeType.ALL)
   @JoinTable(name="job_execution", joinColumns={@JoinColumn(name ="job_execution_id", referencedColumnName="id")})
   public JobExecution jobExecution;
