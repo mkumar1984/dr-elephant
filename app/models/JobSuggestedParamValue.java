@@ -39,8 +39,9 @@ public class JobSuggestedParamValue extends Model {
 
   public static class TABLE {
     public static final String TABLE_NAME = "job_suggested_param_value";
-    public static final String paramSetId = "param_set_id";
-    public static final String paramId = "param_id";
+    public static final String id = "id";
+    public static final String jobExecutionId = "jobExecutionId";
+    public static final String tuningParameterId = "tuningParameterId";
     public static final String paramValue = "paramValue";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
@@ -48,19 +49,19 @@ public class JobSuggestedParamValue extends Model {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  public Long id;
+  public Integer id;
   public Double paramValue;
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "job_execution", joinColumns = { @JoinColumn(name = "param_set_id",
-      referencedColumnName = "param_set_id") })
+  @JoinTable(name = "job_execution", joinColumns = { @JoinColumn(name = "job_execution_id",
+      referencedColumnName = "id") })
   public JobExecution jobExecution;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "algo_param", joinColumns = { @JoinColumn(name = "param_id", referencedColumnName = "param_id") })
-  public AlgoParam algoParam;
+  @JoinTable(name = "tuning_parameter", joinColumns = { @JoinColumn(name = "tuning_parameter_id", referencedColumnName = "id") })
+  public TuningParameter tuningParameter;
 
 
   public static Finder<Long, JobSuggestedParamValue> find = new Finder<Long, JobSuggestedParamValue>(

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.linkedin.drelephant.tunin;
 
 import java.net.MalformedURLException;
@@ -8,15 +24,26 @@ import java.util.Map;
 
 import models.JobExecution;
 import models.JobExecution.ExecutionState;
-import models.JobExecution.ParamSetStatus;
+import models.TuningJobExecution;
+import models.TuningJobExecution.ParamSetStatus;
 import org.apache.log4j.*;
 import play.libs.Json;
+
+
+/**
+ * This class pools the scheduler for completion status of execution and updates the database
+ */
+
+// Todo: Rename class to ExecutionStatusFetcher
+// Todo: This is not generic in terms of schedulers
 
 public class JobCompleteDetector {
   private static final Logger logger = Logger.getLogger(JobCompleteDetector.class);
 
-  private AzkabanJobStatusUtil azkabanJobStatusUtil;
+  // Todo: rename?
+  private AzkabanJobStatusUtil _azkabanJobStatusUtil;
 
+  // Todo: rename?
   public enum AzkabanJobStatus {
     FAILED,
     CANCELLED,
@@ -24,89 +51,115 @@ public class JobCompleteDetector {
     SUCCEEDED
   }
 
-  public List<JobExecution> updateCompletedJobs() throws MalformedURLException, URISyntaxException {
-    logger.error("100 Inside completed jobs");
-    List<JobExecution> sentJobs = getJobExecution();
-    logger.info("Sent jobs:"+ Json.toJson(sentJobs));
-    List<JobExecution> completedJobs = getCompletedJob(sentJobs);
-    updateJobStatus(completedJobs);
-    logger.error("Finished completed jobs");
-    return completedJobs;
+  /**
+   * Updates the status of completed executions
+   * @return List of completed executions
+   * @throws MalformedURLException
+   * @throws URISyntaxException
+   */
+  public List<TuningJobExecution> updateCompletedExecutions() throws MalformedURLException, URISyntaxException {
+    logger.debug ("Checking execution status");
+
+    List<TuningJobExecution> runningExecutions = getStartedExecutions();
+    // Todo: The following function will be different for different schedulers
+    List<TuningJobExecution> completedExecutions = getCompletedExecutions(runningExecutions);
+    updateExecutionStatus(completedExecutions);
+    logger.info("Execution status updated");
+    return completedExecutions;
   }
 
-  public List<JobExecution> getJobExecution() {
-    logger.error("100 Inside getJobExecution jobs");
-    List<JobExecution> jobExecutions =
-        JobExecution.find.select("*").where().eq(JobExecution.TABLE.paramSetState, ParamSetStatus.SENT).findList();
-    logger.error("Finished getJobExecution jobs");
-    return jobExecutions;
+  /**
+   * Returns the list of executions which have already received param suggestion
+   * @return JobExecution list
+   */
+  public List<TuningJobExecution> getStartedExecutions() {
+    logger.debug ("fetching started executions");
+
+    List<TuningJobExecution> tuningJobExecutionList = new ArrayList<TuningJobExecution>();
+    try {
+      tuningJobExecutionList =
+          TuningJobExecution.find.select ("*").fetch (TuningJobExecution.TABLE.jobExecution, "*").where ().
+              eq (TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT).findList ();
+    } catch(NullPointerException e){
+      logger.error("CompletionDetector: 0 started executions found");
+    }
+    logger.debug ("started executions fetched");
+    return tuningJobExecutionList;
   }
 
-  public List<JobExecution> getCompletedJob(List<JobExecution> jobExecutions) throws MalformedURLException,
-      URISyntaxException {
-
-    logger.error("Inside getCompletedJob jobs:\n" + Json.toJson(jobExecutions));
-    List<JobExecution> completedJobs = new ArrayList<JobExecution>();
+  /**
+   * Returns the list of completed executions
+   * @param jobExecutions Started Execution list
+   * @return List of completed executions
+   * @throws MalformedURLException
+   * @throws URISyntaxException
+   */
+  public List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions) throws MalformedURLException,
+                                                                                     URISyntaxException {
+    logger.debug("Fetching completed executions" + Json.toJson(jobExecutions));
+    List<TuningJobExecution> completedExecutions = new ArrayList<TuningJobExecution>();
     try
     {
-    for (JobExecution jobExecution : jobExecutions) {
+      for (TuningJobExecution tuningJobExecution : jobExecutions) {
 
-      logger.info("FLow Execution Id: " + jobExecution.flowExecId);
+        JobExecution jobExecution = tuningJobExecution.jobExecution;
 
-      if (azkabanJobStatusUtil == null) {
-        logger.error("Initializing  AzkabanJobStatusUtil");
-        azkabanJobStatusUtil = new AzkabanJobStatusUtil(jobExecution.flowExecId);
-      }
+        if (_azkabanJobStatusUtil == null) {
+          logger.info("Initializing  AzkabanJobStatusUtil");
+          _azkabanJobStatusUtil = new AzkabanJobStatusUtil(jobExecution.flowExecution.flowExecId);
+        }
 
-      logger.error("Calling  getJobsFromFlow");
-
-      try {
-        Map<String, String> jobStatus = azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecId);
-        if (jobStatus != null) {
-          for (Map.Entry<String, String> job : jobStatus.entrySet()) {
-            logger.error("Job Found:" + job.getKey() + ". Status: " + job.getValue());
-            if (job.getKey().equals(jobExecution.job.jobName)) {
-              if (job.getValue().equals(AzkabanJobStatus.FAILED.toString())) {
-                jobExecution.paramSetState = ParamSetStatus.EXECUTED;
-                jobExecution.executionState = ExecutionState.FAILED;
-              }
-              if (job.getValue().equals(AzkabanJobStatus.CANCELLED.toString()) || job.getValue().equals(AzkabanJobStatus.KILLED.toString())) {
-                jobExecution.paramSetState = ParamSetStatus.EXECUTED;
-                jobExecution.executionState = ExecutionState.CANCELLED;
-              }
-              if (job.getValue().equals(AzkabanJobStatus.SUCCEEDED.toString())) {
-                jobExecution.paramSetState = ParamSetStatus.EXECUTED;
-                jobExecution.executionState = ExecutionState.SUCCEDED;
-              }
-              if (jobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
-                completedJobs.add(jobExecution);
+        try {
+          Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
+          if (jobStatus != null) {
+            for (Map.Entry<String, String> job : jobStatus.entrySet()) {
+              logger.info("Job Found:" + job.getKey() + ". Status: " + job.getValue());
+              if (job.getKey().equals(jobExecution.job.jobName)) {
+                if (job.getValue().equals(AzkabanJobStatus.FAILED.toString())) {
+                  tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
+                  jobExecution.executionState = ExecutionState.FAILED;
+                }
+                if (job.getValue().equals(AzkabanJobStatus.CANCELLED.toString()) || job.getValue().equals(AzkabanJobStatus.KILLED.toString())) {
+                  tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
+                  jobExecution.executionState = ExecutionState.CANCELLED;
+                }
+                if (job.getValue().equals(AzkabanJobStatus.SUCCEEDED.toString())) {
+                  tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
+                  jobExecution.executionState = ExecutionState.SUCCEDED;
+                }
+                if (tuningJobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
+                  completedExecutions.add(tuningJobExecution);
+                }
               }
             }
+          } else {
+            logger.info("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
           }
-        } else {
-          logger.error("No jobs found for flow execution: " + jobExecution.jobExecId);
+        } catch(Exception e){
+          logger.error(e);
         }
-      } catch(Exception e){
-        logger.error("Error: ", e);
-        logger.error("Stack trace: " + e.getStackTrace());
       }
+    } catch(Exception e) {
+      logger.error(e);
     }
-    }catch(Exception e)
-    {
-      e.printStackTrace();
-      logger.error("Error in log " , e);
-      logger.error("ERROR IN " + e.getStackTrace());
-    }
-    logger.error("Finished getCompletedJob jobs");
-    logger.info("Completed jobs: " + completedJobs);
-    return completedJobs;
+    logger.debug("Completed executions fetched");
+    return completedExecutions;
   }
 
-  public boolean updateJobStatus(List<JobExecution> jobExecutions) {
+  /**
+   * Updates the job execution status
+   * @param jobExecutions JobExecution list
+   * @return Update status
+   */
+  public boolean updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
+    // Todo: what is the use of this?
     boolean updateStatus = true;
-    for (JobExecution jobExecution : jobExecutions) {
-      logger.error("Updating jobExecution: " + jobExecution.jobExecId);
+    for (TuningJobExecution tuningJobExecution : jobExecutions) {
+
+      JobExecution jobExecution = tuningJobExecution.jobExecution;
+      logger.debug ("Updating jobExecution: " + jobExecution.jobExecId);
       jobExecution.update();
+      tuningJobExecution.update();
     }
     return updateStatus;
   }

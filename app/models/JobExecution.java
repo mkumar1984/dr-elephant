@@ -16,6 +16,7 @@
 
 package models;
 
+import com.avaje.ebean.annotation.EmbeddedColumns;
 import java.sql.Timestamp;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -37,13 +38,13 @@ public class JobExecution extends Model {
 
   private static final long serialVersionUID = 1L;
 
-  public enum ParamSetStatus {
-    CREATED,
-    SENT,
-    EXECUTED,
-    FITNESS_COMPUTED,
-    DISCARDED
-  }
+//  public enum ParamSetStatus {
+//    CREATED,
+//    SENT,
+//    EXECUTED,
+//    FITNESS_COMPUTED,
+//    DISCARDED
+//  }
   public enum ExecutionState {
     NOT_STARTED,
     IN_PROGRESS,
@@ -54,57 +55,59 @@ public class JobExecution extends Model {
 
   public static class TABLE {
     public static final String TABLE_NAME = "job_execution";
-    public static final String paramSetId = "paramSetId";
-    public static final String jobId = "jobId";
-    public static final String algoId = "algoId";
-    public static final String paramSetState = "paramSetState";
-    public static final String isDefaultExecution = "isDefaultExecution";
+    public static final String id = "id";
     public static final String jobExecId = "jobExecId";
-    public static final String flowExecId = "flowExecId";
-    public static final String jobExecUrl = "jobExecUrl";
-    public static final String flowExecUrl = "flowExecUrl";
     public static final String executionState = "executionState";
     public static final String resourceUsage = "resourceUsage";
     public static final String executionTime = "executionTime";
     public static final String inputSizeInMb = "inputSizeInMb";
-    public static final String costMetric = "costMetric";
+    public static final String jobExecUrl = "jobExecUrl";
+    public static final String flowExecutionId = "flowExecutionId";
+    public static final String jobDefinitionId = "jobDefinitionId";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
-    public static final String job = "job";
+    public static final String flowExecution = "flowExecution";
+    public static  final String job = "job";
   }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  public Long paramSetId;
+  public Long id;
 
-  @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="job", joinColumns={@JoinColumn(name ="job_id", referencedColumnName="job_id")})
-  public Job job;
-
-  @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
-  public Algo algo;
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  public ParamSetStatus paramSetState;
-
-  public Boolean isDefaultExecution;
-
+  @Column(nullable = true)
   public String jobExecId;
-  public String flowExecId;
 
-  public String jobExecUrl;
-  public String flowExecUrl;
-
+  @Column(nullable = true)
   @Enumerated(EnumType.STRING)
   public ExecutionState executionState;
 
+  @Column(nullable = true)
   public Double resourceUsage;
+
+  @Column(nullable = true)
   public Double executionTime;
+
+  @Column(nullable = true)
   public Double inputSizeInMb;
-  public Double costMetric;
+
+  @Column(nullable = true)
+  public String jobExecUrl;
+
+  @Column(nullable = true)
+  @ManyToOne(cascade = CascadeType.ALL)
+  @JoinTable(name="flow_execution", joinColumns={@JoinColumn(name ="flow_execution_id", referencedColumnName="id")})
+  public FlowExecution flowExecution;
+
+
+  @Column(nullable = false)
+  @ManyToOne(cascade = CascadeType.ALL)
+  @JoinTable(name="job_definition", joinColumns={@JoinColumn(name ="job_definition_id", referencedColumnName="id")})
+  public Job job;
+
+  @Column(nullable = true)
   public Timestamp createdTs;
+
+  @Column(nullable = true)
   public Timestamp updatedTs;
 
   public static Finder<Long, JobExecution> find = new Finder<Long, JobExecution>(Long.class, JobExecution.class);

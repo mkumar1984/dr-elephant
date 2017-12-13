@@ -21,55 +21,102 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+
+/**
+ * Particle class represents a configuration set for a job
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Particle {
 
-    @JsonProperty("_candidate")
-    private List<Double> _candidate;
-    private double _fitness;
-    private double _birthdate;
-    private boolean _maximize;
+  @JsonProperty("_candidate")
 
-    @JsonProperty("paramSetId")
-    private Long _paramSetId;
+  // Todo: Candidate should be a Map<String, Double>?
+  // todo: rename _candidate to _configurationValues?
+  private List<Double> _candidate;
+  private double _fitness;
+  private double _birthdate;
+  private boolean _maximize;
 
-    public void setCandidate(List<Double> candidate){
-        this._candidate = candidate;
-    }
+  @JsonProperty("paramSetId")
+  private Long _paramSetId;
 
-    public List<Double> getCandidate(){
-        return _candidate;
-    }
+  /**
+   * Sets the configuration values
+   * @param candidate Configuration values
+   */
+  public void setCandidate(List<Double> candidate){
+    this._candidate = candidate;
+  }
 
-    public void setFitness(double fitness){
-        this._fitness = fitness;
-    }
+  /**
+   * Returns the configuration values
+   * @return Configuration values
+   */
+  public List<Double> getCandidate(){
+    return _candidate;
+  }
 
-    public double getFitness(){
-        return _fitness;
-    }
+  /**
+   * Sets fitness of the configuration
+   * @param fitness Fitness
+   */
+  public void setFitness(double fitness){
+    this._fitness = fitness;
+  }
 
-    public void setBirthdate(double birthDate){
-        this._birthdate = birthDate;
-    }
+  /**
+   * Returns the fitness of the configuration
+   * @return fitness
+   */
+  public double getFitness(){
+    return _fitness;
+  }
 
-    public double getBirthdate(){
-        return _birthdate;
-    }
+  /**
+   * Sets the birthdate of the configuration
+   * @param birthDate Birthdate
+   */
+  public void setBirthdate(double birthDate){
+    this._birthdate = birthDate;
+  }
 
-    public void setMaximize(boolean maximize){
-        this._maximize = maximize;
-    }
+  /**
+   * Returns the birthdate of the configuration
+   * @return birth date
+   */
+  public double getBirthdate(){
+    return _birthdate;
+  }
 
-    public boolean getMaximize (){
-        return _maximize;
-    }
+  /**
+   * Sets maximize which represents whether the objective of optimization is to maximize or minimize the fitness
+   * @param maximize true if the ojective is to maximize fitness, false otherwise
+   */
+  public void setMaximize(boolean maximize) {
+    this._maximize = maximize;
+  }
 
-    public void setPramSetId(Long paramSetId){
-        this._paramSetId = paramSetId;
-    }
+  /**
+   * Returns maximize
+   * @return Maximize
+   */
+  public boolean getMaximize (){
+    return _maximize;
+  }
 
-    public Long getParamSetId(){
-        return _paramSetId;
-    }
+  /**
+   * Sets the param Set Id
+   * @param paramSetId Param Set Id
+   */
+  public void setPramSetId(Long paramSetId){
+    this._paramSetId = paramSetId;
+  }
+
+  /**
+   * Returns the param set id
+   * @return the param set id
+   */
+  public Long getParamSetId(){
+    return _paramSetId;
+  }
 }

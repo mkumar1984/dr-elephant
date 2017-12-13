@@ -1,12 +1,12 @@
 import inspyred
 from random import Random
-#from restartable_pso import restartable_pso
 import argparse
 import time
 import json
 import imp
+import os
 
-restartable_pso = imp.load_source('restartable_pso', '/Users/mkumar1/git/dr-elephant/app/com/linkedin/drelephant/tunin/pso/restartable_pso.py')
+restartable_pso = imp.load_source('restartable_pso', '/home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/pso/restartable_pso.py')
 
 
 param_value_type = []
@@ -19,12 +19,14 @@ param_name = []
 
 itr = 0;
 
+
+
 # Todo
 def fix_data_type(params):
   params_as_json = {}
 
   for i in xrange(0, len(params)):
-    params[i] = int(round(params[i])) #if param_value_type[i] == 'int' else float(params[i])
+    params[i] = int(round(params[i]))
     params[i] *= param_step_size[i]
     params_as_json[param_name[i]] = int(params[i]) if param_value_type[
                                 i] == 'int' \
@@ -73,7 +75,6 @@ def initialize_params(parameters_to_tune):
 
 
 def initial_pop_generator(random, args):
-  # print "Random: ", random
   # From the list of algo, get the index of each param param
   #0 mapreduce.task.io.sort.factor     5 150 10  int
   #1 mapreduce.task.io.sort.mb     50  6144  100 int
@@ -84,6 +85,7 @@ def initial_pop_generator(random, args):
   for i in range(0, len(param_name)):
     if param_name[i] == 'mapreduce.task.io.sort.factor':
       sort_factor_index = i
+
     elif param_name[i] == 'mapreduce.task.io.sort.mb':
       sort_memory_index = i
     elif param_name[i] == 'mapreduce.map.sort.spill.percent':
@@ -229,8 +231,6 @@ if __name__ == '__main__':
   args = parser.parse_args()
   json_tuning_state = args.json_tuning_state
   parameters_to_tune = args.parameters_to_tune
-  parameters_to_tune = json.loads(parameters_to_tune)  
-  #print parameters_to_tune
+  parameters_to_tune = json.loads(parameters_to_tune)
   initialize_params(parameters_to_tune)
   main(json_tuning_state)
-

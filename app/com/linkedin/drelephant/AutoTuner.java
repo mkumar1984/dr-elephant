@@ -1,20 +1,17 @@
 package com.linkedin.drelephant;
 
-import com.linkedin.drelephant.configurations.tunin.TuninAlgorithmConfiguration;
 import com.linkedin.drelephant.configurations.tunin.TuninAlgorithmConfigurationData;
 import com.linkedin.drelephant.tunin.FitnessComputeUtil;
 import com.linkedin.drelephant.tunin.JobCompleteDetector;
 import com.linkedin.drelephant.tunin.PSOParamGenerator;
 import com.linkedin.drelephant.tunin.ParamGenerator;
-import com.linkedin.drelephant.util.Utils;
 
 import models.JobExecution;
 
+import models.TuningJobExecution;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public class AutoTuner implements Runnable{
@@ -74,20 +71,22 @@ public class AutoTuner implements Runnable{
             while(!Thread.currentThread().isInterrupted())
             {
               JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
-              List<JobExecution> completedJobExecution = jobCompleteDetector.updateCompletedJobs();
+              List<TuningJobExecution> completedJobExecution = jobCompleteDetector.updateCompletedExecutions ();
 
               FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
-              List<JobExecution> fitnessComputedExecution = fitnessComputeUtil.updateFitness();
+              List<TuningJobExecution> fitnessComputedExecution = fitnessComputeUtil.updateFitness();
 
               ParamGenerator paramGenerator = new PSOParamGenerator();
               paramGenerator.getParams();
+              Thread.sleep(METRICS_COMPUTATION_INTERVAL);
             }
+
           }catch(Exception e)
           {
             logger.error(e.getMessage());
             logger.error(ExceptionUtils.getStackTrace(e));
           }
-          Thread.sleep(METRICS_COMPUTATION_INTERVAL);
+
         }catch (Exception e){
           logger.error(e.getMessage());
           logger.error(ExceptionUtils.getStackTrace(e));

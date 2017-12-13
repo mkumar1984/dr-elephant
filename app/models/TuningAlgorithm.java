@@ -29,8 +29,8 @@ import javax.persistence.Table;
 import play.db.ebean.Model;
 
 @Entity
-@Table(name = "algo")
-public class Algo extends Model{
+@Table(name = "tuning_algorithm")
+public class TuningAlgorithm extends Model{
 
   private static final long serialVersionUID = 1L;
 
@@ -50,8 +50,8 @@ public class Algo extends Model{
 
 
   public static class TABLE {
-    public static final String TABLE_NAME = "algo";
-    public static final String algoId = "algoId";
+    public static final String TABLE_NAME = "tuning_algorithm";
+    public static final String id = "id";
     public static final String jobType = "jobType";
     public static final String optimizationAlgo = "optimizationAlgo";
     public static final String optimizationAlgoVersion = "optimizationAlgoVersion";
@@ -62,7 +62,7 @@ public class Algo extends Model{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  public Integer algoId;
+  public Integer id;
 
 
   @Enumerated(EnumType.STRING)
@@ -79,6 +79,6 @@ public class Algo extends Model{
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
-  public static Finder<Integer, Algo> find = new Finder<Integer, Algo>(Integer.class, Algo.class);
+  public static Finder<Integer, TuningAlgorithm> find = new Finder<Integer, TuningAlgorithm>(Integer.class, TuningAlgorithm.class);
 
 }

@@ -21,8 +21,8 @@ import javax.persistence.*;
 import play.db.ebean.Model;
 
 @Entity
-@Table(name="algo_param")
-public class AlgoParam extends Model{
+@Table(name="tuning_parameter")
+public class TuningParameter extends Model{
 
   private static final long serialVersionUID = 1L;
 
@@ -34,25 +34,29 @@ public class AlgoParam extends Model{
   }
 
   public static class TABLE {
-    public static final String TABLE_NAME = "algo_param";
-    public static final String paramId = "primaryKeyParamId";
+    public static final String TABLE_NAME = "tuning_parameter";
+    public static final String id = "id";
     public static final String paramName = "paramName";
-    public static final String algoId = "algoId";
+    public static final String tuningAlgorithmId = "tuningAlgorithmId";
     public static final String defaultValue = "defaultValue";
     public static final String minValue = "minValue";
     public static final String maxValue = "maxValue";
+    public static final String stepSize = "stepSize";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
+    public static final String tuningAlgorithm = "tuningAlgorithm";
   }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  public Integer paramId;
+  public Integer id;
+
+  @Column(nullable = false)
   public String paramName;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
-  public Algo algo;
+  @JoinTable(name="tuning_algorithm", joinColumns={@JoinColumn(name ="tuning_algorithm_id", referencedColumnName="id")})
+  public TuningAlgorithm tuningAlgorithm;
 
   @Column(nullable = false)
   public Double defaultValue;
@@ -66,8 +70,11 @@ public class AlgoParam extends Model{
   @Column(nullable = false)
   public Double stepSize;
 
+  @Column(nullable = false)
   public Timestamp createdTs;
+
+  @Column(nullable = false)
   public Timestamp updatedTs;
 
-  public static Finder<Integer, AlgoParam> find = new Finder<Integer, AlgoParam>(Integer.class, AlgoParam.class);
+  public static Finder<Integer, TuningParameter> find = new Finder<Integer, TuningParameter>(Integer.class, TuningParameter.class);
 }

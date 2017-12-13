@@ -17,6 +17,7 @@
 package models;
 
 import java.sql.Timestamp;
+import javax.persistence.Column;
 import play.db.ebean.Model;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -30,17 +31,24 @@ public class JobSavedState extends Model {
 
   public static class TABLE {
     public static final String TABLE_NAME = "job_saved_state";
-    public static final String jobId = "jobId";
+    public static final String jobDefinitionId = "jobDefinitionId";
     public static final String savedState = "savedState";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
   }
 
   @Id
-  public Integer jobId;
+  public Integer jobDefinitionId;
+
+  @Column(nullable = false)
   public byte[] savedState;
+
   public Timestamp createdTs;
   public Timestamp updatedTs;
+
+  public boolean isValid(){
+    return jobDefinitionId !=null && savedState!=null;
+  }
 
   public static Finder<Integer, JobSavedState> find = new Finder<Integer, JobSavedState>(Integer.class, JobSavedState.class);
 }

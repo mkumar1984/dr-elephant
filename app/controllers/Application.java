@@ -16,9 +16,7 @@
 
 package controllers;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,11 +32,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.linkedin.drelephant.tunin.*;
 import models.AppHeuristicResult;
 import models.AppResult;
 import models.Job;
 import models.JobExecution;
 
+import models.TuningJobDefinition;
+import models.TuningJobExecution;
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -51,7 +52,6 @@ import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
 import views.html.index;
-import scala.xml.PrettyPrinter;
 import views.html.help.metrics.helpRuntime;
 import views.html.help.metrics.helpUsedResources;
 import views.html.help.metrics.helpWaittime;
@@ -80,9 +80,6 @@ import views.html.results.searchResults;
 
 import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -92,12 +89,6 @@ import com.google.gson.JsonObject;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.Metrics;
 import com.linkedin.drelephant.analysis.Severity;
-import com.linkedin.drelephant.tunin.AutoTuningAPIHelper;
-import com.linkedin.drelephant.tunin.FitnessComputeUtil;
-import com.linkedin.drelephant.tunin.JobCompleteDetector;
-import com.linkedin.drelephant.tunin.PSOParamGenerator;
-import com.linkedin.drelephant.tunin.ParamGenerator;
-import com.linkedin.drelephant.tunin.TunerState;
 import com.linkedin.drelephant.util.Utils;
 
 
@@ -901,7 +892,7 @@ public class Application extends Controller {
   public static Result getTuningJob(String id) {
           JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
           try{
-              List<JobExecution> completedJobExecution = jobCompleteDetector.updateCompletedJobs();
+              List<TuningJobExecution> completedJobExecution = jobCompleteDetector.updateCompletedExecutions ();
               if(completedJobExecution!=null) {
                   return ok(Json.toJson(completedJobExecution));
               }else{
@@ -913,464 +904,87 @@ public class Application extends Controller {
 
   }
 
-//    if (id == null || id.isEmpty()) {
-//      return badRequest("No job id provided.");
-//    }
-//
-//    //    try{
-//    //      AzkabanWorkflowClient azkabanWorkflowClient=new AzkabanWorkflowClient("https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=4567967");
-//    //      azkabanWorkflowClient.login("ro_elephant_az_svc", new File("/Users/mkumar1/hguest.private_key.der"));
-//    //    }catch(Exception e)
-//    //    {
-//    //      logger.error("Error in log " , e);
-//    //    }
-//
-//    JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
-//    FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
-//    List<JobExecution> jobExecutions = null;
-//    try {
-//      switch (id) {
-//        case "1":
-//          logger.error("100 ID value is " + id);
-//          jobExecutions = jobCompleteDetector.getJobExecution();
-//          break;
-//        case "2":
-//          logger.error("100 ID value is " + id);
-//          jobExecutions = jobCompleteDetector.getJobExecution();
-//          jobExecutions = jobCompleteDetector.getCompletedJob(jobExecutions);
-//          break;
-//        case "3":
-//          logger.error("100 ID value is " + id);
-//          jobExecutions = jobCompleteDetector.updateCompletedJobs();
-//          break;
-//        case "4":
-//          logger.error("100 ID value is " + id);
-//          jobExecutions = fitnessComputeUtil.getJobExecution();
-//          break;
-//        case "5":
-//          logger.error("100 ID value is " + id);
-//          jobExecutions = fitnessComputeUtil.getJobExecution();
-//          fitnessComputeUtil.updateJobMetrics(jobExecutions);
-//          break;
-//        case "6":
-//          logger.error("100 ID value is " + id);
-//          return callGetCurrentRunParameters();
-//        case "7":
-//          logger.error("100 ID value is " + id);
-//          return callGetCurrentRunParameters1();
-//        default:
-//          Job job = Job.find.select("*").where().idEq(id).findUnique();
-//          if (job != null) {
-//            return ok(Json.toJson(job));
-//          } else {
-//            return notFound("Unable to find job on id: " + id);
-//          }
-//      }
-//    } catch (Exception e) {
-//      logger.error("Error in log ", e);
-//      e.printStackTrace();
-//      logger.error("Error " + e.getStackTrace().toString());
-//    }
-//
-//    //JobSuggestedParamValue jobSuggestedParamValue=JobSuggestedParamValue.find.select("*").where()
-//
-//    if (jobExecutions != null) {
-//      return ok(Json.toJson(jobExecutions));
-//    } else {
-//      return notFound("Unable to find job on id: " + id);
-//    }
-//  }
 
-//  public static Result callGetCurrentRunParameters()
-//  {
-//
-//    Map<String, String> paramValueMap=new HashMap<String, String>();
-//    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
-//    paramValueMap.put("mapreduce.map.memory.mb", "20000");
-//    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
-//
-//    String defaultParams=Json.toJson(paramValueMap).toString();
-//    String projectName="metricsV2";
-//    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
-//    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-//    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424";
-//    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592424&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-//    String client="UMP";
-//    String userName="mkumar1";
-//    Boolean isRetry=false;
-//    Boolean skipExecutionForOptimization=false;
-//    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
-//  }
-//  public static Result callGetCurrentRunParameters1()
-//  {
-//
-//    Map<String, String> paramValueMap=new HashMap<String, String>();
-//    paramValueMap.put("mapreduce.task.io.sort.mb", "10000");
-//    paramValueMap.put("mapreduce.map.memory.mb", "20000");
-//    paramValueMap.put("pig.maxCombinedSplitSize", "30000");
-//
-//    String defaultParams=Json.toJson(paramValueMap).toString();
-//    String projectName="metricsV2";
-//    String flowDefId= "https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish";
-//    String jobDefId="https://ltx1-holdemaz03.grid.linkedin.com:8443/manager?project=metricsV2&flow=sitespeed_v2_hourly_finish&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-//    String flowExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426";
-//    String jobExecId="https://ltx1-holdemaz03.grid.linkedin.com:8443/executor?execid=2592426&job=sitespeed_v2_hourly_datafile_sitespeed_neptune_metrics_new";
-//    String client="UMP";
-//    String userName="mkumar1";
-//    Boolean isRetry=false;
-//    Boolean skipExecutionForOptimization=false;
-//    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowExecId, jobExecId, defaultParams, client, userName, isRetry, skipExecutionForOptimization);
-//  }
 
   public static Result getCurrentRunParametersNew()
   {
     String jsonString = request().body().asJson().toString();
 
     ObjectMapper mapper = new ObjectMapper();
-    Map<String, String> paramValueMap = null;
+    Map<String, String> paramValueMap = new HashMap<String, String>();
+    TuningInput tuningInput = new TuningInput();
     try {
+      //Todo: safe typecast
       paramValueMap = (Map<String, String>) mapper.readValue(jsonString, Map.class);
-    } catch (JsonParseException e) {
-      logger.error("Error is " + e);
-    } catch (JsonMappingException e) {
-      logger.error("Error is " + e);
-    } catch (IOException e) {
-      logger.error("Error is " + e);
+      // Todo if key not in map?
+      String flowDefId = paramValueMap.get("flowDefId");
+      String jobDefId = paramValueMap.get("jobDefId");
+      String flowDefUrl = paramValueMap.get("flowDefUrl");
+      String jobDefUrl = paramValueMap.get("jobDefUrl");
+      String flowExecId = paramValueMap.get("flowExecId");
+      String jobExecId = paramValueMap.get("jobExecId");
+      String flowExecUrl = paramValueMap.get("flowExecUrl");
+      String jobExecUrl = paramValueMap.get("jobExecUrl");
+      String jobName = paramValueMap.get("jobName");
+      String userName = paramValueMap.get("userName");
+      String client = paramValueMap.get("client");
+      String scheduler = paramValueMap.get("scheduler");
+      String defaultParams = paramValueMap.get("defaultParams");
+      Boolean isRetry = Boolean.parseBoolean(paramValueMap.get("isRetry"));
+      Boolean skipExecutionForOptimization=Boolean.parseBoolean(paramValueMap.get("skipExecutionForOptimization"));
+      String jobType = paramValueMap.get("jobType");
+      String optimizationAlgo = paramValueMap.get("optimizationAlgo");
+      String optimizationAlgoVersion = paramValueMap.get("optimizationAlgoVersion");
+      String optimizationMetric = paramValueMap.get("optimizationMetric");
+
+      tuningInput.setFlowDefId(flowDefId);
+      tuningInput.setJobDefId(jobDefId);
+      tuningInput.setFlowDefUrl(flowDefUrl);
+      tuningInput.setJobDefUrl(jobDefUrl);
+      tuningInput.setFlowExecId(flowExecId);
+      tuningInput.setJobExecId(jobExecId);
+      tuningInput.setFlowExecUrl(flowExecUrl);
+      tuningInput.setJobExecUrl(jobExecUrl);
+      tuningInput.setJobName(jobName);
+      tuningInput.setUserName(userName);
+      tuningInput.setClient(client);
+      tuningInput.setScheduler(scheduler);
+      tuningInput.setDefaultParams(defaultParams);
+      tuningInput.setRetry(isRetry);
+      tuningInput.setSkipExecutionForOptimization(skipExecutionForOptimization);
+      tuningInput.setJobType(jobType);
+      tuningInput.setOptimizationAlgo(optimizationAlgo);
+      tuningInput.setOptimizationAlgoVersion(optimizationAlgoVersion);
+      tuningInput.setOptimizationMetric(optimizationMetric);
+      return getCurrentRunParameters(tuningInput);
+
+    } catch (Exception e) {
+      logger.error("Exception while parsing input: " + e);
+      // Todo: Incase of error: return default params
+      return notFound("Error parsing input");
     }
-
-    String defaultParams=paramValueMap.get("defaultParams");
-    String projectName=paramValueMap.get("projectName");;
-    String flowDefId= paramValueMap.get("flowDefId");
-    String jobDefId=paramValueMap.get("jobDefId");
-    String flowExecId=paramValueMap.get("flowExecId");
-    String jobExecId=paramValueMap.get("jobExecId");
-    String client=paramValueMap.get("client");
-    String userName=paramValueMap.get("userName");
-    Boolean isRetry=Boolean.parseBoolean(paramValueMap.get("isRetry"));
-    Boolean skipExecutionForOptimization=Boolean.parseBoolean(paramValueMap.get("skipExecutionForOptimization"));
-    String flowDefUrl=paramValueMap.get("flowDefUrl");
-    String jobDefUrl=paramValueMap.get("jobDefUrl");
-    String flowExecUrl=paramValueMap.get("flowExecUrl");
-    String jobExecUrl=paramValueMap.get("jobExecUrl");
-    String jobName=paramValueMap.get("jobName");
-    String scheduler = paramValueMap.get("scheduler");
-
-    return getCurrentRunParameters(projectName, flowDefId, jobDefId, flowDefUrl, jobDefUrl, flowExecId, jobExecId,
-        flowExecUrl, jobExecUrl, jobName, defaultParams, client, scheduler, userName, isRetry,
-        skipExecutionForOptimization);
   }
 
-  public static Result getCurrentRunParameters(String projectName, String flowDefId, String jobDefId,
-      String flowDefUrl, String jobDefUrl, String flowExecId, String jobExecId, String flowExecUrl, String jobExecUrl,
-      String jobName, String defaultParams, String client, String scheduler, String userName, Boolean isRetry,
-      Boolean skipExecutionForOptimization) {
+  public static Result getCurrentRunParameters(TuningInput tuningInput) {
     AutoTuningAPIHelper autoTuningAPIHelper = new AutoTuningAPIHelper();
     Map<String, Double> outputParams =
-        autoTuningAPIHelper.getCurrentRunParameters(flowDefId, jobDefId, flowDefUrl, jobDefUrl, flowExecId, jobExecId,
-            flowExecUrl, jobExecUrl, jobName, userName, client, scheduler, defaultParams, isRetry,
-            skipExecutionForOptimization);
+        autoTuningAPIHelper.getCurrentRunParameters(tuningInput);
     if (outputParams != null) {
-      logger.error("Outupt params " + outputParams);
+      logger.debug("Output params " + outputParams);
       return ok(Json.toJson(outputParams));
     } else {
-      return notFound("Unable to find parameters for given job: " + jobDefId + " and flow: " + flowDefId);
+      // Todo: Incase of error: return default params
+      return notFound("Unable to find parameters. Job id: " + tuningInput.getJobDefId() + " Flow id: " + tuningInput.getFlowDefId());
     }
   }
 
-  public static Result restParam() {
-    ParamGenerator paramGenerator = new PSOParamGenerator();
-    //      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-    //      List<TunerState> tunerStateList = paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
-    //      TunerState tunerState = tunerStateList.get(0);
-    //
-    //      TunerState newTunerState = new TunerState();
-    //      newTunerState.setTuningJob(tunerState.getTuningJob());
-    //      newTunerState.setParametersToTune(tunerState.getParametersToTune());
-    //      newTunerState.setStringTunerState("temp");
-    //
-    //
-    //      JsonNode jsonTmp = Json.parse(tmp);
-    //      JsonNode jsonTunerState = Json.toJson(tunerState);
-//      JsonNode stringTunerState = jsonTunerState.get("stringTunerState");
-//
-//      String parametersToTune = jsonTunerState.get("parametersToTune").toString();
-//      String errorString = "Error string";
-//      try{
-//          Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/pso_param_generation.py " +tmp+" "+parametersToTune);
-//          BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//          BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-//          String updatedStringTunerState = in.readLine();
-//          errorString = error.readLine();
-//          newTunerState.setStringTunerState(updatedStringTunerState);
-//      } catch (IOException e){
-//          return ok("Error:\n\n" + e.toString());
-//      }
-//
-//      return ok(errorString+ "\n\n" + tmp + "\n\n" + jsonTmp + "\n\n" + stringTunerState + "\n\n" + parametersToTune + "\n\n" + Json.toJson(newTunerState));
 
-    paramGenerator.getParams();
-    return ok("check");
-
-
-      ////      TunerState newTunerState = paramGenerator.generateParamSet(tunerState);
-//      return ok(Json.toJson(tunerState));
-
+  public static Result restParam(){
+      ParamGenerator paramGenerator = new PSOParamGenerator();
 //      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-//      Job job = jobsForSwarmSuggestion.get(0);
-//      List<AlgoParam> algoParamList = AlgoParam.find.where().eq("algo", job.algo).findList();
-//      TunerState tunerState = new TunerState();
-//      tunerState.setTuningJob(job);
-//      tunerState.setParametersToTune(algoParamList);
-//
-//      JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
-//      if(jobSavedState!=null){
-//
-//          String savedState = new String(jobSavedState.savedState);
-//          ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
-//          JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
-//          List<Particle> currentPopulation = paramGenerator.jsonToParticleList(jsonCurrentPopulation);
-//          for( Particle particle: currentPopulation){
-//              Long paramSetId = particle.getParamSetId();
-//              JobExecution jobExecution = JobExecution.find.byId(paramSetId);
-//              particle.setFitness(jobExecution.costMetric);
-//          }
-//
-//          JsonNode updatedJsonCurrentPopulation = paramGenerator.particleListToJson(currentPopulation);
-//          jsonSavedState.set("current_population", updatedJsonCurrentPopulation);
-//          savedState = Json.stringify(jsonSavedState);
-//          tunerState.setStringTunerState(savedState);
-//
-//      }
-//      else{
-//          tunerState.setStringTunerState("{}");
-//      }
-//
-//      return ok(Json.toJson(jobSavedState) + "\n\n");
-
-
-
-//      List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
-//      TunerState tunerState = jobTunerStateList.get(0);
-//      TunerState newTunerState = paramGenerator.generateParamSet(tunerState);
-//      return ok(Json.toJson(tunerState) + "\n\n" + Json.toJson(newTunerState) );
-
-      //      JsonNode jsonTunerState = Json.toJson(tunerState);
-//      JsonNode stringTunerState = jsonTunerState.get("stringTunerState");
-////      String stringTunerState = jsonTunerState.get("stringTunerState").toString();
-//      String parametersToTune = jsonTunerState.get("parametersToTune").toString();
-//      return ok(stringTunerState + "\n\n" + parametersToTune);
-
-      //      TunerState newTunerState = paramGenerator.generateParamSet(tunerState);
-
-//      Job job = newTunerState.getTuningJob();
-//      List<AlgoParam> paramList = newTunerState.getParametersToTune();
-//      String stringTunerState = newTunerState.getStringTunerState();
-//      return ok(Json.toJson(newTunerState));
-      //      JsonNode jsonTunerState = Json.parse(stringTunerState);
-
-//      if (jsonTunerState == null){
-//          return ok("String tuner state\n\n" + stringTunerState);
-//      } else{
-//          return ok(jsonTunerState);
-//      }
-
-
-
-//      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-//      List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
-//      TunerState tunerState = jobTunerStateList.get(0);
-//      TunerState jobTunerState = paramGenerator.generateParamSet(tunerState);
-//
-//      Job job = jobTunerState.getTuningJob();
-//      List<AlgoParam> paramList = jobTunerState.getParametersToTune();
-//      String stringTunerState = jobTunerState.getStringTunerState();
-//      JsonNode jsonTunerState = Json.parse(stringTunerState);
-//      JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
-
-//      String tmp = "[{\"_candidate\":[1000,1000,5,0.8,4096.0,512.0],\"maximize\":false,\"birthdate\":1.510632948412705E9,\"fitness\":0},{\"_candidate\":[377.649000415422,500.1012005037423,120.9206674491925,0.7929829408557095,2621.991988445575,512.0],\"maximize\":false,\"birthdate\":1.510632948412707E9,\"fitness\":0},{\"_candidate\":[244.18253123845352,1247.5360424531382,113.20897919691934,0.8265120097448186,5660.186827441222,512.0],\"maximize\":false,\"birthdate\":1.510632948412708E9,\"fitness\":0}]";
-//      JsonNode jsonSuggestedPopulation = Json.parse(tmp);
-//      List<Particle> suggestedPopulation = paramGenerator.jsonToParticleList(jsonSuggestedPopulation);
-//
-//      return ok(Json.toJson(suggestedPopulation) + "\n\n" + Json.toJson(jsonSuggestedPopulation));
-//    List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-//    List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
-//    TunerState tunerState = jobTunerStateList.get(0);
-//    JsonNode jsonTunerState = Json.toJson(tunerState);
-//    String stringTunerState = jsonTunerState.get("stringTunerState").toString();
-//    String parametersToTune = jsonTunerState.get("parametersToTune").toString();
-//    try{
-//      Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/pso_param_generation.py " +stringTunerState+" "+parametersToTune);
-//      BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//      String updatedStringTunerState = in.readLine();
-//      tunerState.setStringTunerState(updatedStringTunerState);
-//      if(updatedStringTunerState!=null){
-//        return ok(updatedStringTunerState);
-//      }
-//    } catch (IOException e){
-//      System.out.println(e);
-//    }
-//    return ok(stringTunerState + "\n\n" + parametersToTune);
-
-
-
-//    List<TunerState> tunerStateList = paramGenerator.ParamGenerator();
-//    if(tunerStateList != null){
-//      return ok(Json.toJson(tunerStateList));
-//    }
-//    return notFound("Tuner state list is null");
-//    List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-//    List<TunerState> jobTunerStateList= paramGenerator.getJobsTunerState(jobsForSwarmSuggestion);
-//
-//    TunerState tunerState = jobTunerStateList.get(0);
-//
-//    JsonNode jsonTunerState = Json.toJson(tunerState);
-//    String stringTunerState = jsonTunerState.get("stringTunerState").toString();
-//    String parametersToTune = jsonTunerState.get("parametersToTune").toString();
-//
-//
-//    try{
-//      Process p = Runtime.getRuntime().exec("/home/aragrawa/virtualenvs/auto-tuning/bin/python /home/aragrawa/development/aragrawas-hadoop-tuning/hadoop-tuning/src/linkedin/restartable/pso_param_generation.py " +stringTunerState+ " " +parametersToTune);
-//      BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//      String updatedStringTunerState = in.readLine();
-//      tunerState.setStringTunerState(updatedStringTunerState);
-//      if(updatedStringTunerState != null) {
-//        return ok(Json.toJson(updatedStringTunerState));
-//      }else{
-//        return ok(stringTunerState + "\n\n" + parametersToTune);
-//      }
-//    } catch (IOException e){
-//      System.out.println(e);
-//      return notFound(e.toString());
-//    }
-
-
-//    return notFound("Not found");
-
-
-//    if(stringTunerState!=null){
-//      return ok(jsonTunerState + "\n\n" + stringTunerState + "\n\n" + parametersToTune);
-//    }else{
-//      return ok(jsonTunerState);
-//    }
-
-
-//    Particle particle = new Particle();
-//
-//    particle.setBirthdate(1);
-//    particle.setFitness(2);
-//    particle.setMaximize(false);
-//    particle.setPramSetId((long)3);
-//    List<Double> candidate = new ArrayList<Double>();
-//    candidate.add((double)4);
-//    particle.setCandidate(candidate);
-//
-//    JsonNode jsonParticle = Json.toJson(particle);
-//
-//    Particle newparticle = Json.fromJson(jsonParticle, Particle.class);
-
-//    List<Job> jobList = paramGenerator.fetchJobsForParamSuggestion();
-//    Job job = jobList.get(0);
-//    JobSavedState jobSavedState = JobSavedState.find.byId(job.jobId);
-//    String savedState = new String(jobSavedState.savedState);
-//
-//    ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
-//    JsonNode jsonCurrentPopulation = jsonSavedState.get("current_population");
-//
-//    return ok(jsonParticle + "\n\n" + Json.toJson(newparticle));
-//    List<Particle> currentPopulation = paramGenerator.jsonToParticleList(jsonCurrentPopulation);
-//
-//
-//    return ok(jsonCurrentPopulation + "\n\n" + Json.toJson(currentPopulation));
-//    List<TunerState> tunerStateList= paramGenerator.getJobsTunerState(jobList);
-//    if(tunerStateList!= null){
-//      TunerState tunerState = tunerStateList.get(0);
-//      String state =tunerState.getStringTunerState();
-//      return ok(Json.parse(state));
-//    }
-//    else{
-//      return notFound(Json.toJson(jobList));
-//    }
-
-
-//    List<AlgoParam> paramList = tunerState.getParametersToTune();
-//
-//    String state = "{\"current_population\": [{\"_candidate\": [35.08818788666294, 7.749754445944973], \"maximize\": false, \"birthdate\": 1510288289.837573, \"fitness\": 1291.239623142204}, {\"_candidate\": [3.199917189984381, -10.769648835738517], \"maximize\": false, \"birthdate\": 1510288289.837574, \"fitness\": 126.22480606788152}, {\"_candidate\": [1.9565303311484934, 7.447017820592105], \"maximize\": false, \"birthdate\": 1510288289.837575, \"fitness\": 59.28608535692042}], \"prev_population\": [{\"_candidate\": [-19.27348244949365, -13.757291957914351], \"maximize\": false, \"birthdate\": 1510288289.837448, \"fitness\": 560.7302077462346}, {\"_candidate\": [6.476813168476025, 10.655249883797493], \"maximize\": false, \"birthdate\": 1510288289.837449, \"fitness\": 155.48345890551093}, {\"_candidate\": [1.8237963003244935, 7.897503085567713], \"maximize\": false, \"birthdate\": 1510288289.83745, \"fitness\": 65.69678793162886}], \"archive\": [{\"_candidate\": [13.222154663549407, -17.453153020563732], \"maximize\": false, \"birthdate\": 1510288289.837319, \"fitness\": 479.4379243060343}, {\"_candidate\": [1.6702614733455174, -0.9326084010362266], \"maximize\": false, \"birthdate\": 1510288289.837321, \"fitness\": 3.659531819025686}, {\"_candidate\": [1.9565303311484934, 7.447017820592105], \"maximize\": false, \"birthdate\": 1510288289.837575, \"fitness\": 59.28608535692042}]}";
-//    tunerState.setStringTunerState(state);
-//    tunerStateList.set(0, tunerState);
-
-
-//    String stringTunerState = tunerState.getStringTunerState();
-//    JsonNode jsonTunerState = Json.parse(stringTunerState);
-//    JsonNode jsonSuggestedPopulation = jsonTunerState.get("current_population");
-//
-//    List<Particle> suggestedPopulation =  paramGenerator.jsonToParticleList(jsonSuggestedPopulation);
-//    Particle particle = suggestedPopulation.get(0);
-//
-//    List<JobSuggestedParamValue> jobSuggestedParamValueList = paramGenerator.getParamValueList(particle, paramList);
-//
-//    Job job = tunerState.getTuningJob();
-//    JobExecution jobExecution = new JobExecution();
-//    jobExecution.job = job;
-//    jobExecution.algo = job.algo;
-//    jobExecution.isDefaultExecution = false;
-//    if (paramGenerator.isParamConstraintViolated(jobSuggestedParamValueList)){
-//      jobExecution.paramSetState = JobExecution.ParamSetStatus.FITNESS_COMPUTED;
-//      jobExecution.resourceUsage = (double) -1;
-//      jobExecution.executionTime = (double) -1;
-//      jobExecution.costMetric = 3 * job.averageResourceUsage * job.allowedMaxResourceUsagePercent / 100;
-//    }
-//    else{
-//      jobExecution.paramSetState = JobExecution.ParamSetStatus.CREATED;
-//    }
-//    Long paramSetId = paramGenerator.saveSuggestedParamMetadata(jobExecution);
-//
-//    for (JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
-//      jobSuggestedParamValue.jobExecution = jobExecution;
-//      jobSuggestedParamValue.paramValuePK.primaryKeyParamSetId = paramSetId;
-//    }
-//
-//    particle.setPramSetId(paramSetId);
-//    paramGenerator.saveSuggestedParams(jobSuggestedParamValueList);
-
-//    Boolean penalty =  paramGenerator.isParamConstraintViolated(jobSuggestedParamValueList);
-
-//    if(paramSetId != null){
-//      return ok(Json.toJson(particle) + "\n\n" + Json.toJson(jobSuggestedParamValueList));
-//    } else{
-//      return ok(Json.toJson(jobExecution));
-//    }
-
-//    paramGenerator.updateDatabase(tunerStateList);
-//    return ok("Check");
-
-//    Job job = jobList.get(0);
-//    JobExecution jobExecution = new JobExecution();
-//    jobExecution.job = job;
-//    jobExecution.algo = job.algo;
-//    jobExecution.isDefaultExecution = false;
-//    jobExecution.paramSetState = JobExecution.ParamSetStatus.DISCARDED;
-//
-//    Long num = paramGenerator.saveSuggestedParamMetadata(jobExecution);
-//    if(num!=null){
-//      return ok(Json.toJson(num));
-//    } else{
-//      return notFound("Null return");
-//    }
-//    List<Particle> particleList = new ArrayList<Particle>();
-//    Particle particle = new Particle();
-//    List<Float> floatList = new ArrayList<Float>();
-//    floatList.add((float) 1.2);
-//    floatList.add((float) 1.4);
-//    particle.setCandidate(floatList);
-//    particle.setFitness((float) 1.6);
-//    particle.setBirthdate((double) 1.8);
-//    particle.setMaximize(false);
-////    particle.setPramSetId((long) 1);
-//    particleList.add(particle);
-//    JsonNode json = paramGenerator.particleListToJson(particleList);
-//
-//    particleList = paramGenerator.jsonToParticleList(json);
-//    return ok(json);
+//      List<JobTuningInfo> jobTuningInfoList = paramGenerator.getJobsTuningInfo(jobsForSwarmSuggestion);
+    JsonNode output = paramGenerator.test ();
+      return ok(Json.toJson(output));
   }
 
 

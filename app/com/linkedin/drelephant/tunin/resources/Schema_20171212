@@ -1,0 +1,128 @@
+CREATE TABLE IF NOT EXISTS tuning_algorithm (
+id INT UNSIGNED NOT NULL AUTO_INCREMENT  COMMENT 'Unique Algo ID of the job which need to be optimized' ,
+job_type ENUM('PIG', 'HIVE', 'SPARK') NOT NULL COMMENT 'Job type e.g. pig, hive, spark',
+optimization_algo enum ('PSO')  NOT NULL COMMENT 'optimization algorithm name e.g. PSO',
+optimization_algo_version int NOT NULL COMMENT 'algo version',
+optimization_metric enum('RESOURCE', 'EXECUTION_TIME', 'TEST_X2') COMMENT 'metric to be optimized',
+created_ts TIMESTAMP DEFAULT now(),
+updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
+PRIMARY KEY(id)
+) ENGINE=InnoDB ;
+
+CREATE TABLE IF NOT EXISTS tuning_parameter (
+id INT UNSIGNED NOT NULL AUTO_INCREMENT  COMMENT 'Unique Param ID of the parameter which need to be optimized' ,
+param_name varchar(100) NOT NULL,
+tuning_algorithm_id INT UNSIGNED NOT NULL,
+default_value double  NOT NULL,
+min_value double  NOT NULL,
+max_value double NOT NULL,
+step_size double NOT NULL,
+created_ts TIMESTAMP DEFAULT now(),
+updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
+PRIMARY KEY(id),
+INDEX(tuning_algorithm_id),
+FOREIGN KEY (tuning_algorithm_id) REFERENCES tuning_algorithm(id)
+) ENGINE=InnoDB ;
+
+CREATE TABLE if not exists flow_definition(
+id int unsigned NOT NULL AUTO_INCREMENT,
+flow_def_id varchar(1000) NOT NULL, 
+flow_def_url varchar(1000) NOT NULL,
+Primary key(id),
+unique(flow_def_id)
+) ENGINE=InnoDB ;
+
+CREATE TABLE if not exists flow_execution(
+id int unsigned NOT NULL AUTO_INCREMENT,
+flow_exec_id varchar(1000) NOT NULL, 
+flow_exec_url varchar(1000) NOT NULL,
+flow_definition_id int unsigned NOT NULL,
+FOREIGN KEY (flow_definition_id) REFERENCES flow_definition(id),
+Primary key(id),
+unique(flow_exec_id)
+) ENGINE=InnoDB ;
+
+CREATE TABLE IF NOT EXISTS job_definition(
+id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+job_def_id VARCHAR(1000)  NOT NULL,  
+flow_definition_id int unsigned   NOT NULL,
+job_name varchar(1000),
+job_def_url varchar(1000) NOT NULL,
+scheduler VARCHAR(100)  NOT NULL,
+username VARCHAR(100)  NOT NULL,
+created_ts TIMESTAMP DEFAULT now(),
+updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
+PRIMARY KEY(id),
+unique(job_def_id),
+FOREIGN KEY (flow_definition_id) REFERENCES flow_definition(id)
+) ENGINE=InnoDB ;
+
+CREATE TABLE IF NOT EXISTS tuning_job_definition(
+job_definition_id INT unsigned NOT NULL,
+client varchar(100) NOT NULL,
+tuning_algorithm_id INT UNSIGNED NOT NULL,
+tuning_enabled TINYINT NOT NULL,  
+average_resource_usage double COMMENT 'average resource usage when optimization started on this job',
+average_execution_time double,
+allowed_max_resource_usage_percent double,
+allowed_max_execution_time_percent double,
+created_ts TIMESTAMP DEFAULT now(),
+updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
+INDEX(job_definition_id),
+FOREIGN KEY(job_definition_id) references job_definition(id),
+FOREIGN KEY(tuning_algorithm_id) references tuning_algorithm(id)
+) ENGINE=InnoDB ;
+
+
+CREATE TABLE IF NOT EXISTS job_execution (
+id int UNSIGNED NOT NULL AUTO_INCREMENT  COMMENT 'Parameter set for an execution',	
+job_exec_id varchar(1000),
+job_exec_url varchar(1000),
+job_definition_id INT UNSIGNED NOT NULL,
+flow_execution_id INT UNSIGNED,
+execution_state enum('SUCCEEDED', 'FAILED', 'NOT_STARTED', 'IN_PROGRESS'),
+resource_usage double,
+execution_time double,
+input_size_in_mb BIGINT,
+created_ts TIMESTAMP DEFAULT now(),
+updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
+PRIMARY KEY(id),
+INDEX(job_exec_id),
+INDEX(job_exec_url),
+FOREIGN KEY (job_definition_id) REFERENCES job_definition (id),
+FOREIGN KEY (flow_execution_id) REFERENCES flow_execution (id),
+unique(job_exec_id)
+) ENGINE=InnoDB ;
+
+CREATE TABLE IF NOT EXISTS tuning_job_execution(
+job_execution_id INT UNSIGNED NOT NULL,
+tuning_algorithm_id INT UNSIGNED NOT NULL,
+param_set_state enum ('CREATED', 'SENT', 'EXECUTED', 'FITNESS_COMPUTED', 'DISCARDED'),
+is_default_execution TINYINT NOT NULL,
+fitness  DOUBLE,
+INDEX(job_execution_id),
+FOREIGN KEY (tuning_algorithm_id) REFERENCES tuning_algorithm(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS job_suggested_param_value (
+id int unsigned not null AUTO_INCREMENT,
+job_execution_id INT UNSIGNED NOT NULL,
+tuning_parameter_id INT UNSIGNED NOT NULL,
+param_value double NOT NULL,
+created_ts TIMESTAMP DEFAULT now(),
+updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
+PRIMARY KEY(id),
+UNIQUE(job_execution_id, tuning_parameter_id),
+CONSTRAINT job_suggested_param_values_f1 FOREIGN KEY (job_execution_id) REFERENCES job_execution(id),
+CONSTRAINT job_suggested_param_values_f2 FOREIGN KEY (tuning_parameter_id) REFERENCES tuning_parameter(id)
+) ENGINE=InnoDB ;
+
+
+CREATE TABLE IF NOT EXISTS job_saved_state (
+job_definition_id INT UNSIGNED NOT NULL,
+saved_state BLOB NOT NULL,
+created_ts TIMESTAMP DEFAULT now(),
+updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
+PRIMARY KEY(job_definition_id),
+CONSTRAINT job_saved_state_f1 FOREIGN KEY (job_definition_id) REFERENCES job_definition(id)
+) ENGINE=InnoDB ;

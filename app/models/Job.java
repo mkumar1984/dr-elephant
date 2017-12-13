@@ -15,6 +15,7 @@ import javax.persistence.Table;
 
 import play.db.ebean.Model;
 
+//Todo: Rename class to job_definition
 
 @Entity
 @Table(name = "job_definition")
@@ -25,52 +26,24 @@ public class Job extends Model {
   public static final int JOB_NAME_LIMIT = 1000;
 
   public static class TABLE {
-    public static final String TABLE_NAME = "job";
-    public static final String jobId = "jobId";
-    public static final String flowDefId = "flowDefId";
+    public static final String TABLE_NAME = "job_definition";
+    public static final String id = "id";
     public static final String jobDefId = "jobDefId";
-    public static final String flowDefUrl = "flowDefUrl";
-    public static final String jobDefUrl = "jobDefUrl";
-    public static final String jobName = "jobName";
-    public static final String algoId = "algoId";
     public static final String scheduler = "scheduler";
     public static final String username = "username";
-    public static final String client = "client";
-    public static final String tuningEnabled = "tuningEnabled";
-    public static final String averageResourceUsage = "averageResourceUsage";
-    public static final String averageExecutionTime = "averageExecutionTime";
-    public static final String allowedMaxResourceUsagePercent = "allowedMaxResourceUsagePercent";
-    public static final String allowedMaxExecutionTimePercent = "allowedMaxExecutionTimePercent";
-    public static final String deleted = "deleted";
+    public static final String jobName = "jobName";
+    public static final String jobDefUrl = "jobDefUrl";
+    public static final String flowDefinitionId = "flowDefinitionId";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
   }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  public Integer jobId;
-
-  @Column(length = JOB_NAME_LIMIT, nullable = false)
-  public String flowDefId;
+  public Integer id;
 
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String jobDefId;
-
-  @Column(length = JOB_NAME_LIMIT, nullable = false)
-  public String flowDefUrl;
-
-  @Column(length = JOB_NAME_LIMIT, nullable = false)
-  public String jobDefUrl;
-
-  @Column(length = JOB_NAME_LIMIT, nullable = false)
-  public String jobName;
-
-  @Column(length = JOB_NAME_LIMIT, nullable = false)
-  public String client;
-
-  @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="algo", joinColumns={@JoinColumn(name ="algo_id", referencedColumnName="algo_id")})
-  public Algo algo;
 
   @Column(length = USERNAME_LIMIT, nullable = false)
   public String scheduler;
@@ -78,23 +51,15 @@ public class Job extends Model {
   @Column(length = USERNAME_LIMIT, nullable = false)
   public String username;
 
-  @Column(nullable = false)
-  public Boolean tuningEnabled;
+  @Column(length = JOB_NAME_LIMIT, nullable = false)
+  public String jobName;
 
-  @Column(nullable = true)
-  public Double averageResourceUsage;
+  @Column(length = JOB_NAME_LIMIT, nullable = false)
+  public String jobDefUrl;
 
-  @Column(nullable = true)
-  public Double averageExecutionTime;
-
-  @Column(nullable = true)
-  public Double allowedMaxResourceUsagePercent;
-
-  @Column(nullable = true)
-  public Double allowedMaxExecutionTimePercent;
-
-  @Column(nullable = true)
-  public Boolean deleted;
+  @ManyToOne(cascade = CascadeType.ALL)
+  @JoinTable(name="flow_definition", joinColumns={@JoinColumn(name ="flow_definition_id", referencedColumnName="id")})
+  public FlowDefinition flowDefinition;
 
   @Column(nullable = true)
   public Timestamp createdTs;
