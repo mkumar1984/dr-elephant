@@ -96,6 +96,12 @@ def initial_pop_generator(random, args):
       reduce_memory_index = i
     elif param_name[i] == 'pig.maxCombinedSplitSize':
       maxCombinedSplitSize_index = i
+    elif param_name[i] == 'mapreduce.map.java.opts':
+      map_java_opts_index = i
+    elif param_name[i] == 'mapreduce.reduce.java.opts':
+      reduce_java_opts_index = i
+    elif param_name[i] == 'mapreduce.input.fileinputformat.split.maxsize':
+      fileinput_format_split_size_index = i
   global itr
 
   if itr == 0:
@@ -112,8 +118,12 @@ def initial_pop_generator(random, args):
       init[map_memory_index] = random.uniform(1.2, 1.5) * param_default_value[map_memory_index]
       init[reduce_memory_index] = random.uniform(1.2, 1.5) * param_default_value[reduce_memory_index]
 
-  init[sort_memory_index] = random.uniform(0.0, 0.25) * init[sort_memory_index]
+  init[sort_memory_index] = random.uniform(0.0, 0.25) * init[map_memory_index]
   init[maxCombinedSplitSize_index] = param_default_value[maxCombinedSplitSize_index]
+
+  init[map_java_opts_index] = 0.75 * init[map_memory_index]
+  init[reduce_java_opts_index] = 0.75 * init[reduce_memory_index]
+  init[fileinput_format_split_size_index] = init[maxCombinedSplitSize_index]
   itr += 1
 
   return init

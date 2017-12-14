@@ -17,7 +17,7 @@ import java.util.List;
 public class AutoTuner implements Runnable{
 
     private static final Logger logger = Logger.getLogger(AutoTuner.class);
-    private static final long METRICS_COMPUTATION_INTERVAL = 5 * 60 * 1000;
+    private static final long METRICS_COMPUTATION_INTERVAL = 60 * 1000;
     private static final String TUNIN_ALGORITHM_CONF = "TuninAlgorithmConf.xml";
     private List<TuninAlgorithmConfigurationData> _tuninAlgorithmConfData;
 
