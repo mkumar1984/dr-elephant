@@ -70,7 +70,6 @@ allowed_max_execution_time_percent double,
 created_ts TIMESTAMP DEFAULT now(),
 updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
 INDEX(job_definition_id),
-UNIQUE(job_definition_id),
 FOREIGN KEY(job_definition_id) references job_definition(id),
 FOREIGN KEY(tuning_algorithm_id) references tuning_algorithm(id)
 ) ENGINE=InnoDB ;
