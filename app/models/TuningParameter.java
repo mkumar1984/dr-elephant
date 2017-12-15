@@ -45,6 +45,7 @@ public class TuningParameter extends Model{
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
     public static final String tuningAlgorithm = "tuningAlgorithm";
+    public static final String isDerived = "isDerived";
   }
 
   @Id
@@ -75,6 +76,9 @@ public class TuningParameter extends Model{
 
   @Column(nullable = false)
   public Timestamp updatedTs;
+
+  @Column(nullable = false)
+  public Integer isDerived;
 
   public static Finder<Integer, TuningParameter> find = new Finder<Integer, TuningParameter>(Integer.class, TuningParameter.class);
 }

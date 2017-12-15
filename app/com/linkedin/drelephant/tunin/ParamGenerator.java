@@ -19,6 +19,8 @@ package com.linkedin.drelephant.tunin;
 import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.HashMap;
+import java.util.Map;
 import models.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.log4j.Logger;
@@ -175,7 +177,45 @@ public abstract class ParamGenerator {
       Job job = tuningJobDefinition.job;
       logger.info ("Getting tuning information for job: " + job.id);
       List<TuningParameter>
-          tuningParameterList = TuningParameter.find.where ().eq (TuningParameter.TABLE.tuningAlgorithm, tuningJobDefinition.tuningAlgorithm).findList ();
+          tuningParameterList = TuningParameter.find.where ()
+          .eq (TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id, tuningJobDefinition.tuningAlgorithm.id)
+          .eq(TuningParameter.TABLE.isDerived, 0)
+          .findList ();
+
+      try {
+        logger.info("Trying to overwrite default parameters for job " + tuningJobDefinition.job.id);
+        TuningJobExecution defaultJobExecution = TuningJobExecution.find.where ()
+            .eq (  TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + Job.TABLE.id, tuningJobDefinition.job.id)
+            .eq(TuningJobExecution.TABLE.isDefaultExecution, 1)
+            .orderBy ( TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc")
+            .findUnique ();
+        logger.info("Found default execution: " + Json.toJson (defaultJobExecution));
+        if (defaultJobExecution != null && defaultJobExecution.jobExecution!= null) {
+          List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find
+              .where ()
+              .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id, defaultJobExecution.jobExecution.id)
+              .findList ();
+          logger.info("Found default params " + Json.toJson (jobSuggestedParamValueList));
+          logger.info("Size: " + jobSuggestedParamValueList.size ());
+          if(jobSuggestedParamValueList.size ()>0){
+            Map<Integer, Double> defaultExecutionParamMap = new HashMap<Integer, Double> ();
+
+            for(JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
+              defaultExecutionParamMap.put(jobSuggestedParamValue.tuningParameter.id, jobSuggestedParamValue.paramValue);
+            }
+
+            for(TuningParameter tuningParameter: tuningParameterList){
+              Integer paramId = tuningParameter.id;
+              if(defaultExecutionParamMap.containsKey (paramId)){
+                logger.info("Updating value of param " + tuningParameter.paramName + " to " + defaultExecutionParamMap.get (paramId));
+                tuningParameter.defaultValue = defaultExecutionParamMap.get (paramId);
+              }
+            }
+          }
+        }
+      } catch (NullPointerException e){
+        logger.error("Error extracting default params for job with id= " + tuningJobDefinition.job.id, e);
+      }
       JobTuningInfo jobTuningInfo = new JobTuningInfo ();
       jobTuningInfo.setTuningJob (job);
       jobTuningInfo.setParametersToTune (tuningParameterList);
@@ -299,26 +339,72 @@ public abstract class ParamGenerator {
         continue;
       }
 
+      TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
+          .fetch(TuningJobDefinition.TABLE.job, "*")
+          .where()
+          .eq(TuningJobDefinition.TABLE.job + "." + Job.TABLE.id, job.id)
+          .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
+          .findUnique ();
+
+      List<TuningParameter>
+          derivedParameterList = TuningParameter.find.where ()
+          .eq (TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id, tuningJobDefinition.tuningAlgorithm.id)
+          .eq(TuningParameter.TABLE.isDerived, 1)
+          .findList ();
+
+      logger.info("Derived params: " + Json.toJson (derivedParameterList));
+
       JsonNode jsonTunerState = Json.parse (stringTunerState);
       JsonNode jsonSuggestedPopulation = jsonTunerState.get (JSON_CURRENT_POPULATION_KEY);
 
       if (jsonSuggestedPopulation == null) {
         continue;
       }
+
       List<Particle> suggestedPopulation = jsonToParticleList (jsonSuggestedPopulation);
 
       for (Particle suggestedParticle : suggestedPopulation) {
         List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList (suggestedParticle, paramList);
 
+        // yaha pe derived para mka value derive karke usko jobSuggestedParamValueList me append karte ja
+
+        Map<String, Double> jobSuggestedParamValueMap = new HashMap<String, Double> ();
+        for(JobSuggestedParamValue jobSuggestedParamValue: jobSuggestedParamValueList){
+          jobSuggestedParamValueMap.put(jobSuggestedParamValue.tuningParameter.paramName, jobSuggestedParamValue.paramValue);
+        }
+
+
+        for(TuningParameter derivedParameter: derivedParameterList){
+          logger.info("Computing value of derived params");
+          Double paramValue = null;
+          if(derivedParameter.paramName.equals ("mapreduce.reduce.java.opts")){
+            String parentParamName = "mapreduce.reduce.memory.mb";
+            if(jobSuggestedParamValueMap.containsKey (parentParamName)){
+              paramValue = 0.75 * jobSuggestedParamValueMap.get(parentParamName);
+            }
+          } else if(derivedParameter.paramName.equals ("mapreduce.map.java.opts")){
+            String parentParamName = "mapreduce.map.memory.mb";
+            if(jobSuggestedParamValueMap.containsKey (parentParamName)){
+              paramValue = 0.75 * jobSuggestedParamValueMap.get(parentParamName);
+            }
+          } else if(derivedParameter.paramName.equals ("mapreduce.input.fileinputformat.split.maxsize")){
+            String parentParamName = "pig.maxCombinedSplitSize";
+            if(jobSuggestedParamValueMap.containsKey (parentParamName)){
+              paramValue = jobSuggestedParamValueMap.get(parentParamName);
+            }
+          }
+
+          if(paramValue!= null){
+            JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue ();
+            jobSuggestedParamValue.paramValue = paramValue;
+            jobSuggestedParamValue.tuningParameter = derivedParameter;
+            jobSuggestedParamValueList.add(jobSuggestedParamValue);
+          }
+        }
+
+
+
         TuningJobExecution tuningJobExecution = new TuningJobExecution ();
-        TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
-            .fetch(TuningJobDefinition.TABLE.job, "*")
-            .where()
-            .eq(TuningJobDefinition.TABLE.job + "." + Job.TABLE.id, job.id)
-            .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-            .findUnique ();
-
-
         JobExecution jobExecution = new JobExecution ();
         jobExecution.job = job;
         tuningJobExecution.jobExecution = jobExecution;
@@ -370,7 +456,7 @@ public abstract class ParamGenerator {
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals ("mapreduce.map.memory.mb")) {
         mrMapMemory = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals ("pig.maxCombinedSplitSize")) {
-        pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue;
+        pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / (1024*1024);
       }
     }
 

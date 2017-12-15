@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS tuning_parameter (
 id INT UNSIGNED NOT NULL AUTO_INCREMENT  COMMENT 'Unique Param ID of the parameter which need to be optimized' ,
 param_name varchar(100) NOT NULL,
 tuning_algorithm_id INT UNSIGNED NOT NULL,
+is_derived tinyint not null;
 default_value double  NOT NULL,
 min_value double  NOT NULL,
 max_value double NOT NULL,
@@ -69,6 +70,7 @@ allowed_max_execution_time_percent double,
 created_ts TIMESTAMP DEFAULT now(),
 updated_ts TIMESTAMP DEFAULT now() ON UPDATE now(),
 INDEX(job_definition_id),
+UNIQUE(job_definition_id),
 FOREIGN KEY(job_definition_id) references job_definition(id),
 FOREIGN KEY(tuning_algorithm_id) references tuning_algorithm(id)
 ) ENGINE=InnoDB ;
