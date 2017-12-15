@@ -100,6 +100,9 @@ public abstract class ParamGenerator {
    * @return Job list
    */
   public List<TuningJobDefinition> fetchJobsForParamSuggestion() {
+
+    // Todo: [Important] Change the logic. This is very rigid. Ideally you should look at the param set ids in the saved state,
+    // todo: [continuation] if their fitness is computed, pso can generate new params for the job
     logger.info ("Fetching job list to suggest parameters");
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition> ();
 
@@ -113,6 +116,7 @@ public abstract class ParamGenerator {
           .or (Expr.or (Expr.eq (TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.CREATED),
               Expr.eq (TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.SENT)),
               Expr.eq (TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.EXECUTED))
+          .eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
           .findList ();
     } catch (NullPointerException e){
       logger.info("ParamGenerator.fetchJobsForParamSuggestion: No pending executions found");
