@@ -192,6 +192,7 @@ public abstract class ParamGenerator {
             .eq (  TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + Job.TABLE.id, tuningJobDefinition.job.id)
             .eq(TuningJobExecution.TABLE.isDefaultExecution, 1)
             .orderBy ( TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc")
+            .setMaxRows (1)
             .findUnique ();
         logger.info("Found default execution: " + Json.toJson (defaultJobExecution));
         if (defaultJobExecution != null && defaultJobExecution.jobExecution!= null) {
