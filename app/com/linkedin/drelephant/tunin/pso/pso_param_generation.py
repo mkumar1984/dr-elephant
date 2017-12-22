@@ -121,6 +121,9 @@ def initial_pop_generator(random, args):
   init[sort_memory_index] = random.uniform(0.0, 0.25) * init[map_memory_index]
   init[maxCombinedSplitSize_index] = param_default_value[maxCombinedSplitSize_index]
 
+  for i in range(0,len(param_name)):
+    (min_val, max_val) = param_value_range[i]
+    init[i] = max(min_val, min(max_val, init[i]))
   # init[map_java_opts_index] = 0.75 * init[map_memory_index]
   # init[reduce_java_opts_index] = 0.75 * init[reduce_memory_index]
   # init[fileinput_format_split_size_index] = init[maxCombinedSplitSize_index]
