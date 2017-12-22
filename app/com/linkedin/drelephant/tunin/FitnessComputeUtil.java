@@ -130,12 +130,12 @@ public class FitnessComputeUtil {
           if (jobExecution.executionState.equals (JobExecution.ExecutionState.FAILED) || jobExecution.executionState.equals (JobExecution.ExecutionState.CANCELLED)) {
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
             tuningJobExecution.fitness =
-                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent * 1024.0 * 1024.0 / (100.0 * totalInputBytesInMB);
           } else if (jobExecution.resourceUsage > (tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
             tuningJobExecution.fitness =
-                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent * 1024.0 * 1024.0 / (100.0 * totalInputBytesInMB );
           } else {
-            tuningJobExecution.fitness = jobExecution.resourceUsage;
+            tuningJobExecution.fitness = jobExecution.resourceUsage * 1024.0 * 1024.0 / totalInputBytesInMB;
           }
           tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
           jobExecution.update ();
