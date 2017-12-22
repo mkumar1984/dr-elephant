@@ -6,7 +6,7 @@ import json
 import imp
 import os
 
-restartable_pso = imp.load_source('restartable_pso', '/home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/pso/restartable_pso.py')
+restartable_pso = imp.load_source('restartable_pso', '/Users/aragrawa/development/dr-elephant/app/com/linkedin/drelephant/tunin/pso/restartable_pso.py')
 
 
 param_value_type = []
@@ -105,29 +105,31 @@ def initial_pop_generator(random, args):
   global itr
 
   if itr == 0:
-      itr += 1
-      return param_default_value
+    itr += 1
+    init = param_default_value
+    #return param_default_value
 
-  init = [random.uniform(x, y) for x, y in param_value_range]
+  else:
+    init = [random.uniform(x, y) for x, y in param_value_range]
+    if itr%2==1:
+        init[map_memory_index] = random.uniform(0.5, 0.8) * param_default_value[map_memory_index]
+        init[reduce_memory_index] = random.uniform(0.5, 0.8) * param_default_value[reduce_memory_index]
 
-  if itr%2==1:
-      init[map_memory_index] = random.uniform(0.5, 0.8) * param_default_value[map_memory_index]
-      init[reduce_memory_index] = random.uniform(0.5, 0.8) * param_default_value[reduce_memory_index]
+    if itr%2==0:
+        init[map_memory_index] = random.uniform(1.2, 1.5) * param_default_value[map_memory_index]
+        init[reduce_memory_index] = random.uniform(1.2, 1.5) * param_default_value[reduce_memory_index]
 
-  if itr%2==0:
-      init[map_memory_index] = random.uniform(1.2, 1.5) * param_default_value[map_memory_index]
-      init[reduce_memory_index] = random.uniform(1.2, 1.5) * param_default_value[reduce_memory_index]
+    init[sort_memory_index] = random.uniform(0.0, 0.25) * init[map_memory_index]
+    init[maxCombinedSplitSize_index] = param_default_value[maxCombinedSplitSize_index]
 
-  init[sort_memory_index] = random.uniform(0.0, 0.25) * init[map_memory_index]
-  init[maxCombinedSplitSize_index] = param_default_value[maxCombinedSplitSize_index]
+    # init[map_java_opts_index] = 0.75 * init[map_memory_index]
+    # init[reduce_java_opts_index] = 0.75 * init[reduce_memory_index]
+    # init[fileinput_format_split_size_index] = init[maxCombinedSplitSize_index]
+    itr += 1
 
   for i in range(0,len(param_name)):
     (min_val, max_val) = param_value_range[i]
     init[i] = max(min_val, min(max_val, init[i]))
-  # init[map_java_opts_index] = 0.75 * init[map_memory_index]
-  # init[reduce_java_opts_index] = 0.75 * init[reduce_memory_index]
-  # init[fileinput_format_split_size_index] = init[maxCombinedSplitSize_index]
-  itr += 1
 
   return init
 
@@ -244,6 +246,9 @@ if __name__ == '__main__':
   args = parser.parse_args()
   json_tuning_state = args.json_tuning_state
   parameters_to_tune = args.parameters_to_tune
+  print "Hello"
   parameters_to_tune = json.loads(parameters_to_tune)
+  print "1"
   initialize_params(parameters_to_tune)
+  print "2"
   main(json_tuning_state)
