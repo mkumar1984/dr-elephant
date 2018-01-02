@@ -288,10 +288,10 @@ class restartable_pso(inspyred.ec.EvolutionaryComputation):
                     'archival using {0} at generation {1} and evaluation {'
                     '2}'.format(self.archiver.__name__, self.num_generations,
                                 self.num_evaluations))
-            self.archive = self.archiver(random=self._random,
-                                         archive=self.archive,
-                                         population=list(self.population),
-                                         args=self._kwargs)
+            # self.archive = self.archiver(random=self._random,
+            #                              archive=self.archive,
+            #                              population=list(self.population),
+            #                              args=self._kwargs)
             self.logger.debug(
                     'archive size is now {0}'.format(len(self.archive)))
             self.logger.debug(
