@@ -246,9 +246,6 @@ if __name__ == '__main__':
   args = parser.parse_args()
   json_tuning_state = args.json_tuning_state
   parameters_to_tune = args.parameters_to_tune
-  print "Hello"
   parameters_to_tune = json.loads(parameters_to_tune)
-  print "1"
   initialize_params(parameters_to_tune)
-  print "2"
   main(json_tuning_state)
