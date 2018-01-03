@@ -116,7 +116,7 @@ public abstract class ParamGenerator {
           .or (Expr.or (Expr.eq (TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.CREATED),
               Expr.eq (TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.SENT)),
               Expr.eq (TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.EXECUTED))
-          .eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
+          //.eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
           .findList ();
     } catch (NullPointerException e){
       logger.info("ParamGenerator.fetchJobsForParamSuggestion: No pending executions found");

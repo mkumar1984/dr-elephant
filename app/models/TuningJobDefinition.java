@@ -16,7 +16,6 @@
 
 package models;
 
-import java.sql.Timestamp;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -24,12 +23,16 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
 import play.db.ebean.Model;
 
 
 @Entity
 @Table(name="tuning_job_definition")
 public class TuningJobDefinition  extends Model  {
+
+  /** */
+  private static final long serialVersionUID = 1L;
 
   public static final int JOB_NAME_LIMIT = 1000;
 
@@ -41,6 +44,7 @@ public class TuningJobDefinition  extends Model  {
     public static final String tuningEnabled = "tuningEnabled";
     public static final String averageResourceUsage = "averageResourceUsage";
     public static final String averageExecutionTime = "averageExecutionTime";
+    public static final String averageInputSizeInBytes = "averageInputSizeInBytes";
     public static final String allowedMaxResourceUsagePercent = "allowedMaxResourceUsagePercent";
     public static final String allowedMaxExecutionTimePercent = "allowedMaxExecutionTimePercent";
     public static final String job = "job";
@@ -74,11 +78,24 @@ public class TuningJobDefinition  extends Model  {
   public Double averageExecutionTime;
 
   @Column(nullable = true)
+  public Long averageInputSizeInBytes;
+
+  @Column(nullable = true)
   public Double allowedMaxResourceUsagePercent;
 
   @Column(nullable = true)
   public Double allowedMaxExecutionTimePercent;
 
+  public Double getAverageInputSizeInGB()
+  {
+    if(averageInputSizeInBytes!=null)
+    {
+      return averageInputSizeInBytes * 1.0 /(1024*1024*1024);
+    }else
+    {
+      return null;
+    }
+  }
   public static Model.Finder<Integer, TuningJobDefinition> find = new Model.Finder<Integer, TuningJobDefinition> (Integer.class, TuningJobDefinition.class);
 
 //  @Column(nullable = false)

@@ -88,7 +88,7 @@ public class JobExecution extends Model {
   public Double executionTime;
 
   @Column(nullable = true)
-  public Double inputSizeInMb;
+  public Double inputSizeInBytes;
 
   @Column(nullable = true)
   public String jobExecUrl;

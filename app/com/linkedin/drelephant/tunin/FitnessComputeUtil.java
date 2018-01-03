@@ -94,22 +94,22 @@ public class FitnessComputeUtil {
         if (results != null && results.size () > 0) {
           Long totalExecutionTime = 0L;
           Double totalResourceUsed = 0D;
-          Double totalInputBytesInMB = 0D;
+          Double totalInputBytesInBytes = 0D;
 
           for (AppResult appResult : results) {
             logger.info ("Job Execution Update: ApplicationID " + appResult.id);
             Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
             totalExecutionTime += executionTime;
             totalResourceUsed += appResult.resourceUsed;
-            totalInputBytesInMB += getTotalInputBytes (appResult);
+            totalInputBytesInBytes += getTotalInputBytes (appResult);
           }
 
           if (totalExecutionTime != 0) {
             jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
             jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
-            jobExecution.inputSizeInMb = totalInputBytesInMB;
+            jobExecution.inputSizeInBytes = totalInputBytesInBytes;
             logger.info ("Job Execution Update: UpdatedValue " + totalExecutionTime + ":" + totalResourceUsed + ":"
-                + totalInputBytesInMB);
+                + totalInputBytesInBytes);
           }
 
           Job job = jobExecution.job;
@@ -130,12 +130,12 @@ public class FitnessComputeUtil {
           if (jobExecution.executionState.equals (JobExecution.ExecutionState.FAILED) || jobExecution.executionState.equals (JobExecution.ExecutionState.CANCELLED)) {
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
             tuningJobExecution.fitness =
-                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent * 1024.0 * 1024.0 / (100.0 * totalInputBytesInMB);
+                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent * 1024.0 * 1024.0 * 1024 / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
           } else if (jobExecution.resourceUsage > (tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
             tuningJobExecution.fitness =
-                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent * 1024.0 * 1024.0 / (100.0 * totalInputBytesInMB );
+                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent * 1024.0 * 1024.0 * 1024 / (100.0 * totalInputBytesInBytes );
           } else {
-            tuningJobExecution.fitness = jobExecution.resourceUsage * 1024.0 * 1024.0 / totalInputBytesInMB;
+            tuningJobExecution.fitness = jobExecution.resourceUsage * 1024.0 * 1024.0 * 1024.0 / totalInputBytesInBytes;
           }
           tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
           jobExecution.update ();

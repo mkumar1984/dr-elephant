@@ -59,6 +59,7 @@ public class AutoTuningAPIHelper {
     JobExecution jobExecution = new JobExecution ();
     jobExecution.id = 0L;
     jobExecution.job = tuningJobExecutionDefault.jobExecution.job;
+    jobExecution.executionState=ExecutionState.NOT_STARTED;
     jobExecution.save();
     tuningJobExecution.jobExecution = jobExecution;
     tuningJobExecution.isDefaultExecution = tuningJobExecutionDefault.isDefaultExecution;
@@ -84,6 +85,13 @@ public class AutoTuningAPIHelper {
       jobSuggestedParamValue1.tuningParameter = jobSuggestedParamValue.tuningParameter;
       jobSuggestedParamValue1.save();
     }
+
+    tuningJobExecution = TuningJobExecution.find.select ("*")
+        .where ()
+        .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id, tuningJobExecution.jobExecution.id)
+        .setMaxRows (1)
+        .findUnique ();
+
     return tuningJobExecution;
   }
 

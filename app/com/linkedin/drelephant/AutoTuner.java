@@ -1,14 +1,15 @@
 package com.linkedin.drelephant;
 
 import com.linkedin.drelephant.configurations.tunin.TuninAlgorithmConfigurationData;
+import com.linkedin.drelephant.tunin.BaselineComputeUtil;
 import com.linkedin.drelephant.tunin.FitnessComputeUtil;
 import com.linkedin.drelephant.tunin.JobCompleteDetector;
 import com.linkedin.drelephant.tunin.PSOParamGenerator;
 import com.linkedin.drelephant.tunin.ParamGenerator;
 
 import models.JobExecution;
-
 import models.TuningJobExecution;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 
@@ -17,7 +18,7 @@ import java.util.List;
 public class AutoTuner implements Runnable{
 
     private static final Logger logger = Logger.getLogger(AutoTuner.class);
-    private static final long METRICS_COMPUTATION_INTERVAL = 60 * 1000;
+    private static final long METRICS_COMPUTATION_INTERVAL = 60 * 1000 / 5;
     private static final String TUNIN_ALGORITHM_CONF = "TuninAlgorithmConf.xml";
     private List<TuninAlgorithmConfigurationData> _tuninAlgorithmConfData;
 
@@ -70,6 +71,9 @@ public class AutoTuner implements Runnable{
           {
             while(!Thread.currentThread().isInterrupted())
             {
+              BaselineComputeUtil baselineComputeUtil=new BaselineComputeUtil();
+              baselineComputeUtil.computeBaseline();
+
               JobCompleteDetector jobCompleteDetector = new JobCompleteDetector();
               List<TuningJobExecution> completedJobExecution = jobCompleteDetector.updateCompletedExecutions ();
 
