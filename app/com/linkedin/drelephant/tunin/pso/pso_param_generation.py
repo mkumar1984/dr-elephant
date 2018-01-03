@@ -154,7 +154,7 @@ def bounder(candidate, args):
 def dummy_fitness_evaluator(candidates, args):
     fitness = []
     for cs in candidates:
-        fitness.append(0)
+        fitness.append(float("inf"))
     return fitness
 
 
