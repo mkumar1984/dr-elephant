@@ -74,7 +74,7 @@ public class TuningAlgorithm extends Model{
   public Integer optimizationAlgoVersion;
 
   @Enumerated(EnumType.STRING)
-  public OptimizationMetric OptimizationMetric;
+  public OptimizationMetric optimizationMetric;
 
   public Timestamp createdTs;
   public Timestamp updatedTs;

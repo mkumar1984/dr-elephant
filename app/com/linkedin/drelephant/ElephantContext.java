@@ -66,11 +66,18 @@ public class ElephantContext {
   private static final String HEURISTICS_CONF = "HeuristicConf.xml";
   private static final String JOB_TYPES_CONF = "JobTypeConf.xml";
   private static final String GENERAL_CONF = "GeneralConf.xml";
+  private static final String AUTO_TUNING_CONF = "AutoTuningConf.xml";
 
   private final Map<String, List<String>> _heuristicGroupedNames = new HashMap<String, List<String>>();
   private List<HeuristicConfigurationData> _heuristicsConfData;
   private List<FetcherConfigurationData> _fetchersConfData;
   private Configuration _generalConf;
+
+  public Configuration getAutoTuningConf() {
+    return _autoTuningConf;
+  }
+
+  private Configuration _autoTuningConf;
   private List<AggregatorConfigurationData> _aggregatorConfData;
 
   private final Map<String, ApplicationType> _nameToType = new HashMap<String, ApplicationType>();
@@ -103,6 +110,7 @@ public class ElephantContext {
     loadJobTypes();
 
     loadGeneralConf();
+    loadAutoTuningConf();
 
     // It is important to configure supported types in the LAST step so that we could have information from all
     // configurable components.
@@ -307,7 +315,15 @@ public class ElephantContext {
     _generalConf = new Configuration();
     _generalConf.addResource(this.getClass().getClassLoader().getResourceAsStream(GENERAL_CONF));
   }
+  /**
+   * Load in the GeneralConf.xml file as a configuration object for other objects to access
+   */
+  private void loadAutoTuningConf() {
+    logger.info("Loading configuration file " + AUTO_TUNING_CONF);
 
+    _autoTuningConf = new Configuration();
+    _autoTuningConf.addResource(this.getClass().getClassLoader().getResourceAsStream(AUTO_TUNING_CONF));
+  }
   /**
    * Given an application type, return the currently bound heuristics
    *

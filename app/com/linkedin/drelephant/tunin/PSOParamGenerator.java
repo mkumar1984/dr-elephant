@@ -17,8 +17,13 @@
 package com.linkedin.drelephant.tunin;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.linkedin.drelephant.ElephantContext;
+
+import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
+
 import play.libs.Json;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,20 +34,28 @@ import java.util.List;
 /**
  * This class extends ParamGenerator class. It generates parameter suggestion using PSO algorithm,
  */
-public class PSOParamGenerator extends ParamGenerator{
+public class PSOParamGenerator extends ParamGenerator {
 
-  // Todo:Fetch python root dir and tuning script path from config
   private final Logger logger = Logger.getLogger(PSOParamGenerator.class);
-  private static  final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
-  private static final String PYTHON_ROOT_DIR = "/home/aragrawa/virtualenvs/auto-tuning/bin/python";
-  private static final String TUNING_SCRIPT_PATH = "/home/aragrawa/development/production/dr-elephant/app/com/linkedin/drelephant/tunin/pso/pso_param_generation.py";
+  private static final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
+  public static final String PYTHON_ROOT_DIR_CONF = "python.root.dir";
+  public static final String TUNING_SCRIPT_PATH_CONF = "pso.script.path";
+
+  private String PYTHON_ROOT_DIR = null;
+  private String TUNING_SCRIPT_PATH = null;
+
+  public PSOParamGenerator() {
+    Configuration configuration = ElephantContext.instance().getAutoTuningConf();
+    PYTHON_ROOT_DIR = configuration.get(PYTHON_ROOT_DIR_CONF);
+    TUNING_SCRIPT_PATH = configuration.get(TUNING_SCRIPT_PATH_CONF);
+  }
 
   /**
    * Interacts with python scripts to generate new parameter suggestions
    * @param jobTuningInfo Job tuning information
    * @return Updated job tuning information
    */
-  public JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo){
+  public JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo) {
 
     JobTuningInfo newJobTuningInfo = new JobTuningInfo();
     newJobTuningInfo.setTuningJob(jobTuningInfo.getTuningJob());
@@ -52,27 +65,32 @@ public class PSOParamGenerator extends ParamGenerator{
     String parametersToTune = jsonTunerState.get(PARAMS_TO_TUNE_FIELD_NAME).toString();
 
     String stringTunerState = jobTuningInfo.getStringTunerState();
-    stringTunerState = stringTunerState.replaceAll("\\s+","");
+    stringTunerState = stringTunerState.replaceAll("\\s+", "");
 
     List<String> error = new ArrayList<String>();
 
-    try{
-      Process p = Runtime.getRuntime().exec(PYTHON_ROOT_DIR + " " + TUNING_SCRIPT_PATH + " " + stringTunerState+ " " + parametersToTune);
+    try {
+      logger.debug("Running PSO python script with following parameters: ");
+      logger.debug("StringTunerState: " + stringTunerState);
+      logger.debug("Parameters to tune: " + parametersToTune);
+      Process p =
+          Runtime.getRuntime().exec(
+              PYTHON_ROOT_DIR + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune);
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();
-      logger.info("Output from pso script: " + updatedStringTunerState);
+      logger.debug("Output from pso script: " + updatedStringTunerState);
       newJobTuningInfo.setStringTunerState(updatedStringTunerState);
       String errorLine;
-      while((errorLine=errorStream.readLine())!=null){
+      while ((errorLine = errorStream.readLine()) != null) {
         error.add(errorLine);
       }
 
-      if(error.size()!=0){
+      if (error.size() != 0) {
         logger.error("Error running python script: " + error.toString());
       }
-    } catch (IOException e){
-      System.out.println(e);
+    } catch (IOException e) {
+      logger.error("Error in generateParamSet", e);
     }
     return newJobTuningInfo;
   }

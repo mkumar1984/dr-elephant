@@ -16,6 +16,8 @@
 
 package com.linkedin.drelephant.tunin;
 
+import models.TuningAlgorithm;
+
 /**
  * This class holds the parameters passed to rest api from the client.
  */
@@ -40,7 +42,42 @@ public class TuningInput {
     private String optimizationAlgo;
     private String optimizationAlgoVersion;
     private String optimizationMetric;
+    private Double allowedMaxResourceUsagePercent;
+    private Double allowedMaxExecutionTimePercent;
+    private TuningAlgorithm tuningAlgorithm;
 
+
+    public TuningAlgorithm getTuningAlgorithm() {
+      return tuningAlgorithm;
+    }
+
+    public void setTuningAlgorithm(TuningAlgorithm tuningAlgorithm) {
+      this.tuningAlgorithm = tuningAlgorithm;
+    }
+
+    public Boolean getIsRetry() {
+      return isRetry;
+    }
+
+    public void setIsRetry(Boolean isRetry) {
+      this.isRetry = isRetry;
+    }
+
+    public Double getAllowedMaxResourceUsagePercent() {
+      return allowedMaxResourceUsagePercent;
+    }
+
+    public void setAllowedMaxResourceUsagePercent(Double allowedMaxResourceUsagePercent) {
+      this.allowedMaxResourceUsagePercent = allowedMaxResourceUsagePercent;
+    }
+
+    public Double getAllowedMaxExecutionTimePercent() {
+      return allowedMaxExecutionTimePercent;
+    }
+
+    public void setAllowedMaxExecutionTimePercent(Double allowedMaxExecutionTimePercent) {
+      this.allowedMaxExecutionTimePercent = allowedMaxExecutionTimePercent;
+    }
 
     /**
      * Returns the flow definition id
