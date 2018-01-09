@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2016 LinkedIn Corp.
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations under
+  the License.
+-->
+
+<!-- General configurations -->
+<configuration>
+  <property>
+    <name>autotuning.enabled</name>
+    <value>true</value>
+    <description>Auto Tuning is enabled or not</description>
+  </property>
+  <property>
+    <name>autotuning.default.allowed_max_resource_usage_percent</name>
+    <value>150</value>
+    <description>Default value for allowed max resource usage percent</description>
+  </property>
+  <property>
+    <name>autotuning.default.allowed_max_execution_time_percent</name>
+    <value>150</value>
+    <description>Default value for allowed max execution time percent</description>
+  </property>
+  <property>
+    <name>autotuning.daemon.wait.interval.ms</name>
+    <value>60000</value>
+    <description>Auto tuning daemon wait interval</description>
+  </property>
+  <property>
+    <name>baseline.execution.count</name>
+    <value>30</value>
+    <description>Baseline to be done on recent number of execution</description>
+  </property>
+  <property>
+    <name>fitness.compute.wait_interval.ms</name>
+    <value>1800000</value>
+    <description>Wait time after the job is completed for fitness computation</description>
+  </property>
+  <property>
+    <name>python.root.dir</name>
+    <value>/home/mkumar1/work/code/autotuning/bin/python</value>
+    <description>Root directory for python</description>
+  </property>
+  <property>
+    <name>pso.script.path</name>
+    <value>/home/mkumar1/work/code/dr-elephant/app/com/linkedin/drelephant/tunin/pso/pso_param_generation.py</value>
+    <description>PSO script path</description>
+  </property>
+</configuration>

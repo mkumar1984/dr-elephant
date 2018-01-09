@@ -906,17 +906,19 @@ public class Application extends Controller {
 
 
 
+  /**
+   * Rest API for getting current run parameters from auto tuning framework
+   * @return
+   */
   public static Result getCurrentRunParametersNew()
   {
     String jsonString = request().body().asJson().toString();
-
+    logger.debug("Started processing getCurrentRunParameters request with following parameters " + jsonString);
     ObjectMapper mapper = new ObjectMapper();
     Map<String, String> paramValueMap = new HashMap<String, String>();
     TuningInput tuningInput = new TuningInput();
     try {
-      //Todo: safe typecast
       paramValueMap = (Map<String, String>) mapper.readValue(jsonString, Map.class);
-      // Todo if key not in map?
       String flowDefId = paramValueMap.get("flowDefId");
       String jobDefId = paramValueMap.get("jobDefId");
       String flowDefUrl = paramValueMap.get("flowDefUrl");
@@ -930,13 +932,31 @@ public class Application extends Controller {
       String client = paramValueMap.get("client");
       String scheduler = paramValueMap.get("scheduler");
       String defaultParams = paramValueMap.get("defaultParams");
-      Boolean isRetry = Boolean.parseBoolean(paramValueMap.get("isRetry"));
-      Boolean skipExecutionForOptimization=Boolean.parseBoolean(paramValueMap.get("skipExecutionForOptimization"));
+      Boolean isRetry=false;
+      if(paramValueMap.containsKey("isRetry"))
+      {
+        isRetry = Boolean.parseBoolean(paramValueMap.get("isRetry"));
+      }
+      Boolean skipExecutionForOptimization=false;
+      if(paramValueMap.containsKey("isRetry"))
+      {
+        skipExecutionForOptimization=Boolean.parseBoolean(paramValueMap.get("skipExecutionForOptimization"));
+      }
       String jobType = paramValueMap.get("jobType");
       String optimizationAlgo = paramValueMap.get("optimizationAlgo");
       String optimizationAlgoVersion = paramValueMap.get("optimizationAlgoVersion");
       String optimizationMetric = paramValueMap.get("optimizationMetric");
 
+      Double allowedMaxExecutionTimePercent=null;
+      Double allowedMaxResourceUsagePercent=null;
+      if(paramValueMap.containsKey("isRetry"))
+      {
+        allowedMaxResourceUsagePercent = Double.parseDouble(paramValueMap.get("allowedMaxResourceUsagePercent"));
+      }
+      if(paramValueMap.containsKey("isRetry"))
+      {
+        allowedMaxExecutionTimePercent = Double.parseDouble(paramValueMap.get("allowedMaxExecutionTimePercent"));
+      }
       tuningInput.setFlowDefId(flowDefId);
       tuningInput.setJobDefId(jobDefId);
       tuningInput.setFlowDefUrl(flowDefUrl);
@@ -956,12 +976,13 @@ public class Application extends Controller {
       tuningInput.setOptimizationAlgo(optimizationAlgo);
       tuningInput.setOptimizationAlgoVersion(optimizationAlgoVersion);
       tuningInput.setOptimizationMetric(optimizationMetric);
+      tuningInput.setAllowedMaxExecutionTimePercent(allowedMaxExecutionTimePercent);
+      tuningInput.setAllowedMaxResourceUsagePercent(allowedMaxResourceUsagePercent);
       return getCurrentRunParameters(tuningInput);
 
     } catch (Exception e) {
       logger.error("Exception", e);
-      // Todo: Incase of error: return default params
-      return notFound("Error parsing input");
+      return notFound("Error parsing input ");
     }
   }
 
@@ -970,10 +991,9 @@ public class Application extends Controller {
     Map<String, Double> outputParams =
         autoTuningAPIHelper.getCurrentRunParameters(tuningInput);
     if (outputParams != null) {
-      logger.debug("Output params " + outputParams);
+      logger.info("Output params " + outputParams);
       return ok(Json.toJson(outputParams));
     } else {
-      // Todo: Incase of error: return default params
       return notFound("Unable to find parameters. Job id: " + tuningInput.getJobDefId() + " Flow id: " + tuningInput.getFlowDefId());
     }
   }

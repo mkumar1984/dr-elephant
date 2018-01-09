@@ -1,0 +1,90 @@
+package com.linkedin.drelephant.tunin;
+
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import models.JobExecution;
+import models.JobExecution.ExecutionState;
+import models.TuningJobExecution;
+import models.TuningJobExecution.ParamSetStatus;
+import org.apache.log4j.*;
+import play.libs.Json;
+
+
+public class AzkabanJobCompleteDetector extends JobCompleteDetector {
+
+  private static final Logger logger = Logger.getLogger(AzkabanJobCompleteDetector.class);
+  private AzkabanJobStatusUtil _azkabanJobStatusUtil;
+
+  public enum AzkabanJobStatus {
+    FAILED,
+    CANCELLED,
+    KILLED,
+    SUCCEEDED
+  }
+
+  /**
+   * Returns the list of completed executions
+   * @param jobExecutions Started Execution list
+   * @return List of completed executions
+   * @throws MalformedURLException
+   * @throws URISyntaxException
+   */
+  public List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions)
+      throws MalformedURLException, URISyntaxException {
+    logger.debug("Fetching completed executions" + Json.toJson(jobExecutions));
+    List<TuningJobExecution> completedExecutions = new ArrayList<TuningJobExecution>();
+    try {
+      for (TuningJobExecution tuningJobExecution : jobExecutions) {
+
+        JobExecution jobExecution = tuningJobExecution.jobExecution;
+
+        logger.debug("Checking completion for job execution: " + Json.toJson(tuningJobExecution));
+
+        if (_azkabanJobStatusUtil == null) {
+          logger.info("Initializing  AzkabanJobStatusUtil");
+          _azkabanJobStatusUtil = new AzkabanJobStatusUtil(jobExecution.flowExecution.flowExecId);
+        }
+
+        try {
+          Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
+          if (jobStatus != null) {
+            for (Map.Entry<String, String> job : jobStatus.entrySet()) {
+              logger.info("Job Found:" + job.getKey() + ". Status: " + job.getValue());
+              if (job.getKey().equals(jobExecution.job.jobName)) {
+                if (job.getValue().equals(AzkabanJobStatus.FAILED.toString())) {
+                  tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
+                  jobExecution.executionState = ExecutionState.FAILED;
+                }
+                if (job.getValue().equals(AzkabanJobStatus.CANCELLED.toString())
+                    || job.getValue().equals(AzkabanJobStatus.KILLED.toString())) {
+                  tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
+                  jobExecution.executionState = ExecutionState.CANCELLED;
+                }
+                if (job.getValue().equals(AzkabanJobStatus.SUCCEEDED.toString())) {
+                  tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
+                  jobExecution.executionState = ExecutionState.SUCCEEDED;
+                }
+                if (tuningJobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
+                  completedExecutions.add(tuningJobExecution);
+                }
+              }
+            }
+          } else {
+            logger.debug("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
+          }
+        } catch (Exception e) {
+          logger.error("Error get status for execution with id: " + jobExecution.id, e);
+        }
+      }
+    } catch (Exception e) {
+      logger.error("Error in getCompletedExecutions ", e);
+      e.printStackTrace();
+    }
+    logger.debug("Completed executions fetched");
+    return completedExecutions;
+  }
+}
