@@ -7,6 +7,7 @@ import com.linkedin.drelephant.analysis.HDFSContext;
 import com.linkedin.drelephant.tunin.APIFitnessComputeUtil;
 import com.linkedin.drelephant.tunin.AzkabanJobCompleteDetector;
 import com.linkedin.drelephant.tunin.BaselineComputeUtil;
+import com.linkedin.drelephant.tunin.FitnessComputeUtil;
 import com.linkedin.drelephant.tunin.JobCompleteDetector;
 import com.linkedin.drelephant.tunin.PSOParamGenerator;
 import com.linkedin.drelephant.tunin.ParamGenerator;

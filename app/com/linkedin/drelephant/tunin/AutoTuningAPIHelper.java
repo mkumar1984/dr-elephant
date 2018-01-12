@@ -87,6 +87,7 @@ public class AutoTuningAPIHelper {
             .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
                 tuningJobExecutionDefault.jobExecution.id).findList();
 
+
     for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
       JobSuggestedParamValue jobSuggestedParamValue1 = new JobSuggestedParamValue();
       jobSuggestedParamValue1.id = 0;
@@ -106,7 +107,7 @@ public class AutoTuningAPIHelper {
     return tuningJobExecution;
   }
 
-  private void setDefaultValue(TuningInput tuningInput) {
+  public void setDefaultValue(TuningInput tuningInput) {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     if (tuningInput.getAllowedMaxExecutionTimePercent() == null) {
       Double allowedMaxExecutionTimePercent = new Double(Utils.getNonNegativeInt(configuration, "", 150));
@@ -131,6 +132,7 @@ public class AutoTuningAPIHelper {
    */
   public Map<String, Double> getCurrentRunParameters(TuningInput tuningInput) {
     setDefaultValue(tuningInput);
+
     String jobDefId = tuningInput.getJobDefId();
 
     logger.debug("Processing request getCurrentRunParameters");
