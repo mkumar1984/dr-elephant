@@ -17,7 +17,7 @@
 package com.linkedin.drelephant.tunin;
 
 import models.TuningParameter;
-import models.Job;
+import models.JobDefinition;
 import java.util.List;
 
 /**
@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class JobTuningInfo {
 
-  private Job _tuningJob;
+  private JobDefinition _tuningJob;
 
   //todo: rename it to _tunerState
   private String _stringTunerState; //archive, prev_population, current_population, rnd_state
@@ -35,7 +35,7 @@ public class JobTuningInfo {
    * Sets the job being tuned
    * @param tuningJob Job
    */
-  public void setTuningJob(Job tuningJob) {
+  public void setTuningJob(JobDefinition tuningJob) {
     this._tuningJob = tuningJob;
   }
 
@@ -43,7 +43,7 @@ public class JobTuningInfo {
    * Returns the job being tuned
    * @return Job
    */
-  public Job getTuningJob() {
+  public JobDefinition getTuningJob() {
     return _tuningJob;
   }
 

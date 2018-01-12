@@ -17,12 +17,24 @@
 package models;
 
 import java.sql.Timestamp;
-import javax.persistence.*;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
 import play.db.ebean.Model;
 
+
 @Entity
-@Table(name="tuning_parameter")
-public class TuningParameter extends Model{
+@Table(name = "tuning_parameter")
+public class TuningParameter extends Model {
 
   private static final long serialVersionUID = 1L;
 
@@ -56,7 +68,8 @@ public class TuningParameter extends Model{
   public String paramName;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="tuning_algorithm", joinColumns={@JoinColumn(name ="tuning_algorithm_id", referencedColumnName="id")})
+  @JoinTable(name = "tuning_algorithm", joinColumns = { @JoinColumn(name = "tuning_algorithm_id",
+      referencedColumnName = "id") })
   public TuningAlgorithm tuningAlgorithm;
 
   @Column(nullable = false)
@@ -80,5 +93,6 @@ public class TuningParameter extends Model{
   @Column(nullable = false)
   public Integer isDerived;
 
-  public static Finder<Integer, TuningParameter> find = new Finder<Integer, TuningParameter>(Integer.class, TuningParameter.class);
+  public static Finder<Integer, TuningParameter> find = new Finder<Integer, TuningParameter>(Integer.class,
+      TuningParameter.class);
 }

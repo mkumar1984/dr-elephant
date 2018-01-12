@@ -31,9 +31,9 @@ import play.libs.Json;
 
 
 /**
- * This class pools the scheduler for completion status of execution and updates the database
+ * This class pools the scheduler for completion status of execution and updates the database with current status
+ * of the job.
  */
-
 public abstract class JobCompleteDetector {
   private static final Logger logger = Logger.getLogger(JobCompleteDetector.class);
 
@@ -71,7 +71,7 @@ public abstract class JobCompleteDetector {
   }
 
   /**
-   * Returns the list of completed executions
+   * Returns the list of completed executions.
    * @param jobExecutions Started Execution list
    * @return List of completed executions
    * @throws MalformedURLException

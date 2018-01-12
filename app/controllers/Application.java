@@ -16,8 +16,6 @@
 
 package controllers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,14 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.linkedin.drelephant.tunin.*;
-
 import models.AppHeuristicResult;
 import models.AppResult;
-import models.Job;
-import models.JobExecution;
-import models.TuningJobDefinition;
-import models.TuningJobExecution;
 
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -91,6 +83,8 @@ import com.google.gson.JsonObject;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.Metrics;
 import com.linkedin.drelephant.analysis.Severity;
+import com.linkedin.drelephant.tunin.AutoTuningAPIHelper;
+import com.linkedin.drelephant.tunin.TuningInput;
 import com.linkedin.drelephant.util.Utils;
 
 
@@ -252,6 +246,9 @@ public class Application extends Controller {
     String partialFlowExecId = form.get(FLOW_EXEC_ID);
     partialFlowExecId = (partialFlowExecId != null) ? partialFlowExecId.trim() : null;
 
+    String jobDefId = form.get(JOB_DEF_ID);
+    jobDefId = jobDefId != null ? jobDefId.trim() : "";
+
     // Search and display job details when job id or flow execution url is provided.
     if (!appId.isEmpty()) {
       AppResult result = AppResult.find.select("*")
@@ -271,6 +268,19 @@ public class Application extends Controller {
           .findList();
       Map<IdUrlPair, List<AppResult>> map = ControllerUtil.groupJobs(results, ControllerUtil.GroupBy.JOB_EXECUTION_ID);
       return ok(searchPage.render(null, flowDetails.render(flowExecPair, map)));
+    } else if (!jobDefId.isEmpty()) {
+      List<AppResult> results = AppResult.find
+          .select(AppResult.getSearchFields() + "," + AppResult.TABLE.JOB_DEF_ID)
+          .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, AppHeuristicResult.getSearchFields())
+          .where()
+          .eq(AppResult.TABLE.JOB_DEF_ID, jobDefId)
+          .findList();
+      Map<IdUrlPair, List<AppResult>> map = ControllerUtil.groupJobs(results, ControllerUtil.GroupBy.FLOW_EXECUTION_ID);
+
+      String flowDefId = (results.isEmpty()) ? "" :  results.get(0).flowDefId;  // all results should have the same flow id
+      IdUrlPair flowDefIdPair = new IdUrlPair(flowDefId, AppResult.TABLE.FLOW_DEF_URL);
+
+      return ok(searchPage.render(null, flowDefinitionIdDetails.render(flowDefIdPair, map)));
     }
 
     // Prepare pagination of results
@@ -887,26 +897,6 @@ public class Application extends Controller {
     }
   }
 
-  /**
-   * Rest API for searching a particular job information
-   * E.g, localhost:8080/rest/job?id=xyz
-   */
-  public static Result getTuningJob(String id) {
-          JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
-          try{
-              List<TuningJobExecution> completedJobExecution = jobCompleteDetector.updateCompletedExecutions ();
-              if(completedJobExecution!=null) {
-                  return ok(Json.toJson(completedJobExecution));
-              }else{
-                  return notFound("Null response");
-              }
-          } catch (Exception e){
-              return notFound(e.toString());
-          }
-
-  }
-
-
 
   /**
    * Rest API for getting current run parameters from auto tuning framework
@@ -940,7 +930,7 @@ public class Application extends Controller {
         isRetry = Boolean.parseBoolean(paramValueMap.get("isRetry"));
       }
       Boolean skipExecutionForOptimization=false;
-      if(paramValueMap.containsKey("isRetry"))
+      if(paramValueMap.containsKey("skipExecutionForOptimization"))
       {
         skipExecutionForOptimization=Boolean.parseBoolean(paramValueMap.get("skipExecutionForOptimization"));
       }
@@ -998,15 +988,6 @@ public class Application extends Controller {
     } else {
       return notFound("Unable to find parameters. Job id: " + tuningInput.getJobDefId() + " Flow id: " + tuningInput.getFlowDefId());
     }
-  }
-
-
-  public static Result restParam(){
-      ParamGenerator paramGenerator = new PSOParamGenerator();
-//      List<Job> jobsForSwarmSuggestion = paramGenerator.fetchJobsForParamSuggestion();
-//      List<JobTuningInfo> jobTuningInfoList = paramGenerator.getJobsTuningInfo(jobsForSwarmSuggestion);
-    JsonNode output = paramGenerator.test ();
-      return ok(Json.toJson(output));
   }
 
 
@@ -1272,15 +1253,19 @@ public class Application extends Controller {
 
       // Execution record
       JsonObject dataset = new JsonObject();
-      dataset.addProperty("flowtime", mrJobsList.get(mrJobsList.size() - 1).finishTime);
+      dataset.addProperty("flowtime", Utils.getFlowTime(mrJobsList.get(mrJobsList.size() - 1)));
       dataset.addProperty("score", flowPerfScore);
       dataset.add("jobscores", jobScores);
 
       datasets.add(dataset);
     }
 
-    return ok(new Gson().toJson(datasets));
+    JsonArray sortedDatasets = Utils.sortJsonArray(datasets);
+
+    return ok(new Gson().toJson(sortedDatasets));
   }
+
+
 
   /**
    * The data for plotting the job history graph. While plotting the job history
@@ -1363,14 +1348,16 @@ public class Application extends Controller {
 
       // Execution record
       JsonObject dataset = new JsonObject();
-      dataset.addProperty("flowtime", mrJobsList.get(mrJobsList.size() - 1).finishTime);
+      dataset.addProperty("flowtime", Utils.getFlowTime(mrJobsList.get(mrJobsList.size() - 1)));
       dataset.addProperty("score", jobPerfScore);
       dataset.add("stagescores", stageScores);
 
       datasets.add(dataset);
     }
 
-    return ok(new Gson().toJson(datasets));
+    JsonArray sortedDatasets = Utils.sortJsonArray(datasets);
+
+    return ok(new Gson().toJson(sortedDatasets));
   }
 
   /**
@@ -1465,7 +1452,7 @@ public class Application extends Controller {
 
       // Execution record
       JsonObject dataset = new JsonObject();
-      dataset.addProperty("flowtime", mrJobsList.get(mrJobsList.size() - 1).finishTime);
+      dataset.addProperty("flowtime", Utils.getFlowTime(mrJobsList.get(mrJobsList.size() - 1)));
       dataset.addProperty("runtime", Utils.getTotalRuntime(mrJobsList));
       dataset.addProperty("waittime", Utils.getTotalWaittime(mrJobsList));
       dataset.addProperty("resourceused", totalMemoryUsed);
@@ -1475,7 +1462,9 @@ public class Application extends Controller {
       datasets.add(dataset);
     }
 
-    return ok(new Gson().toJson(datasets));
+    JsonArray sortedDatasets = Utils.sortJsonArray(datasets);
+
+    return ok(new Gson().toJson(sortedDatasets));
   }
 
   /**
@@ -1615,7 +1604,7 @@ public class Application extends Controller {
 
       // Execution record
       JsonObject dataset = new JsonObject();
-      dataset.addProperty("flowtime", mrJobsList.get(mrJobsList.size() - 1).finishTime);
+      dataset.addProperty("flowtime", Utils.getFlowTime(mrJobsList.get(mrJobsList.size() - 1)));
       dataset.addProperty("runtime", totalFlowRuntime);
       dataset.addProperty("waittime", totalFlowDelay);
       dataset.addProperty("resourceused", totalFlowMemoryUsed);
@@ -1625,7 +1614,9 @@ public class Application extends Controller {
       datasets.add(dataset);
     }
 
-    return ok(new Gson().toJson(datasets));
+    JsonArray sortedDatasets = Utils.sortJsonArray(datasets);
+
+    return ok(new Gson().toJson(sortedDatasets));
   }
 
   /**

@@ -316,7 +316,7 @@ public class ElephantContext {
     _generalConf.addResource(this.getClass().getClassLoader().getResourceAsStream(GENERAL_CONF));
   }
   /**
-   * Load in the GeneralConf.xml file as a configuration object for other objects to access
+   * Load in the AutoTuningConf.xml file as a configuration object for other objects to access
    */
   private void loadAutoTuningConf() {
     logger.info("Loading configuration file " + AUTO_TUNING_CONF);

@@ -16,6 +16,8 @@
 
 package models;
 
+import java.sql.Timestamp;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -28,8 +30,8 @@ import play.db.ebean.Model;
 
 
 @Entity
-@Table(name="tuning_job_definition")
-public class TuningJobDefinition  extends Model  {
+@Table(name = "tuning_job_definition")
+public class TuningJobDefinition extends Model {
 
   /** */
   private static final long serialVersionUID = 1L;
@@ -48,24 +50,24 @@ public class TuningJobDefinition  extends Model  {
     public static final String allowedMaxResourceUsagePercent = "allowedMaxResourceUsagePercent";
     public static final String allowedMaxExecutionTimePercent = "allowedMaxExecutionTimePercent";
     public static final String job = "job";
-//    public static final String createdTs = "createdTs";
-//    public static final String updatedTs = "updatedTs";
+    public static final String createdTs = "createdTs";
+    public static final String updatedTs = "updatedTs";
   }
 
-
-
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="job_definition", joinColumns={@JoinColumn(name ="job_definition_id", referencedColumnName="id")})
-  public Job job;
+  @JoinTable(name = "job_definition", joinColumns = { @JoinColumn(name = "job_definition_id",
+      referencedColumnName = "id") })
+  public JobDefinition job;
 
-//  @Column(nullable = false)
-//  public int jobDefinitionId;
+  //  @Column(nullable = false)
+  //  public int jobDefinitionId;
 
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String client;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="tuning_algorithm", joinColumns={@JoinColumn(name ="tuning_algorithm_id", referencedColumnName="id")})
+  @JoinTable(name = "tuning_algorithm", joinColumns = { @JoinColumn(name = "tuning_algorithm_id",
+      referencedColumnName = "id") })
   public TuningAlgorithm tuningAlgorithm;
 
   @Column(nullable = false)
@@ -86,22 +88,20 @@ public class TuningJobDefinition  extends Model  {
   @Column(nullable = true)
   public Double allowedMaxExecutionTimePercent;
 
-  public Double getAverageInputSizeInGB()
-  {
-    if(averageInputSizeInBytes!=null)
-    {
-      return averageInputSizeInBytes * 1.0 /(1024*1024*1024);
-    }else
-    {
+  public Double getAverageInputSizeInGB() {
+    if (averageInputSizeInBytes != null) {
+      return averageInputSizeInBytes * 1.0 / (1024 * 1024 * 1024);
+    } else {
       return null;
     }
   }
-  public static Model.Finder<Integer, TuningJobDefinition> find = new Model.Finder<Integer, TuningJobDefinition> (Integer.class, TuningJobDefinition.class);
+  public static Model.Finder<Integer, TuningJobDefinition> find = new Model.Finder<Integer, TuningJobDefinition>(
+      Integer.class, TuningJobDefinition.class);
 
-//  @Column(nullable = false)
-//  public Timestamp createdTs;
-//
-//  @Column(nullable = false)
-//  public Timestamp updatedTs;
+    @Column(nullable = false)
+    public Timestamp createdTs;
+
+    @Column(nullable = false)
+    public Timestamp updatedTs;
 
 }

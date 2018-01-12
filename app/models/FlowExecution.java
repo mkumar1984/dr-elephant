@@ -26,12 +26,16 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
 import play.db.ebean.Model;
 
 
 @Entity
-@Table(name="flow_execution")
-public class FlowExecution  extends Model  {
+@Table(name = "flow_execution")
+public class FlowExecution extends Model {
+
+  /** */
+  private static final long serialVersionUID = -530850411828978454L;
 
   public static class TABLE {
     public static final String TABLE_NAME = "flow_execution";
@@ -53,9 +57,10 @@ public class FlowExecution  extends Model  {
   public String flowExecUrl;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="flow_definition", joinColumns={@JoinColumn(name ="flow_definition_id", referencedColumnName="id")})
+  @JoinTable(name = "flow_definition", joinColumns = { @JoinColumn(name = "flow_definition_id",
+      referencedColumnName = "id") })
   public FlowDefinition flowDefinition;
 
-  public static Model.Finder<Integer, FlowExecution>
-      find = new Model.Finder<Integer, FlowExecution> (Integer.class, FlowExecution.class);
+  public static Model.Finder<Integer, FlowExecution> find = new Model.Finder<Integer, FlowExecution>(Integer.class,
+      FlowExecution.class);
 }

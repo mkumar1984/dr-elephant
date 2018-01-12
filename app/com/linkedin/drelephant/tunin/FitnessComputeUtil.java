@@ -22,22 +22,37 @@ import java.util.List;
 import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
-import models.Job;
+import models.JobDefinition;
 import models.JobExecution;
 import models.TuningJobDefinition;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import play.libs.Json;
 
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.util.Utils;
+
 
 /**
- * This class computes the fitness of the suggested parameters after the execution is complete
+ * This class computes the fitness of the suggested parameters after the execution is complete. This uses
+ * Dr Elephant's DB to compute the fitness.
+ * Fitness is : Resource Usage/Input Size in GB
+ * In case there is failure or resource usage/execution time goes beyond configured limit, fitness is computed by
+ * adding a penalty.
  */
 public class FitnessComputeUtil {
   private static final Logger logger = Logger.getLogger(FitnessComputeUtil.class);
+  private static final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
+  private Long waitInterval;
+
+  public FitnessComputeUtil() {
+    Configuration configuration = ElephantContext.instance().getAutoTuningConf();
+    waitInterval = Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * 60000);
+  }
 
   /**
    * Updates the metrics (execution time, resource usage, cost function) of the completed executions whose metrics are
@@ -71,7 +86,7 @@ public class FitnessComputeUtil {
         long diff = System.currentTimeMillis() - tuningJobExecution.jobExecution.updatedTs.getTime();
         logger.debug("CurrentMillis " + System.currentTimeMillis() + ", Job update time "
             + tuningJobExecution.jobExecution.updatedTs.getTime());
-        if (diff < 5 * 60000) {
+        if (diff < waitInterval) {
           logger.debug("Delaying fitness compute for job " + tuningJobExecution.jobExecution.jobExecId);
         } else {
           logger.debug("Adding job for fitness compute " + tuningJobExecution.jobExecution.jobExecId);
@@ -97,12 +112,12 @@ public class FitnessComputeUtil {
 
       try {
         JobExecution jobExecution = tuningJobExecution.jobExecution;
-        Job job = jobExecution.job;
+        JobDefinition job = jobExecution.job;
 
         // job id match and tuning enabled
         TuningJobDefinition tuningJobDefinition =
             TuningJobDefinition.find.select("*").fetch(TuningJobDefinition.TABLE.job, "*").where()
-                .eq(TuningJobDefinition.TABLE.job + "." + Job.TABLE.id, job.id)
+                .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
                 .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findUnique();
 
         logger.debug("Job Execution Update: Flow Execution ID " + jobExecution.flowExecution.flowExecId + " Job ID "
@@ -138,11 +153,11 @@ public class FitnessComputeUtil {
                 + totalInputBytesInBytes);
           }
 
-          // todo: what if tuningJobDefinition is unique?
-
           logger.debug("Job execution " + jobExecution.resourceUsage);
           logger.debug("Job details: AvgResourceUsage " + tuningJobDefinition.averageResourceUsage
               + ", allowedMaxResourceUsagePercent: " + tuningJobDefinition.allowedMaxResourceUsagePercent);
+
+          //Compute fitness
           if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)
               || jobExecution.executionState.equals(JobExecution.ExecutionState.CANCELLED)) {
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases

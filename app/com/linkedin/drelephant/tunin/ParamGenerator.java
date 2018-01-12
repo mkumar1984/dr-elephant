@@ -110,7 +110,7 @@ public abstract class ParamGenerator {
       logger.info("ParamGenerator.fetchJobsForParamSuggestion: No pending executions found");
     }
 
-    List<Job> pendingParamJobList = new ArrayList<Job>();
+    List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
     for (TuningJobExecution pendingParamExecution : pendingParamExecutionList) {
       if (!pendingParamJobList.contains(pendingParamExecution.jobExecution.job)) {
         pendingParamJobList.add(pendingParamExecution.jobExecution.job);
@@ -162,7 +162,7 @@ public abstract class ParamGenerator {
 
     List<JobTuningInfo> jobTuningInfoList = new ArrayList<JobTuningInfo>();
     for (TuningJobDefinition tuningJobDefinition : tuninJobs) {
-      Job job = tuningJobDefinition.job;
+      JobDefinition job = tuningJobDefinition.job;
       logger.info("Getting tuning information for job: " + job.id);
       List<TuningParameter> tuningParameterList =
           TuningParameter.find
@@ -175,7 +175,7 @@ public abstract class ParamGenerator {
         TuningJobExecution defaultJobExecution =
             TuningJobExecution.find
                 .where()
-                .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + Job.TABLE.id,
+                .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
                     tuningJobDefinition.job.id).eq(TuningJobExecution.TABLE.isDefaultExecution, 1)
                 .orderBy(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc").setMaxRows(1)
                 .findUnique();
@@ -320,7 +320,7 @@ public abstract class ParamGenerator {
 
       //logger.info("Tuner state: " + Json.toJson(jobTuningInfo));
 
-      Job job = jobTuningInfo.getTuningJob();
+      JobDefinition job = jobTuningInfo.getTuningJob();
       List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
       String stringTunerState = jobTuningInfo.getStringTunerState();
 
@@ -331,7 +331,7 @@ public abstract class ParamGenerator {
 
       TuningJobDefinition tuningJobDefinition =
           TuningJobDefinition.find.select("*").fetch(TuningJobDefinition.TABLE.job, "*").where()
-              .eq(TuningJobDefinition.TABLE.job + "." + Job.TABLE.id, job.id)
+              .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
               .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findUnique();
 
       List<TuningParameter> derivedParameterList =

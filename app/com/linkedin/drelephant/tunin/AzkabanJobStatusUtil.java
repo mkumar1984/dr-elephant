@@ -26,10 +26,8 @@ import com.linkedin.drelephant.exceptions.WorkflowClient;
 import com.linkedin.drelephant.exceptions.azkaban.AzkabanWorkflowClient;
 import com.linkedin.drelephant.util.InfoExtractor;
 
-// Todo: rename class to AzkabanUtil
-
 /**
- * This class is azkaban scheduler util.
+ * This class is azkaban scheduler util for getting job status.
  */
 public class AzkabanJobStatusUtil {
   private AzkabanWorkflowClient _workflowClient;

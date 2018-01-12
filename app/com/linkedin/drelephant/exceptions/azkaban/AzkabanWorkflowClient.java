@@ -110,6 +110,12 @@ public class AzkabanWorkflowClient implements WorkflowClient {
     this.jobIdToLog = new HashMap<String, AzkabanJobLogAnalyzer>();
   }
 
+  /**
+   * Making this client more usable by allowing to setURL runtime and get the status
+   * @param url
+   * @throws URISyntaxException
+   * @throws MalformedURLException
+   */
   public void setURL(String url)
       throws URISyntaxException, MalformedURLException {
     if (url == null || url.isEmpty()) {
@@ -186,7 +192,7 @@ public class AzkabanWorkflowClient implements WorkflowClient {
         throw new RuntimeException("Login attempt failed. The session ID could not be obtained.");
       }
       this._sessionId = jsonObject.get("session.id").toString();
-      logger.error("Session ID is " + this._sessionId);
+      logger.debug("Session ID is " + this._sessionId);
     } catch (JSONException e) {
       e.printStackTrace();
     }
@@ -296,15 +302,15 @@ public class AzkabanWorkflowClient implements WorkflowClient {
     String encodedPassword = null;
 
     try {
-      logger.error("Azkaban URL is " + _azkabanUrl);
-      logger.error("Username  " + username);
+      logger.debug("Azkaban URL is " + _azkabanUrl);
+      logger.debug("Username  " + username);
       String userUrl = _azkabanUrl + "/restli/liuser?action=headlessChallenge";
       HttpPost request = new HttpPost(userUrl);
       StringEntity params = new StringEntity("{\"username\":\"" + username + "\"}");
       request.addHeader("content-type", "application/json");
       request.setEntity(params);
       HttpResponse response = httpClient.execute(request);
-      System.out.println("Response is " + response);
+      logger.debug("Response is " + response);
       String responseString = EntityUtils.toString(response.getEntity());
       JSONObject jobject = new JSONObject(responseString);
       encodedPassword = jobject.getString("value");

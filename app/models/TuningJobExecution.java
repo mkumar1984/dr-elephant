@@ -21,18 +21,21 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+
 import play.db.ebean.Model;
 
 
 @Entity
-@Table(name="tuning_job_execution")
-public class TuningJobExecution  extends Model  {
+@Table(name = "tuning_job_execution")
+public class TuningJobExecution extends Model {
+
+  /** */
+  private static final long serialVersionUID = -294471313051608818L;
 
   public enum ParamSetStatus {
     CREATED,
@@ -52,14 +55,14 @@ public class TuningJobExecution  extends Model  {
     public static final String jobExecution = "jobExecution";
   }
 
-
   @OneToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="job_execution", joinColumns={@JoinColumn(name ="job_execution_id", referencedColumnName="id")})
+  @JoinTable(name = "job_execution",
+      joinColumns = { @JoinColumn(name = "job_execution_id", referencedColumnName = "id") })
   public JobExecution jobExecution;
 
-
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="tuning_algorithm", joinColumns={@JoinColumn(name ="tuning_algorithm_id", referencedColumnName="id")})
+  @JoinTable(name = "tuning_algorithm", joinColumns = { @JoinColumn(name = "tuning_algorithm_id",
+      referencedColumnName = "id") })
   public TuningAlgorithm tuningAlgorithm;
 
   @Enumerated(EnumType.STRING)
@@ -71,5 +74,6 @@ public class TuningJobExecution  extends Model  {
   public Double fitness;
 
   // Todo: [Important] Is the finder correct? There is no long in the class
-  public static Model.Finder<Long, TuningJobExecution> find = new Model.Finder<Long, TuningJobExecution> (Long.class, TuningJobExecution.class);
+  public static Model.Finder<Long, TuningJobExecution> find = new Model.Finder<Long, TuningJobExecution>(Long.class,
+      TuningJobExecution.class);
 }

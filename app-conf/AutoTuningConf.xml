@@ -57,4 +57,14 @@
     <value>/home/mkumar1/work/code/dr-elephant/app/com/linkedin/drelephant/tunin/pso/pso_param_generation.py</value>
     <description>PSO script path</description>
   </property>
+  <property>
+    <name>dr.elephant.api.url</name>
+    <value>http://ltx1-holdemdre01.grid.linkedin.com:8080</value>
+    <description>API URL for Dr Elephant</description>
+  </property>
+  <property>
+    <name>job.history.api.url</name>
+    <value>http://ltx1-holdemjh01.grid.linkedin.com:19888</value>
+    <description>Job History Server API URL</description>
+  </property>
 </configuration>

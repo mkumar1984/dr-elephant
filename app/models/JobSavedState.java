@@ -23,6 +23,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+
 @Entity
 @Table(name = "job_saved_state")
 public class JobSavedState extends Model {
@@ -46,9 +47,10 @@ public class JobSavedState extends Model {
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
-  public boolean isValid(){
-    return jobDefinitionId !=null && savedState!=null;
+  public boolean isValid() {
+    return jobDefinitionId != null && savedState != null;
   }
 
-  public static Finder<Integer, JobSavedState> find = new Finder<Integer, JobSavedState>(Integer.class, JobSavedState.class);
+  public static Finder<Integer, JobSavedState> find = new Finder<Integer, JobSavedState>(Integer.class,
+      JobSavedState.class);
 }

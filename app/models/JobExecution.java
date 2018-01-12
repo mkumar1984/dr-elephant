@@ -16,8 +16,8 @@
 
 package models;
 
-import com.avaje.ebean.annotation.EmbeddedColumns;
 import java.sql.Timestamp;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -30,7 +30,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
 import play.db.ebean.Model;
+
 
 @Entity
 @Table(name = "job_execution")
@@ -38,13 +40,6 @@ public class JobExecution extends Model {
 
   private static final long serialVersionUID = 1L;
 
-//  public enum ParamSetStatus {
-//    CREATED,
-//    SENT,
-//    EXECUTED,
-//    FITNESS_COMPUTED,
-//    DISCARDED
-//  }
   public enum ExecutionState {
     NOT_STARTED,
     IN_PROGRESS,
@@ -67,7 +62,7 @@ public class JobExecution extends Model {
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
     public static final String flowExecution = "flowExecution";
-    public static  final String job = "job";
+    public static final String job = "job";
   }
 
   @Id
@@ -95,14 +90,15 @@ public class JobExecution extends Model {
 
   @Column(nullable = true)
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="flow_execution", joinColumns={@JoinColumn(name ="flow_execution_id", referencedColumnName="id")})
+  @JoinTable(name = "flow_execution", joinColumns = { @JoinColumn(name = "flow_execution_id",
+      referencedColumnName = "id") })
   public FlowExecution flowExecution;
-
 
   @Column(nullable = false)
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="job_definition", joinColumns={@JoinColumn(name ="job_definition_id", referencedColumnName="id")})
-  public Job job;
+  @JoinTable(name = "job_definition", joinColumns = { @JoinColumn(name = "job_definition_id",
+      referencedColumnName = "id") })
+  public JobDefinition job;
 
   @Column(nullable = true)
   public Timestamp createdTs;

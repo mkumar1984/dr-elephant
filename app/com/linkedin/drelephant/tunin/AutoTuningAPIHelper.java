@@ -22,24 +22,24 @@ import java.util.Map;
 
 import models.FlowDefinition;
 import models.FlowExecution;
+import models.JobDefinition;
+import models.JobExecution;
+import models.JobExecution.ExecutionState;
+import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningJobExecution;
-import models.TuningParameter;
-import models.Job;
-import models.JobExecution;
-import models.JobExecution.ExecutionState;
 import models.TuningJobExecution.ParamSetStatus;
-import models.JobSuggestedParamValue;
+import models.TuningParameter;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
+import play.libs.Json;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.util.Utils;
-
-import play.libs.Json;
 
 
 /**
@@ -55,17 +55,23 @@ public class AutoTuningAPIHelper {
   public static final String ALLOWED_MAX_EXECUTION_TIME_PERCENT_DEFAULT =
       "autotuning.default.allowed_max_execution_time_percent";
 
-  //Todo: this will not be hard coded
-  //TuningAlgorithm _tuningAlgorithm = TuningAlgorithm.find.where ().idEq (1).findUnique ();
-
+  /**
+   * This class create a job execution with default parameters. This is required when there is no parameters set
+   * remains for suggestion.
+   * @param tuningJobDefinition
+   * @return
+   */
   public TuningJobExecution createDefaultJobExecution(TuningJobDefinition tuningJobDefinition) {
+
+    //Get default execution from DB and clone that to create a new default execution
     TuningJobExecution tuningJobExecutionDefault =
         TuningJobExecution.find
             .select("*")
             .where()
-            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + Job.TABLE.id,
+            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
                 tuningJobDefinition.job.id).eq(TuningJobExecution.TABLE.isDefaultExecution, true).setMaxRows(1)
             .findUnique();
+
 
     TuningJobExecution tuningJobExecution = new TuningJobExecution();
     JobExecution jobExecution = new JobExecution();
@@ -73,6 +79,7 @@ public class AutoTuningAPIHelper {
     jobExecution.job = tuningJobExecutionDefault.jobExecution.job;
     jobExecution.executionState = ExecutionState.NOT_STARTED;
     jobExecution.save();
+
     tuningJobExecution.jobExecution = jobExecution;
     tuningJobExecution.isDefaultExecution = tuningJobExecutionDefault.isDefaultExecution;
     tuningJobExecution.tuningAlgorithm = tuningJobExecutionDefault.tuningAlgorithm;
@@ -87,6 +94,8 @@ public class AutoTuningAPIHelper {
             .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
                 tuningJobExecutionDefault.jobExecution.id).findList();
 
+
+    //Save default parameters corresponding to new default execution
     for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
       JobSuggestedParamValue jobSuggestedParamValue1 = new JobSuggestedParamValue();
       jobSuggestedParamValue1.id = 0;
@@ -106,7 +115,12 @@ public class AutoTuningAPIHelper {
     return tuningJobExecution;
   }
 
-  private void setDefaultValue(TuningInput tuningInput) {
+  /**
+   * Set default values for allowed max execution time and resource usage in case not provided in API call
+   * And set tuning algorithm based on value of job type and optimization metric
+   * @param tuningInput
+   */
+  public void setDefaultValue(TuningInput tuningInput) {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     if (tuningInput.getAllowedMaxExecutionTimePercent() == null) {
       Double allowedMaxExecutionTimePercent = new Double(Utils.getNonNegativeInt(configuration, "", 150));
@@ -131,15 +145,17 @@ public class AutoTuningAPIHelper {
    */
   public Map<String, Double> getCurrentRunParameters(TuningInput tuningInput) {
     setDefaultValue(tuningInput);
-    String jobDefId = tuningInput.getJobDefId();
 
     logger.debug("Processing request getCurrentRunParameters");
 
+    String jobDefId = tuningInput.getJobDefId();
+
     TuningJobDefinition tuningJobDefinition =
         TuningJobDefinition.find.select("*").fetch(TuningJobDefinition.TABLE.job, "*").where()
-            .eq(TuningJobDefinition.TABLE.job + "." + Job.TABLE.jobDefId, jobDefId)
+            .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId, jobDefId)
             .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findUnique();
 
+    //If new job for tuning, update db with new job configuration
     if (tuningJobDefinition == null) {
       logger.debug("New job encountered, creating new entry. ");
       tuningJobDefinition = addNewJobForTuning(tuningInput);
@@ -152,10 +168,11 @@ public class AutoTuningAPIHelper {
             .fetch(TuningJobExecution.TABLE.jobExecution, "*")
             .fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
             .where()
-            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + Job.TABLE.id,
+            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
                 tuningJobDefinition.job.id).eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.CREATED).order()
             .asc(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.createdTs).setMaxRows(1).findUnique();
 
+    //If no new parameter set for suggestion, create a new suggestion with default parameter
     if (tuningJobExecution == null) {
       tuningJobExecution = createDefaultJobExecution(tuningJobDefinition);
     }
@@ -185,7 +202,8 @@ public class AutoTuningAPIHelper {
   }
 
   /**
-   *This is to update job execution
+   *This is to update job execution with IN_PROGRESS and parameter set with IN_PROGRESS. Also update flow_exec_id
+   *, flowExecURL, JobExecID and jobExecURL
    * @param tuningJobExecution
    * @param tuningInput
    */
@@ -226,7 +244,7 @@ public class AutoTuningAPIHelper {
 
     logger.debug("Starting addNewJobForTuning");
 
-    Job job = Job.find.select("*").where().eq(Job.TABLE.jobDefId, tuningInput.getJobDefId()).findUnique();
+    JobDefinition job = JobDefinition.find.select("*").where().eq(JobDefinition.TABLE.jobDefId, tuningInput.getJobDefId()).findUnique();
 
     FlowDefinition flowDefinition =
         FlowDefinition.find.where().eq(FlowDefinition.TABLE.flowDefId, tuningInput.getFlowDefId()).findUnique();
@@ -239,7 +257,7 @@ public class AutoTuningAPIHelper {
     }
 
     if (job == null) {
-      job = new Job();
+      job = new JobDefinition();
       job.jobDefId = tuningInput.getJobDefId();
       job.scheduler = tuningInput.getScheduler();
       job.username = tuningInput.getUserName();
@@ -281,7 +299,7 @@ public class AutoTuningAPIHelper {
    * @param jobExecUrl Job execution url
    * @return default job execution
    */
-  public TuningJobExecution insertDefaultJobExecution(Job job, String flowExecId, String jobExecId, String flowExecUrl,
+  public TuningJobExecution insertDefaultJobExecution(JobDefinition job, String flowExecId, String jobExecId, String flowExecUrl,
       String jobExecUrl, FlowDefinition flowDefinition, TuningAlgorithm tuningAlgorithm) {
     logger.debug("Starting insertDefaultJobExecution");
 

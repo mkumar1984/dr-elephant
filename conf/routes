@@ -56,9 +56,6 @@ GET        /rest/user-details                   controllers.api.v1.Web.restGetUs
 GET        /rest/workflow-exceptions            controllers.api.v1.Web.restExceptions()
 GET        /rest/exception-statuses             controllers.api.v1.Web.restExceptionStatuses()
 POST       /rest/getCurrentRunParameters        controllers.Application.getCurrentRunParametersNew()
-GET        /rest/tuningJob                      controllers.Application.getTuningJob(id: String)
-GET        /rest/param                          controllers.Application.restParam()
-
 
 # Metrics calls
 GET        /ping                                controllers.MetricsController.ping()
