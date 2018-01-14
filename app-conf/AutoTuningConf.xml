@@ -62,9 +62,4 @@
     <value>http://ltx1-holdemdre01.grid.linkedin.com:8080</value>
     <description>API URL for Dr Elephant</description>
   </property>
-  <property>
-    <name>job.history.api.url</name>
-    <value>http://ltx1-holdemjh01.grid.linkedin.com:19888</value>
-    <description>Job History Server API URL</description>
-  </property>
 </configuration>
