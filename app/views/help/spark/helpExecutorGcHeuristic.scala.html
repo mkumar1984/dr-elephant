@@ -13,9 +13,8 @@
 * License for the specific language governing permissions and limitations under
 * the License.
 *@
-<p>The results from this heuristic primarily inform you about key app
-configuration settings, including driver memory, driver cores, executor cores,
-executor instances, executor memory, and the serializer.</p>
-<p>It also checks the values of dynamically allocated min and max executors, the specified yarn jars, executor and driver memory overhead and whether other configuration values are within threshold.</p>
+
+<p>This analysis shows how much time a job is spending in GC. To normalise the results across all jobs, the ratio of the time a job spends in Gc to the total run time of the job is calculated. </p>
+<p>A job is flagged if the ratio is too high, meaning the job spends too much time in GC.</p>
 <h3>Suggestions</h3>
-<p>Suggestions based on the configurations you have set are given in the heuristic result itself.</p>
+<p>We recommend increasing the executor memory.</p>
