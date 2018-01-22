@@ -111,13 +111,14 @@ def initial_pop_generator(random, args):
 
   else:
     init = [random.uniform(x, y) for x, y in param_value_range]
-    if itr%2==1:
-        init[map_memory_index] = random.uniform(0.5, 0.8) * param_default_value[map_memory_index]
-        init[reduce_memory_index] = random.uniform(0.5, 0.8) * param_default_value[reduce_memory_index]
+    # if itr%2==1:
+    init[map_memory_index] = random.uniform(0.5, 0.8) * param_default_value[map_memory_index]
+    init[reduce_memory_index] = random.uniform(0.5, 0.8) * param_default_value[reduce_memory_index]
 
-    if itr%2==0:
-        init[map_memory_index] = random.uniform(1.2, 1.5) * param_default_value[map_memory_index]
-        init[reduce_memory_index] = random.uniform(1.2, 1.5) * param_default_value[reduce_memory_index]
+    # if itr%2==0:
+        # init[map_memory_index] = random.uniform(1.2, 1.5) * param_default_value[map_memory_index]
+        # init[reduce_memory_index] = random.uniform(1.2, 1.5) * param_default_value[reduce_memory_index]
+
 
     init[sort_memory_index] = random.uniform(0.0, 0.25) * init[map_memory_index]
     init[maxCombinedSplitSize_index] = param_default_value[maxCombinedSplitSize_index]
