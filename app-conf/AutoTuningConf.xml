@@ -49,12 +49,12 @@
   </property>
   <property>
     <name>python.root.dir</name>
-    <value>/home/mkumar1/work/code/autotuning/bin/python</value>
+    <value>/path/to/python/executable</value>
     <description>Root directory for python</description>
   </property>
   <property>
     <name>pso.script.path</name>
-    <value>/home/mkumar1/work/code/dr-elephant/app/com/linkedin/drelephant/tunin/pso/pso_param_generation.py</value>
+    <value>/path/to/pso_param_generation.py</value>
     <description>PSO script path</description>
   </property>
   <property>
