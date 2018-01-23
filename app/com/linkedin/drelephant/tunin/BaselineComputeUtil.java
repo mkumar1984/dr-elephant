@@ -28,6 +28,7 @@ import play.libs.Json;
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.SqlRow;
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.util.Utils;
 
 
@@ -60,7 +61,7 @@ public class BaselineComputeUtil {
     return null;
   }
 
-  public List<TuningJobDefinition> getJobForBaselineComputation() {
+  private List<TuningJobDefinition> getJobForBaselineComputation() {
     logger.info("Starting Computing baseline for jobs: ");
 
     List<TuningJobDefinition> tuningJobDefinitions =
@@ -70,7 +71,7 @@ public class BaselineComputeUtil {
     return tuningJobDefinitions;
   }
 
-  public void updateBaselineForJob(TuningJobDefinition tuningJobDefinition) {
+  private void updateBaselineForJob(TuningJobDefinition tuningJobDefinition) {
 
     logger.debug("Computing baseline for jobs: " + Json.toJson(tuningJobDefinition));
 
@@ -104,9 +105,8 @@ public class BaselineComputeUtil {
             + "(SELECT job_exec_id, SUM(value) inputSizeInBytes, MAX(start_time) AS start_time "
             + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr "
             + "ON yar.id=yahr.yarn_app_result_id " + "INNER JOIN yarn_app_heuristic_result_details yahrd "
-            + "ON yahr.id=yahrd.yarn_app_heuristic_result_id "
-            + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='Mapper Speed' "
-            + "AND yahrd.name='Total input size in MB' "
+            + "ON yahr.id=yahrd.yarn_app_heuristic_result_id " + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='"
+            + CommonConstantsHeuristic.MAPPER_SPEED + "' " + "AND yahrd.name='Total input size in MB' "
             + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
 
     logger.debug("Running query for average input size computation " + sql);

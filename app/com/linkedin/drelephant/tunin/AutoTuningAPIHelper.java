@@ -72,7 +72,6 @@ public class AutoTuningAPIHelper {
                 tuningJobDefinition.job.id).eq(TuningJobExecution.TABLE.isDefaultExecution, true).setMaxRows(1)
             .findUnique();
 
-
     TuningJobExecution tuningJobExecution = new TuningJobExecution();
     JobExecution jobExecution = new JobExecution();
     jobExecution.id = 0L;
@@ -93,7 +92,6 @@ public class AutoTuningAPIHelper {
             .where()
             .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
                 tuningJobExecutionDefault.jobExecution.id).findList();
-
 
     //Save default parameters corresponding to new default execution
     for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
@@ -132,9 +130,8 @@ public class AutoTuningAPIHelper {
     }
 
     TuningAlgorithm tuningAlgorithm =
-        TuningAlgorithm.find.select("*").where()
-          .eq(TuningAlgorithm.TABLE.jobType, tuningInput.getJobType())
-          .eq(TuningAlgorithm.TABLE.optimizationMetric, tuningInput.getOptimizationMetric()).findUnique();
+        TuningAlgorithm.find.select("*").where().eq(TuningAlgorithm.TABLE.jobType, tuningInput.getJobType())
+            .eq(TuningAlgorithm.TABLE.optimizationMetric, tuningInput.getOptimizationMetric()).findUnique();
     tuningInput.setTuningAlgorithm(tuningAlgorithm);
   }
 
@@ -244,7 +241,8 @@ public class AutoTuningAPIHelper {
 
     logger.debug("Starting addNewJobForTuning");
 
-    JobDefinition job = JobDefinition.find.select("*").where().eq(JobDefinition.TABLE.jobDefId, tuningInput.getJobDefId()).findUnique();
+    JobDefinition job =
+        JobDefinition.find.select("*").where().eq(JobDefinition.TABLE.jobDefId, tuningInput.getJobDefId()).findUnique();
 
     FlowDefinition flowDefinition =
         FlowDefinition.find.where().eq(FlowDefinition.TABLE.flowDefId, tuningInput.getFlowDefId()).findUnique();
@@ -279,6 +277,8 @@ public class AutoTuningAPIHelper {
     tuningJobDefinition.client = client;
     tuningJobDefinition.tuningAlgorithm = tuningInput.getTuningAlgorithm();
     tuningJobDefinition.tuningEnabled = 1;
+    tuningJobDefinition.allowedMaxExecutionTimePercent = tuningInput.getAllowedMaxExecutionTimePercent();
+    tuningJobDefinition.allowedMaxResourceUsagePercent = tuningInput.getAllowedMaxResourceUsagePercent();
     tuningJobDefinition.save();
 
     TuningJobExecution tuningJobExecution =
@@ -299,8 +299,8 @@ public class AutoTuningAPIHelper {
    * @param jobExecUrl Job execution url
    * @return default job execution
    */
-  public TuningJobExecution insertDefaultJobExecution(JobDefinition job, String flowExecId, String jobExecId, String flowExecUrl,
-      String jobExecUrl, FlowDefinition flowDefinition, TuningAlgorithm tuningAlgorithm) {
+  public TuningJobExecution insertDefaultJobExecution(JobDefinition job, String flowExecId, String jobExecId,
+      String flowExecUrl, String jobExecUrl, FlowDefinition flowDefinition, TuningAlgorithm tuningAlgorithm) {
     logger.debug("Starting insertDefaultJobExecution");
 
     FlowExecution flowExecution =

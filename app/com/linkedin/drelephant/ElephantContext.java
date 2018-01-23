@@ -73,16 +73,14 @@ public class ElephantContext {
   private List<FetcherConfigurationData> _fetchersConfData;
   private Configuration _generalConf;
 
-  public Configuration getAutoTuningConf() {
-    return _autoTuningConf;
-  }
-
   private Configuration _autoTuningConf;
   private List<AggregatorConfigurationData> _aggregatorConfData;
 
   private final Map<String, ApplicationType> _nameToType = new HashMap<String, ApplicationType>();
-  private final Map<ApplicationType, List<Heuristic>> _typeToHeuristics = new HashMap<ApplicationType, List<Heuristic>>();
-  private final Map<ApplicationType, HadoopMetricsAggregator> _typeToAggregator = new HashMap<ApplicationType, HadoopMetricsAggregator>();
+  private final Map<ApplicationType, List<Heuristic>> _typeToHeuristics =
+      new HashMap<ApplicationType, List<Heuristic>>();
+  private final Map<ApplicationType, HadoopMetricsAggregator> _typeToAggregator =
+      new HashMap<ApplicationType, HadoopMetricsAggregator>();
   private final Map<ApplicationType, ElephantFetcher> _typeToFetcher = new HashMap<ApplicationType, ElephantFetcher>();
   private final Map<String, Html> _heuristicToView = new HashMap<String, Html>();
   private Map<ApplicationType, List<JobType>> _appTypeToJobTypes = new HashMap<ApplicationType, List<JobType>>();
@@ -103,6 +101,10 @@ public class ElephantContext {
     loadConfiguration();
   }
 
+  public Configuration getAutoTuningConf() {
+    return _autoTuningConf;
+  }
+
   private void loadConfiguration() {
     loadAggregators();
     loadFetchers();
@@ -117,7 +119,6 @@ public class ElephantContext {
     configureSupportedApplicationTypes();
   }
 
-
   private void loadAggregators() {
     Document document = Utils.loadXMLDoc(AGGREGATORS_CONF);
 
@@ -127,8 +128,8 @@ public class ElephantContext {
         Class<?> aggregatorClass = Class.forName(data.getClassName());
         Object instance = aggregatorClass.getConstructor(AggregatorConfigurationData.class).newInstance(data);
         if (!(instance instanceof HadoopMetricsAggregator)) {
-          throw new IllegalArgumentException(
-              "Class " + aggregatorClass.getName() + " is not an implementation of " + HadoopMetricsAggregator.class.getName());
+          throw new IllegalArgumentException("Class " + aggregatorClass.getName() + " is not an implementation of "
+              + HadoopMetricsAggregator.class.getName());
         }
 
         ApplicationType type = data.getAppType();
@@ -153,6 +154,7 @@ public class ElephantContext {
     }
 
   }
+
   /**
    * Load all the fetchers configured in FetcherConf.xml
    */
@@ -165,8 +167,8 @@ public class ElephantContext {
         Class<?> fetcherClass = Class.forName(data.getClassName());
         Object instance = fetcherClass.getConstructor(FetcherConfigurationData.class).newInstance(data);
         if (!(instance instanceof ElephantFetcher)) {
-          throw new IllegalArgumentException(
-              "Class " + fetcherClass.getName() + " is not an implementation of " + ElephantFetcher.class.getName());
+          throw new IllegalArgumentException("Class " + fetcherClass.getName() + " is not an implementation of "
+              + ElephantFetcher.class.getName());
         }
 
         ApplicationType type = data.getAppType();
@@ -206,8 +208,8 @@ public class ElephantContext {
 
         Object instance = heuristicClass.getConstructor(HeuristicConfigurationData.class).newInstance(data);
         if (!(instance instanceof Heuristic)) {
-          throw new IllegalArgumentException(
-              "Class " + heuristicClass.getName() + " is not an implementation of " + Heuristic.class.getName());
+          throw new IllegalArgumentException("Class " + heuristicClass.getName() + " is not an implementation of "
+              + Heuristic.class.getName());
         }
         ApplicationType type = data.getAppType();
         List<Heuristic> heuristics = _typeToHeuristics.get(type);
@@ -257,9 +259,8 @@ public class ElephantContext {
     }
 
     // Bind No_DATA heuristic to its helper pages, no need to add any real configurations
-    _heuristicsConfData.add(
-        new HeuristicConfigurationData(HeuristicResult.NO_DATA.getHeuristicName(),
-            HeuristicResult.NO_DATA.getHeuristicClassName(), "views.html.help.helpNoData", null, null));
+    _heuristicsConfData.add(new HeuristicConfigurationData(HeuristicResult.NO_DATA.getHeuristicName(),
+        HeuristicResult.NO_DATA.getHeuristicClassName(), "views.html.help.helpNoData", null, null));
   }
 
   /**
@@ -315,6 +316,7 @@ public class ElephantContext {
     _generalConf = new Configuration();
     _generalConf.addResource(this.getClass().getClassLoader().getResourceAsStream(GENERAL_CONF));
   }
+
   /**
    * Load in the AutoTuningConf.xml file as a configuration object for other objects to access
    */
@@ -324,6 +326,7 @@ public class ElephantContext {
     _autoTuningConf = new Configuration();
     _autoTuningConf.addResource(this.getClass().getClassLoader().getResourceAsStream(AUTO_TUNING_CONF));
   }
+
   /**
    * Given an application type, return the currently bound heuristics
    *

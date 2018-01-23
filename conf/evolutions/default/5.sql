@@ -20,8 +20,8 @@
  * This table identifies algo to be used for the optimization metric (Resource, time) and job type (Pig, Hive).
  * In general there should be one algo for one job type, but framework supports multiple algos for one row as well.
  */
-CREATE TABLE `tuning_algorithm` (
-  `id` int(10) unsigned NOT NULL COMMENT 'Auto increment unique id',
+CREATE TABLE IF NOT EXIST `tuning_algorithm` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   `job_type` enum('PIG','HIVE','SPARK') NOT NULL COMMENT 'Job type e.g. pig, hive, spark',
   `optimization_algo` enum('PSO') NOT NULL COMMENT 'optimization algorithm name e.g. PSO',
   `optimization_algo_version` int(11) NOT NULL COMMENT 'algo version',
@@ -37,8 +37,8 @@ INSERT INTO tuning_algorithm VALUES (0, 'PIG', 'PSO', '1', 'RESOURCE', current_t
  * This table represents hadoop parameters to be optimized for each algo in tuning_algorithm.
  * For example mapreduce.map.memory.mb, mapreduce.task.io.sort.mb etc.
  */
-CREATE TABLE `tuning_parameter` (
-  `id` int(10) unsigned NOT NULL COMMENT 'Auto increment unique id',
+CREATE TABLE IF NOT EXIST `tuning_parameter` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   `param_name` varchar(100) NOT NULL COMMENT 'name of the hadoop parameter e.g. mapreduce.task.io.sort.mb ',
   `tuning_algorithm_id` int(10) unsigned NOT NULL COMMENT 'Foreign key from tuning_algorithm table',
   `default_value` double NOT NULL COMMENT 'default value of the parameter in hadoop cluster',
@@ -67,7 +67,7 @@ INSERT INTO `tuning_parameter` VALUES (0,'mapreduce.input.fileinputformat.split.
 /**
  * This table represent flow of the job.
  */
-CREATE TABLE `flow_definition` (
+CREATE TABLE IF NOT EXIST `flow_definition` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   `flow_def_id` varchar(1000) NOT NULL COMMENT 'unique flow definition id from scheduler like azkaban, oozie, appworx etc',
   `flow_def_url` varchar(1000) NOT NULL COMMENT 'flow definition URL from scheduler like azkaban, oozie, appworx etc',
@@ -80,14 +80,14 @@ CREATE TABLE `flow_definition` (
  * information. Broken job defintion info in two table, as this can be used for Dr Elephant basic info.
  * As not all jobs will be enabled for auto tuning.
  */
-CREATE TABLE `job_definition` (
+CREATE TABLE IF NOT EXIST `job_definition` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   `job_def_id` varchar(1000) NOT NULL COMMENT 'unique job definition id from scheduler like azkaban, oozie etc',
   `flow_definition_id` int(10) unsigned NOT NULL COMMENT 'foreign key from flow_definition table',
   `job_name` varchar(1000) DEFAULT NULL COMMENT 'name of the job',
   `job_def_url` varchar(1000) NOT NULL COMMENT 'job definition URL from scheduler like azkaban, oozie, appworx etc',
   `scheduler` varchar(100) NOT NULL COMMENT 'name of the scheduler like azkaban. oozie ',
-  `username` varchar(100) NOT NULL 'name of the user',
+  `username` varchar(100) NOT NULL COMMENT 'name of the user',
   `created_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -99,7 +99,7 @@ CREATE TABLE `job_definition` (
 /**
  * This table represent the job to be optimized and contains information required for auto tuning only.
  */
-CREATE TABLE `tuning_job_definition` (
+CREATE TABLE IF NOT EXIST `tuning_job_definition` (
   `job_definition_id` int(10) unsigned NOT NULL COMMENT 'foreign key from job_definition table',
   `client` varchar(100) NOT NULL COMMENT 'client who is using this. sometime same as scheduler.',
   `tuning_algorithm_id` int(10) unsigned NOT NULL COMMENT 'foreign key from tuning_algorithm table. algorithm to be used for tuning this job',
@@ -120,13 +120,12 @@ CREATE TABLE `tuning_job_definition` (
 /**
  * This table represent one execution of a flow.
  */
-CREATE TABLE `flow_execution` (
+CREATE TABLE IF NOT EXIST `flow_execution` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   `flow_exec_id` varchar(1000) NOT NULL COMMENT 'unique flow execution id from scheduler like azkaban, oozie etc ',
   `flow_exec_url` varchar(1000) NOT NULL COMMENT 'execution url from scheduler like azkaban, oozie etc',
-  `flow_definition_id` int(10) unsigned NOT NULL 'foreign key from flow_definition table',
+  `flow_definition_id` int(10) unsigned NOT NULL COMMENT 'foreign key from flow_definition table',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `flow_exec_id` (`flow_exec_id`),
   KEY `flow_definition_id` (`flow_definition_id`),
   CONSTRAINT `flow_execution_ibfk_1` FOREIGN KEY (`flow_definition_id`) REFERENCES `flow_definition` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=803 DEFAULT CHARSET=latin1 COMMENT 'represent one execution of a flow';
@@ -136,7 +135,7 @@ CREATE TABLE `flow_execution` (
  * tuning related info. Broken execution related info in two table, as this can be used for Dr Elephant basic info.
  * As not all jobs will be enabled for auto tuning.
  */
-CREATE TABLE `job_execution` (
+CREATE TABLE IF NOT EXIST `job_execution` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   `job_exec_id` varchar(1000) DEFAULT NULL COMMENT 'unique job execution id from scheduler like azkaban, oozie etc',
   `job_exec_url` varchar(1000) DEFAULT NULL COMMENT 'job execution url from scheduler like azkaban, oozie etc',
@@ -149,7 +148,6 @@ CREATE TABLE `job_execution` (
   `created_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `job_exec_id_2` (`job_exec_id`),
   KEY `job_exec_id` (`job_exec_id`),
   KEY `job_exec_url` (`job_exec_url`),
   KEY `job_definition_id` (`job_definition_id`),
@@ -162,7 +160,7 @@ CREATE TABLE `job_execution` (
  * This table represent jobs from one execution of a flow and contains auto tuning related information.
  * This one execution is corresponding to one set of parameters.
  */
-CREATE TABLE `tuning_job_execution` (
+CREATE TABLE IF NOT EXIST `tuning_job_execution` (
   `job_execution_id` int(10) unsigned NOT NULL COMMENT 'foreign key from job_execution table',
   `tuning_algorithm_id` int(10) unsigned NOT NULL COMMENT 'foreign key from tuning_algorithm table',
   `param_set_state` enum('CREATED','SENT','EXECUTED','FITNESS_COMPUTED','DISCARDED') DEFAULT NULL COMMENT 'state of this execution parameter set',
@@ -178,7 +176,7 @@ CREATE TABLE `tuning_job_execution` (
 /**
  * Internal table for optimization algorithm. Stores the current state of job to be optimized/
  */
-CREATE TABLE `job_saved_state` (
+CREATE TABLE IF NOT EXIST `job_saved_state` (
   `job_definition_id` int(10) unsigned NOT NULL COMMENT 'foreign key from job_definition table',
   `saved_state` blob NOT NULL COMMENT 'current state',
   `created_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -191,7 +189,7 @@ CREATE TABLE `job_saved_state` (
 /**
  * Suggested parameter value corresponding to one execution of the job.
  */
-CREATE TABLE `job_suggested_param_value` (
+CREATE TABLE IF NOT EXIST `job_suggested_param_value` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   `job_execution_id` int(10) unsigned NOT NULL COMMENT 'foreign key from job_execution table',
   `tuning_parameter_id` int(10) unsigned NOT NULL COMMENT 'foreign key from tuning_parameter table',

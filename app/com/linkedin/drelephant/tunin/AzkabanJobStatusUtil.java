@@ -26,38 +26,38 @@ import com.linkedin.drelephant.exceptions.WorkflowClient;
 import com.linkedin.drelephant.exceptions.azkaban.AzkabanWorkflowClient;
 import com.linkedin.drelephant.util.InfoExtractor;
 
+
 /**
  * This class is azkaban scheduler util for getting job status.
  */
 public class AzkabanJobStatusUtil {
   private AzkabanWorkflowClient _workflowClient;
-  private String scheduler="azkaban";
+  private String scheduler = "azkaban";
   private static String USERNAME = "username";
-  private static String PRIVATE_KEY  = "private_key";
+  private static String PRIVATE_KEY = "private_key";
   private static String PASSWORD = "password";
 
   /**
    * Constructor of the class
    * @param url
    */
-  public AzkabanJobStatusUtil(String url)
-  {
+  public AzkabanJobStatusUtil(String url) {
     // create a new workflow client
-    _workflowClient = (AzkabanWorkflowClient)InfoExtractor.getWorkflowClientInstance(scheduler, url);
+    _workflowClient = (AzkabanWorkflowClient) InfoExtractor.getWorkflowClientInstance(scheduler, url);
     // get the schedulerData
     SchedulerConfigurationData schedulerData = InfoExtractor.getSchedulerData(scheduler);
 
-    if(schedulerData==null) {
+    if (schedulerData == null) {
       throw new RuntimeException(String.format("Cannot find scheduler %s", scheduler));
     }
 
-    if(!schedulerData.getParamMap().containsKey(USERNAME)) {
+    if (!schedulerData.getParamMap().containsKey(USERNAME)) {
       throw new RuntimeException(String.format("Cannot find username for login"));
     }
 
     String username = schedulerData.getParamMap().get(USERNAME);
 
-    if(schedulerData.getParamMap().containsKey(PRIVATE_KEY)) {
+    if (schedulerData.getParamMap().containsKey(PRIVATE_KEY)) {
       _workflowClient.login(username, new File(schedulerData.getParamMap().get(PRIVATE_KEY)));
     } else if (schedulerData.getParamMap().containsKey(PASSWORD)) {
       _workflowClient.login(username, schedulerData.getParamMap().get(PASSWORD));
@@ -73,9 +73,8 @@ public class AzkabanJobStatusUtil {
    * @throws MalformedURLException
    * @throws URISyntaxException
    */
-  public Map<String, String> getJobsFromFlow(String execUrl) throws MalformedURLException, URISyntaxException
-  {
-      _workflowClient.setURL(execUrl);
-      return _workflowClient.getJobsFromFlow();
+  public Map<String, String> getJobsFromFlow(String execUrl) throws MalformedURLException, URISyntaxException {
+    _workflowClient.setURL(execUrl);
+    return _workflowClient.getJobsFromFlow();
   }
 }

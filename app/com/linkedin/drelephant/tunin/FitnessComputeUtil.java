@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 import play.libs.Json;
 
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.util.Utils;
 
 
@@ -72,7 +73,7 @@ public class FitnessComputeUtil {
    * Returns the list of completed executions whose metrics are not computed
    * @return List of job execution
    */
-  public List<TuningJobExecution> getCompletedExecutions() {
+  private List<TuningJobExecution> getCompletedExecutions() {
     logger.debug("Inside getCompletedExecutions jobs");
     List<TuningJobExecution> jobExecutions = new ArrayList<TuningJobExecution>();
     List<TuningJobExecution> outputJobExecutions = new ArrayList<TuningJobExecution>();
@@ -104,7 +105,7 @@ public class FitnessComputeUtil {
    * Updates the execution metrics
    * @param completedExecutions List of completed executions
    */
-  public void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
+  protected void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
     logger.debug("Updating execution metrics");
     for (TuningJobExecution tuningJobExecution : completedExecutions) {
 
@@ -139,11 +140,15 @@ public class FitnessComputeUtil {
 
           for (AppResult appResult : results) {
             logger.info("Job Execution Update: ApplicationID " + appResult.id);
-            Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
-            totalExecutionTime += executionTime;
+            //            Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
+            //            totalExecutionTime += executionTime;
             totalResourceUsed += appResult.resourceUsed;
             totalInputBytesInBytes += getTotalInputBytes(appResult);
           }
+
+          Long totalRunTime = Utils.getTotalRuntime(results);
+          Long totalDelay = Utils.getTotalWaittime(results);
+          totalExecutionTime = totalRunTime - totalDelay;
 
           if (totalExecutionTime != 0) {
             jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
@@ -206,14 +211,14 @@ public class FitnessComputeUtil {
    * @param appResult appResult
    * @return total input size
    */
-  public Long getTotalInputBytes(AppResult appResult) {
+  private Long getTotalInputBytes(AppResult appResult) {
     Long totalInputBytes = 0L;
     if (appResult.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
-        if (appHeuristicResult.heuristicName.equals("Mapper Speed")) {
+        if (appHeuristicResult.heuristicName.equals(CommonConstantsHeuristic.MAPPER_SPEED)) {
           if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
             for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
-              if (appHeuristicResultDetails.name.equals("Total input size in MB")) {
+              if (appHeuristicResultDetails.name.equals(CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB)) {
                 totalInputBytes += Math.round(Double.parseDouble(appHeuristicResultDetails.value) * 1024 * 1024);
               }
             }

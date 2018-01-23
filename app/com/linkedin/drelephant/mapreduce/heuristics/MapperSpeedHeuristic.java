@@ -147,7 +147,7 @@ public class MapperSpeedHeuristic implements Heuristic<MapReduceApplicationData>
     result.addResultDetail("Median task input size", FileUtils.byteCountToDisplaySize(medianSize));
     result.addResultDetail("Median task runtime", Statistics.readableTimespan(medianRuntimeMs));
     result.addResultDetail("Median task speed", FileUtils.byteCountToDisplaySize(medianSpeed) + "/s");
-    result.addResultDetail("Total input size in MB", totalInputByteSize*1.0/(1024*1024) + "");
+    result.addResultDetail(CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB, totalInputByteSize*1.0/(FileUtils.ONE_MB) + "");
 
 
     return result;

@@ -51,7 +51,7 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
   private static final Logger logger = Logger.getLogger(APIFitnessComputeUtil.class);
 
   private static final String DR_ELEPHANT_URL = "dr.elephant.api.url";
-  private static final String JOB_HISTORY_SERVER_URL = "job.history.api.url";
+  private static final String JOB_HISTORY_SERVER_URL = "mapreduce.jobhistory.webapp.address";
 
   private String drElephantURL;
   private String jobHistoryServerURL;
@@ -76,7 +76,7 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
    * Updates the execution metrics
    * @param completedExecutions List of completed executions
    */
-  public void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
+  protected void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
     logger.debug("Updating execution metrics");
     updateAuthToken();
     for (TuningJobExecution tuningJobExecution : completedExecutions) {

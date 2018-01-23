@@ -38,50 +38,40 @@ import com.linkedin.drelephant.util.Utils;
  */
 public class AutoTuner implements Runnable {
 
+  private static final long ONE_MIN=60*100;
   private static final Logger logger = Logger.getLogger(AutoTuner.class);
-  private static final long METRICS_COMPUTATION_INTERVAL = 60 * 1000 / 5;
+  private static final long DEFAULT_METRICS_COMPUTATION_INTERVAL = ONE_MIN / 5;
 
-  public static final String AUTO_TUNING_ENABLED = "autotuning.enabled";
   public static final String AUTO_TUNING_DAEMON_WAIT_INTERVAL = "autotuning.daemon.wait.interval.ms";
 
   public void run() {
 
+    logger.info("Started AutoTuner thread ");
     HDFSContext.load();
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    Boolean autoTuningEnabled = configuration.getBoolean(AUTO_TUNING_ENABLED, false);
 
-    if (autoTuningEnabled) {
-      Long interval =
-          Utils.getNonNegativeLong(configuration, AUTO_TUNING_DAEMON_WAIT_INTERVAL, METRICS_COMPUTATION_INTERVAL);
+    Long interval =
+        Utils.getNonNegativeLong(configuration, AUTO_TUNING_DAEMON_WAIT_INTERVAL, DEFAULT_METRICS_COMPUTATION_INTERVAL);
 
-      try {
+    try {
+      BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
+      JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
+      FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
+      ParamGenerator paramGenerator = new PSOParamGenerator();
+      while (!Thread.currentThread().isInterrupted()) {
         try {
-          BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
-          JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
-          FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
-          ParamGenerator paramGenerator = new PSOParamGenerator();
-
-          while (!Thread.currentThread().isInterrupted()) {
-
-            baselineComputeUtil.computeBaseline();
-            jobCompleteDetector.updateCompletedExecutions();
-            fitnessComputeUtil.updateFitness();
-            paramGenerator.getParams();
-
-            Thread.sleep(interval);
-          }
-
+          baselineComputeUtil.computeBaseline();
+          jobCompleteDetector.updateCompletedExecutions();
+          fitnessComputeUtil.updateFitness();
+          paramGenerator.getParams();
         } catch (Exception e) {
           logger.error("Error in auto tuner thread ", e);
         }
-
-      } catch (Exception e) {
-        logger.error("Error in auto tuner thread ", e);
-        try {
-          Thread.sleep(interval);
-        } catch (InterruptedException e1) {
-        }
+        Thread.sleep(interval);
       }
+    } catch (Exception e) {
+      logger.error("Error in auto tuner thread ", e);
     }
+    logger.info("Shutdown AutoTuner thread ");
   }
 }

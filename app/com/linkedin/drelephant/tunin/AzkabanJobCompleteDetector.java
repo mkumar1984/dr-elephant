@@ -53,7 +53,7 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
    * @throws MalformedURLException
    * @throws URISyntaxException
    */
-  public List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions)
+  protected List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions)
       throws MalformedURLException, URISyntaxException {
     logger.debug("Fetching completed executions" + Json.toJson(jobExecutions));
     List<TuningJobExecution> completedExecutions = new ArrayList<TuningJobExecution>();

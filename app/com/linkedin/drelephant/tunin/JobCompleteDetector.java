@@ -56,7 +56,7 @@ public abstract class JobCompleteDetector {
    * Returns the list of executions which have already received param suggestion
    * @return JobExecution list
    */
-  public List<TuningJobExecution> getStartedExecutions() {
+  private List<TuningJobExecution> getStartedExecutions() {
     logger.debug("fetching started executions");
     List<TuningJobExecution> tuningJobExecutionList = new ArrayList<TuningJobExecution>();
     try {
@@ -77,7 +77,7 @@ public abstract class JobCompleteDetector {
    * @throws MalformedURLException
    * @throws URISyntaxException
    */
-  public abstract List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions)
+  protected abstract List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions)
       throws MalformedURLException, URISyntaxException;
 
   /**
@@ -85,7 +85,7 @@ public abstract class JobCompleteDetector {
    * @param jobExecutions JobExecution list
    * @return Update status
    */
-  public boolean updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
+  private boolean updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
     boolean updateStatus = true;
     for (TuningJobExecution tuningJobExecution : jobExecutions) {
       JobExecution jobExecution = tuningJobExecution.jobExecution;
