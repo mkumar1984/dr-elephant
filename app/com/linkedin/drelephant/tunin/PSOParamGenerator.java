@@ -64,7 +64,7 @@ public class PSOParamGenerator extends ParamGenerator {
     JsonNode jsonTunerState = Json.toJson(jobTuningInfo);
     String parametersToTune = jsonTunerState.get(PARAMS_TO_TUNE_FIELD_NAME).toString();
 
-    String stringTunerState = jobTuningInfo.getStringTunerState();
+    String stringTunerState = jobTuningInfo.getTunerState();
     stringTunerState = stringTunerState.replaceAll("\\s+", "");
 
     List<String> error = new ArrayList<String>();
@@ -80,7 +80,7 @@ public class PSOParamGenerator extends ParamGenerator {
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();
       logger.debug("Output from pso script: " + updatedStringTunerState);
-      newJobTuningInfo.setStringTunerState(updatedStringTunerState);
+      newJobTuningInfo.setTunerState(updatedStringTunerState);
       String errorLine;
       while ((errorLine = errorStream.readLine()) != null) {
         error.add(errorLine);

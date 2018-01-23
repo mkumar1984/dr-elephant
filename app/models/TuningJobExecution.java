@@ -34,7 +34,6 @@ import play.db.ebean.Model;
 @Table(name = "tuning_job_execution")
 public class TuningJobExecution extends Model {
 
-  /** */
   private static final long serialVersionUID = -294471313051608818L;
 
   public enum ParamSetStatus {
@@ -73,7 +72,6 @@ public class TuningJobExecution extends Model {
 
   public Double fitness;
 
-  // Todo: [Important] Is the finder correct? There is no long in the class
   public static Model.Finder<Long, TuningJobExecution> find = new Model.Finder<Long, TuningJobExecution>(Long.class,
       TuningJobExecution.class);
 }

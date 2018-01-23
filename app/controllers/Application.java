@@ -964,7 +964,7 @@ public class Application extends Controller {
     }
   }
 
-  public static Result getCurrentRunParameters(TuningInput tuningInput) {
+  private static Result getCurrentRunParameters(TuningInput tuningInput) {
     AutoTuningAPIHelper autoTuningAPIHelper = new AutoTuningAPIHelper();
     Map<String, Double> outputParams = autoTuningAPIHelper.getCurrentRunParameters(tuningInput);
     if (outputParams != null) {

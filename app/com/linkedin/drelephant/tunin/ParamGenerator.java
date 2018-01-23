@@ -45,21 +45,6 @@ public abstract class ParamGenerator {
    */
   public abstract JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo);
 
-  public JsonNode test() {
-
-    FlowDefinition flowDefinition = new FlowDefinition();
-    flowDefinition.flowDefUrl = "flow_def_url4";
-    flowDefinition.flowDefId = "flow_def_id4";
-    //flowDefinition.save ();
-
-    FlowExecution flowExecution = new FlowExecution();
-    flowExecution.flowDefinition = flowDefinition;
-    flowExecution.flowExecUrl = "flow_exec_url4";
-    flowExecution.flowExecId = "flow_exec_id4";
-    flowExecution.save();
-    return Json.toJson(flowExecution);
-  }
-
   /**
    * Converts a json to list of particles
    * @param jsonParticleList A list of  configurations (particles) in json
@@ -244,7 +229,7 @@ public abstract class ParamGenerator {
           JsonNode updatedJsonCurrentPopulation = particleListToJson(currentPopulation);
           jsonSavedState.set(JSON_CURRENT_POPULATION_KEY, updatedJsonCurrentPopulation);
           savedState = Json.stringify(jsonSavedState);
-          jobTuningInfo.setStringTunerState(savedState);
+          jobTuningInfo.setTunerState(savedState);
         }
       } else {
         logger.info("Saved state empty for job with id: " + job.id);
@@ -253,7 +238,7 @@ public abstract class ParamGenerator {
 
       logger.info("Is the state valid:" + validSavedState);
       if (!validSavedState) {
-        jobTuningInfo.setStringTunerState("{}");
+        jobTuningInfo.setTunerState("{}");
       }
       jobTuningInfoList.add(jobTuningInfo);
     }
@@ -322,7 +307,7 @@ public abstract class ParamGenerator {
 
       JobDefinition job = jobTuningInfo.getTuningJob();
       List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
-      String stringTunerState = jobTuningInfo.getStringTunerState();
+      String stringTunerState = jobTuningInfo.getTunerState();
 
       if (stringTunerState == null) {
         logger.error("Suggested param set is empty for job id: " + job.id);
@@ -417,7 +402,7 @@ public abstract class ParamGenerator {
       ObjectNode updatedJsonTunerState = (ObjectNode) jsonTunerState;
       updatedJsonTunerState.put(JSON_CURRENT_POPULATION_KEY, updatedJsonSuggestedPopulation);
       String updatedStringTunerState = Json.stringify(updatedJsonTunerState);
-      jobTuningInfo.setStringTunerState(updatedStringTunerState);
+      jobTuningInfo.setTunerState(updatedStringTunerState);
     }
     saveTunerState(jobTuningInfoList);
   }
@@ -473,7 +458,7 @@ public abstract class ParamGenerator {
    */
   public void saveTunerState(List<JobTuningInfo> jobTuningInfoList) {
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
-      if (jobTuningInfo.getStringTunerState() == null) {
+      if (jobTuningInfo.getTunerState() == null) {
         continue;
       }
       JobSavedState jobSavedState = JobSavedState.find.byId(jobTuningInfo.getTuningJob().id);
@@ -481,7 +466,7 @@ public abstract class ParamGenerator {
         jobSavedState = new JobSavedState();
         jobSavedState.jobDefinitionId = jobTuningInfo.getTuningJob().id;
       }
-      jobSavedState.savedState = jobTuningInfo.getStringTunerState().getBytes();
+      jobSavedState.savedState = jobTuningInfo.getTunerState().getBytes();
       jobSavedState.save();
     }
   }

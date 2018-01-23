@@ -27,8 +27,7 @@ public class JobTuningInfo {
 
   private JobDefinition _tuningJob;
 
-  //todo: rename it to _tunerState
-  private String _stringTunerState; //archive, prev_population, current_population, rnd_state
+  private String _tunerState; //archive, prev_population, current_population, rnd_state
   private List<TuningParameter> _parametersToTune;
 
   /**
@@ -51,16 +50,16 @@ public class JobTuningInfo {
    * Sets the string tuner state
    * @param stringTunerState String tuner state
    */
-  public void setStringTunerState(String stringTunerState) {
-    this._stringTunerState = stringTunerState;
+  public void setTunerState(String stringTunerState) {
+    this._tunerState = stringTunerState;
   }
 
   /**
    * Returns string tuner state
    * @return String tuner state
    */
-  public String getStringTunerState() {
-    return _stringTunerState;
+  public String getTunerState() {
+    return _tunerState;
   }
 
   /**
