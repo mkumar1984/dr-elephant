@@ -42,9 +42,7 @@ public class AzkabanJobStatusUtil {
    * @param url
    */
   public AzkabanJobStatusUtil(String url) {
-    // create a new workflow client
     _workflowClient = (AzkabanWorkflowClient) InfoExtractor.getWorkflowClientInstance(scheduler, url);
-    // get the schedulerData
     SchedulerConfigurationData schedulerData = InfoExtractor.getSchedulerData(scheduler);
 
     if (schedulerData == null) {
