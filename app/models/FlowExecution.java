@@ -34,7 +34,7 @@ import play.db.ebean.Model;
 @Table(name = "flow_execution")
 public class FlowExecution extends Model {
 
-  /** */
+
   private static final long serialVersionUID = -530850411828978454L;
 
   public static class TABLE {

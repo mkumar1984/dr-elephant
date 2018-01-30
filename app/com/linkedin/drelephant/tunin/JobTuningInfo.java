@@ -27,7 +27,14 @@ public class JobTuningInfo {
 
   private JobDefinition _tuningJob;
 
-  private String _tunerState; //archive, prev_population, current_population, rnd_state
+  /**
+   * Comprises of:
+   *  - archive: best configuration encountered
+   *  - prev_population: pen-ultimate configuration
+   *  - current_population: current configuration
+   *  - rnd_state: state of random number generator
+   */
+  private String _tunerState;
   private List<TuningParameter> _parametersToTune;
 
   /**

@@ -40,7 +40,6 @@ public class TuningJobDefinition extends Model {
 
   public static class TABLE {
     public static final String TABLE_NAME = "tuning_job_definition";
-    //public static final String jobDefinitionId = "jobDefinitionId";
     public static final String client = "client";
     public static final String tuningAlgorithmId = "tuningAlgorithmId";
     public static final String tuningEnabled = "tuningEnabled";
@@ -58,9 +57,6 @@ public class TuningJobDefinition extends Model {
   @JoinTable(name = "job_definition", joinColumns = { @JoinColumn(name = "job_definition_id",
       referencedColumnName = "id") })
   public JobDefinition job;
-
-  //  @Column(nullable = false)
-  //  public int jobDefinitionId;
 
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String client;

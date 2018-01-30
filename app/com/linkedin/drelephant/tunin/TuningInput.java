@@ -19,64 +19,64 @@ package com.linkedin.drelephant.tunin;
 import models.TuningAlgorithm;
 
 /**
- * This class holds the parameters passed to rest api from the client.
+ * This class holds the parameters passed to rest api from the _client.
  */
 public class TuningInput {
 
-    private String flowDefId;
-    private String jobDefId;
-    private String flowDefUrl;
-    private String  jobDefUrl;
-    private String flowExecId;
-    private String jobExecId;
-    private String flowExecUrl;
-    private String jobExecUrl;
-    private String jobName;
-    private String userName;
-    private String client;
-    private String scheduler;
-    private String defaultParams;
-    private Boolean isRetry;
-    private Boolean skipExecutionForOptimization;
-    private String jobType;
-    private String optimizationAlgo;
-    private String optimizationAlgoVersion;
-    private String optimizationMetric;
-    private Double allowedMaxResourceUsagePercent;
-    private Double allowedMaxExecutionTimePercent;
-    private TuningAlgorithm tuningAlgorithm;
+    private String _flowDefId;
+    private String _jobDefId;
+    private String _flowDefUrl;
+    private String _jobDefUrl;
+    private String _flowExecId;
+    private String _jobExecId;
+    private String _flowExecUrl;
+    private String _jobExecUrl;
+    private String _jobName;
+    private String _userName;
+    private String _client;
+    private String _scheduler;
+    private String _defaultParams;
+    private Boolean _isRetry;
+    private Boolean _skipExecutionForOptimization;
+    private String _jobType;
+    private String _optimizationAlgo;
+    private String _optimizationAlgoVersion;
+    private String _optimizationMetric;
+    private Double _allowedMaxResourceUsagePercent;
+    private Double _allowedMaxExecutionTimePercent;
+    private TuningAlgorithm _tuningAlgorithm;
 
 
     public TuningAlgorithm getTuningAlgorithm() {
-      return tuningAlgorithm;
+      return _tuningAlgorithm;
     }
 
     public void setTuningAlgorithm(TuningAlgorithm tuningAlgorithm) {
-      this.tuningAlgorithm = tuningAlgorithm;
+      this._tuningAlgorithm = tuningAlgorithm;
     }
 
     public Boolean getIsRetry() {
-      return isRetry;
+      return _isRetry;
     }
 
     public void setIsRetry(Boolean isRetry) {
-      this.isRetry = isRetry;
+      this._isRetry = isRetry;
     }
 
     public Double getAllowedMaxResourceUsagePercent() {
-      return allowedMaxResourceUsagePercent;
+      return _allowedMaxResourceUsagePercent;
     }
 
     public void setAllowedMaxResourceUsagePercent(Double allowedMaxResourceUsagePercent) {
-      this.allowedMaxResourceUsagePercent = allowedMaxResourceUsagePercent;
+      this._allowedMaxResourceUsagePercent = allowedMaxResourceUsagePercent;
     }
 
     public Double getAllowedMaxExecutionTimePercent() {
-      return allowedMaxExecutionTimePercent;
+      return _allowedMaxExecutionTimePercent;
     }
 
     public void setAllowedMaxExecutionTimePercent(Double allowedMaxExecutionTimePercent) {
-      this.allowedMaxExecutionTimePercent = allowedMaxExecutionTimePercent;
+      this._allowedMaxExecutionTimePercent = allowedMaxExecutionTimePercent;
     }
 
     /**
@@ -84,7 +84,7 @@ public class TuningInput {
      * @return Flow definition id
      */
     public String getFlowDefId() {
-        return flowDefId;
+        return _flowDefId;
     }
 
     /**
@@ -92,7 +92,7 @@ public class TuningInput {
      * @param flowDefId Flow definition id
      */
     public void setFlowDefId(String flowDefId) {
-        this.flowDefId = flowDefId;
+        this._flowDefId = flowDefId;
     }
 
     /**
@@ -100,7 +100,7 @@ public class TuningInput {
      * @return Job definition id
      */
     public String getJobDefId() {
-        return jobDefId;
+        return _jobDefId;
     }
 
     /**
@@ -108,7 +108,7 @@ public class TuningInput {
      * @param jobDefId JOb definition id
      */
     public void setJobDefId(String jobDefId) {
-        this.jobDefId = jobDefId;
+        this._jobDefId = jobDefId;
     }
 
     /**
@@ -116,7 +116,7 @@ public class TuningInput {
      * @return Flow definition url
      */
     public String getFlowDefUrl() {
-        return flowDefUrl;
+        return _flowDefUrl;
     }
 
     /**
@@ -124,7 +124,7 @@ public class TuningInput {
      * @param flowDefUrl Flow definition url
      */
     public void setFlowDefUrl(String flowDefUrl) {
-        this.flowDefUrl = flowDefUrl;
+        this._flowDefUrl = flowDefUrl;
     }
 
     /**
@@ -132,7 +132,7 @@ public class TuningInput {
      * @return Job definition url
      */
     public String getJobDefUrl() {
-        return jobDefUrl;
+        return _jobDefUrl;
     }
 
     /**
@@ -140,7 +140,7 @@ public class TuningInput {
      * @param jobDefUrl Job definition url
      */
     public void setJobDefUrl(String jobDefUrl) {
-        this.jobDefUrl = jobDefUrl;
+        this._jobDefUrl = jobDefUrl;
     }
 
     /**
@@ -148,7 +148,7 @@ public class TuningInput {
      * @return Flow execution id
      */
     public String getFlowExecId() {
-        return flowExecId;
+        return _flowExecId;
     }
 
     /**
@@ -156,7 +156,7 @@ public class TuningInput {
      * @param flowExecId Flow execution id
      */
     public void setFlowExecId(String flowExecId) {
-        this.flowExecId = flowExecId;
+        this._flowExecId = flowExecId;
     }
 
     /**
@@ -164,7 +164,7 @@ public class TuningInput {
      * @return Job execution id
      */
     public String getJobExecId() {
-        return jobExecId;
+        return _jobExecId;
     }
 
     /**
@@ -172,7 +172,7 @@ public class TuningInput {
      * @param jobExecId Job execution id
      */
     public void setJobExecId(String jobExecId) {
-        this.jobExecId = jobExecId;
+        this._jobExecId = jobExecId;
     }
 
     /**
@@ -180,7 +180,7 @@ public class TuningInput {
      * @return Flow execution url
      */
     public String getFlowExecUrl() {
-        return flowExecUrl;
+        return _flowExecUrl;
     }
 
     /**
@@ -188,7 +188,7 @@ public class TuningInput {
      * @param flowExecUrl Flow execution url
      */
     public void setFlowExecUrl(String flowExecUrl) {
-        this.flowExecUrl = flowExecUrl;
+        this._flowExecUrl = flowExecUrl;
     }
 
     /**
@@ -196,7 +196,7 @@ public class TuningInput {
      * @return Job execution url
      */
     public String getJobExecUrl() {
-        return jobExecUrl;
+        return _jobExecUrl;
     }
 
     /**
@@ -204,7 +204,7 @@ public class TuningInput {
      * @param jobExecUrl Job execution url
      */
     public void setJobExecUrl(String jobExecUrl) {
-        this.jobExecUrl = jobExecUrl;
+        this._jobExecUrl = jobExecUrl;
     }
 
     /**
@@ -212,7 +212,7 @@ public class TuningInput {
      * @return Job name
      */
     public String getJobName() {
-        return jobName;
+        return _jobName;
     }
 
     /**
@@ -220,7 +220,7 @@ public class TuningInput {
      * @param jobName Job name
      */
     public void setJobName(String jobName) {
-        this.jobName = jobName;
+        this._jobName = jobName;
     }
 
     /**
@@ -228,7 +228,7 @@ public class TuningInput {
      * @return Username
      */
     public String getUserName() {
-        return userName;
+        return _userName;
     }
 
     /**
@@ -236,39 +236,39 @@ public class TuningInput {
      * @param userName Username
      */
     public void setUserName(String userName) {
-        this.userName = userName;
+        this._userName = userName;
     }
 
     /**
-     * Returns the client. For example: UMP, Azkaban
+     * Returns the _client. For example: UMP, Azkaban
      * @return Client
      */
     public String getClient() {
-        return client;
+        return _client;
     }
 
     /**
-     * Sets the client
+     * Sets the _client
      * @param client Client
      */
     public void setClient(String client) {
-        this.client = client;
+        this._client = client;
     }
 
     /**
-     * Returns the scheduler
+     * Returns the _scheduler
      * @return Scheduler
      */
     public String getScheduler() {
-        return scheduler;
+        return _scheduler;
     }
 
     /**
-     * Sets the scheduler
+     * Sets the _scheduler
      * @param scheduler Scheduler
      */
     public void setScheduler(String scheduler) {
-        this.scheduler = scheduler;
+        this._scheduler = scheduler;
     }
 
     /**
@@ -276,7 +276,7 @@ public class TuningInput {
      * @return default parameters
      */
     public String getDefaultParams() {
-        return defaultParams;
+        return _defaultParams;
     }
 
     /**
@@ -284,31 +284,31 @@ public class TuningInput {
      * @param defaultParams default parameters
      */
     public void setDefaultParams(String defaultParams) {
-        this.defaultParams = defaultParams;
+        this._defaultParams = defaultParams;
     }
 
     /**
      * Returns true if the execution is a retry, false otherwise
-     * @return isRetry
+     * @return _isRetry
      */
     public Boolean getRetry() {
-        return isRetry;
+        return _isRetry;
     }
 
     /**
-     * Sets the isRetry
+     * Sets the _isRetry
      * @param retry
      */
     public void setRetry(Boolean retry) {
-        isRetry = retry;
+        _isRetry = retry;
     }
 
     /**
      * Returns true if this execution is to be skipped for learning by optimization algorithm, false otherwise
-     * @return skipExecutionForOptimization
+     * @return _skipExecutionForOptimization
      */
     public Boolean getSkipExecutionForOptimization() {
-        return skipExecutionForOptimization;
+        return _skipExecutionForOptimization;
     }
 
     /**
@@ -316,7 +316,7 @@ public class TuningInput {
      * @param skipExecutionForOptimization
      */
     public void setSkipExecutionForOptimization(Boolean skipExecutionForOptimization) {
-        this.skipExecutionForOptimization = skipExecutionForOptimization;
+        this._skipExecutionForOptimization = skipExecutionForOptimization;
     }
 
     /**
@@ -324,7 +324,7 @@ public class TuningInput {
      * @return Job type
      */
     public String getJobType() {
-        return jobType;
+        return _jobType;
     }
 
     /**
@@ -332,7 +332,7 @@ public class TuningInput {
      * @param jobType Job type
      */
     public void setJobType(String jobType) {
-        this.jobType = jobType;
+        this._jobType = jobType;
     }
 
     /**
@@ -340,7 +340,7 @@ public class TuningInput {
      * @return optimization algorithm
      */
     public String getOptimizationAlgo() {
-        return optimizationAlgo;
+        return _optimizationAlgo;
     }
 
     /**
@@ -348,7 +348,7 @@ public class TuningInput {
      * @param optimizationAlgo Optimization algorithm
      */
     public void setOptimizationAlgo(String optimizationAlgo) {
-        this.optimizationAlgo = optimizationAlgo;
+        this._optimizationAlgo = optimizationAlgo;
     }
 
     /**
@@ -356,7 +356,7 @@ public class TuningInput {
      * @return Optimization algorithm version
      */
     public String getOptimizationAlgoVersion() {
-        return optimizationAlgoVersion;
+        return _optimizationAlgoVersion;
     }
 
     /**
@@ -364,7 +364,7 @@ public class TuningInput {
      * @param optimizationAlgoVersion Optimization algorithm version
      */
     public void setOptimizationAlgoVersion(String optimizationAlgoVersion) {
-        this.optimizationAlgoVersion = optimizationAlgoVersion;
+        this._optimizationAlgoVersion = optimizationAlgoVersion;
     }
 
     /**
@@ -372,7 +372,7 @@ public class TuningInput {
      * @return Optimization metric
      */
     public String getOptimizationMetric() {
-        return optimizationMetric;
+        return _optimizationMetric;
     }
 
     /**
@@ -380,6 +380,6 @@ public class TuningInput {
      * @param optimizationMetric Optimization metric
      */
     public void setOptimizationMetric(String optimizationMetric) {
-        this.optimizationMetric = optimizationMetric;
+        this._optimizationMetric = optimizationMetric;
     }
 }
