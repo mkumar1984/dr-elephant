@@ -39,14 +39,15 @@ import com.linkedin.drelephant.util.Utils;
  */
 public class BaselineComputeUtil {
 
-  public static Integer numJobsForBaselineDefault = 30;
-  public Integer numJobsForBaseline = null;
+  private static final Integer NUM_JOBS_FOR_BASELINE_DEFAULT = 30;
   private final Logger logger = Logger.getLogger(getClass());
-  public static final String BASELINE_EXECUTION_COUNT = "baseline.execution.count";
+  private static final String BASELINE_EXECUTION_COUNT = "baseline.execution.count";
+
+  private Integer _numJobsForBaseline = null;
 
   public BaselineComputeUtil() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    numJobsForBaseline = Utils.getNonNegativeInt(configuration, BASELINE_EXECUTION_COUNT, numJobsForBaselineDefault);
+    _numJobsForBaseline = Utils.getNonNegativeInt(configuration, BASELINE_EXECUTION_COUNT, NUM_JOBS_FOR_BASELINE_DEFAULT);
   }
 
   public List<TuningJobDefinition> computeBaseline() {
@@ -86,7 +87,7 @@ public class BaselineComputeUtil {
 
     SqlRow baseline = Ebean.createSqlQuery(sql)
         .setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
-        .setParameter("num", numJobsForBaseline)
+        .setParameter("num", _numJobsForBaseline)
         .findUnique();
 
     Double avgResourceUsage = 0D;
@@ -100,7 +101,7 @@ public class BaselineComputeUtil {
     tuningJobDefinition.update();
   }
 
-  public Long getAvgInputSizeInBytes(String jobDefId) {
+  private Long getAvgInputSizeInBytes(String jobDefId) {
     String sql = "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
         + "(SELECT job_exec_id, SUM(value) inputSizeInBytes, MAX(start_time) AS start_time "
         + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr " + "ON yar.id=yahr.yarn_app_result_id "
@@ -113,7 +114,7 @@ public class BaselineComputeUtil {
 
     SqlRow baseline = Ebean.createSqlQuery(sql)
         .setParameter("jobDefId", jobDefId)
-        .setParameter("num", numJobsForBaseline)
+        .setParameter("num", _numJobsForBaseline)
         .findUnique();
     Double avgInputSizeInBytes = baseline.getDouble("avgInputSizeInMB") * FileUtils.ONE_MB;
     return avgInputSizeInBytes.longValue();

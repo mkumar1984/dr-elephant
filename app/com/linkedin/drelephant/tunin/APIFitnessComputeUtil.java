@@ -54,8 +54,8 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
   private static final String DR_ELEPHANT_URL = "dr.elephant.api.url";
   private static final String JOB_HISTORY_SERVER_URL = "mapreduce.jobhistory.webapp.address";
 
-  private String drElephantURL;
-  private String jobHistoryServerURL;
+  private String _drElephantURL;
+  private String _jobHistoryServerURL;
   private ObjectMapper _objectMapper = new ObjectMapper();
 
   private AuthenticatedURL.Token _token;
@@ -69,8 +69,8 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
 
   public APIFitnessComputeUtil() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    drElephantURL = configuration.get(DR_ELEPHANT_URL);
-    jobHistoryServerURL = configuration.get(JOB_HISTORY_SERVER_URL);
+    _drElephantURL = configuration.get(DR_ELEPHANT_URL);
+    _jobHistoryServerURL = configuration.get(JOB_HISTORY_SERVER_URL);
   }
 
   /**
@@ -87,7 +87,7 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
         JobExecution jobExecution = tuningJobExecution.jobExecution;
         JobDefinition job = jobExecution.job;
 
-        URL jobExecURL = new URL(new URL(drElephantURL),
+        URL jobExecURL = new URL(new URL(_drElephantURL),
             String.format("/rest/jobexec?id=%s", URLEncoder.encode(jobExecution.jobExecId)));
         HttpURLConnection conn = (HttpURLConnection) jobExecURL.openConnection();
         JsonNode allApps = _objectMapper.readTree(conn.getInputStream());
@@ -168,9 +168,9 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
     logger.debug("Execution metrics updated");
   }
 
-  public Long getTotalInputBytes(String applicationID) throws IOException, AuthenticationException {
+  private Long getTotalInputBytes(String applicationID) throws IOException, AuthenticationException {
     applicationID = applicationID.replace("application_", "job_");
-    URL applicationURL = new URL(new URL(jobHistoryServerURL),
+    URL applicationURL = new URL(new URL(_jobHistoryServerURL),
         String.format("/ws/v1/history/mapreduce/jobs/%s/counters", applicationID));
     HttpURLConnection conn = (HttpURLConnection) _authenticatedURL.openConnection(applicationURL, _token);
     JsonNode rootNode = _objectMapper.readTree(conn.getInputStream());

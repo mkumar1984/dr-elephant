@@ -38,8 +38,8 @@ public class PSOParamGenerator extends ParamGenerator {
 
   private final Logger logger = Logger.getLogger(PSOParamGenerator.class);
   private static final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
-  public static final String PYTHON_ROOT_DIR_CONF = "python.root.dir";
-  public static final String TUNING_SCRIPT_PATH_CONF = "pso.script.path";
+  private static final String PYTHON_ROOT_DIR_CONF = "python.root.dir";
+  private static final String TUNING_SCRIPT_PATH_CONF = "pso.script.path";
 
   private String PYTHON_ROOT_DIR = null;
   private String TUNING_SCRIPT_PATH = null;

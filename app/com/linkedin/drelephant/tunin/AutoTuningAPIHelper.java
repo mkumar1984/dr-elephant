@@ -61,7 +61,7 @@ public class AutoTuningAPIHelper {
    * @param tuningJobDefinition
    * @return
    */
-  public TuningJobExecution createDefaultJobExecution(TuningJobDefinition tuningJobDefinition) {
+  private TuningJobExecution createDefaultJobExecution(TuningJobDefinition tuningJobDefinition) {
 
     //Get default execution from DB and clone that to create a new default execution
     TuningJobExecution tuningJobExecutionDefault = TuningJobExecution.find.select("*")
@@ -206,7 +206,7 @@ public class AutoTuningAPIHelper {
    * @param tuningJobExecution
    * @param tuningInput
    */
-  public void updateJobExecutionParameter(TuningJobExecution tuningJobExecution, TuningInput tuningInput) {
+  private void updateJobExecutionParameter(TuningJobExecution tuningJobExecution, TuningInput tuningInput) {
 
     FlowExecution flowExecution =
         FlowExecution.find.where().eq(FlowExecution.TABLE.flowExecId, tuningInput.getFlowExecId()).findUnique();
@@ -239,7 +239,7 @@ public class AutoTuningAPIHelper {
    * @param tuningInput Tuning input parameters
    * @return Job
    */
-  public TuningJobDefinition addNewJobForTuning(TuningInput tuningInput) {
+  private TuningJobDefinition addNewJobForTuning(TuningInput tuningInput) {
 
     logger.debug("Starting addNewJobForTuning");
 
@@ -301,7 +301,7 @@ public class AutoTuningAPIHelper {
    * @param jobExecUrl Job execution url
    * @return default job execution
    */
-  public TuningJobExecution insertDefaultJobExecution(JobDefinition job, String flowExecId, String jobExecId,
+  private TuningJobExecution insertDefaultJobExecution(JobDefinition job, String flowExecId, String jobExecId,
       String flowExecUrl, String jobExecUrl, FlowDefinition flowDefinition, TuningAlgorithm tuningAlgorithm) {
     logger.debug("Starting insertDefaultJobExecution");
 
@@ -346,7 +346,7 @@ public class AutoTuningAPIHelper {
    * @param defaultParams Default parameters map as string
    */
   @SuppressWarnings("unchecked")
-  public void insertDefaultParameters(JobExecution jobExecution, String defaultParams) {
+  private void insertDefaultParameters(JobExecution jobExecution, String defaultParams) {
     ObjectMapper mapper = new ObjectMapper();
     Map<String, Double> paramValueMap = null;
     try {
@@ -369,7 +369,7 @@ public class AutoTuningAPIHelper {
    * @param paramName Parameter name
    * @param paramValue Parameter value
    */
-  public void insertExecutionParameter(JobExecution jobExecution, String paramName, Double paramValue) {
+  private void insertExecutionParameter(JobExecution jobExecution, String paramName, Double paramValue) {
     logger.debug("Starting insertExecutionParameter");
     JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
     jobSuggestedParamValue.jobExecution = jobExecution;
