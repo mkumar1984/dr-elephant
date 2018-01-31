@@ -20,6 +20,7 @@ import models.TuningParameter;
 import models.JobDefinition;
 import java.util.List;
 
+
 /**
  * This class holds the tuning information for the job.
  */
@@ -73,11 +74,15 @@ public class JobTuningInfo {
    * Sets parameters to tune
    * @param parameters Parameters to tune
    */
-  public void setParametersToTune(List<TuningParameter> parameters) { this._parametersToTune = parameters; }
+  public void setParametersToTune(List<TuningParameter> parameters) {
+    this._parametersToTune = parameters;
+  }
 
   /**
    * Returns parameters to tune
    * @return Parameters to tune
    */
-  public List<TuningParameter> getParametersToTune() { return _parametersToTune; }
+  public List<TuningParameter> getParametersToTune() {
+    return _parametersToTune;
+  }
 }

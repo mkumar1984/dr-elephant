@@ -36,9 +36,7 @@ public class TuningAlgorithm extends Model {
   private static final long serialVersionUID = 1L;
 
   public enum JobType {
-    PIG,
-    HIVE,
-    SPARK
+    PIG, HIVE, SPARK
   }
 
   public enum OptimizationAlgo {
@@ -46,8 +44,7 @@ public class TuningAlgorithm extends Model {
   }
 
   public enum OptimizationMetric {
-    RESOURCE,
-    EXECUTION_TIME
+    RESOURCE, EXECUTION_TIME
   }
 
   public static class TABLE {
@@ -79,7 +76,6 @@ public class TuningAlgorithm extends Model {
   public Timestamp createdTs;
   public Timestamp updatedTs;
 
-  public static Finder<Integer, TuningAlgorithm> find = new Finder<Integer, TuningAlgorithm>(Integer.class,
-      TuningAlgorithm.class);
-
+  public static Finder<Integer, TuningAlgorithm> find =
+      new Finder<Integer, TuningAlgorithm>(Integer.class, TuningAlgorithm.class);
 }

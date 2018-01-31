@@ -73,9 +73,8 @@ public class PSOParamGenerator extends ParamGenerator {
       logger.debug("Running PSO python script with following parameters: ");
       logger.debug("StringTunerState: " + stringTunerState);
       logger.debug("Parameters to tune: " + parametersToTune);
-      Process p =
-          Runtime.getRuntime().exec(
-              PYTHON_ROOT_DIR + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune);
+      Process p = Runtime.getRuntime()
+          .exec(PYTHON_ROOT_DIR + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune);
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();
@@ -94,5 +93,4 @@ public class PSOParamGenerator extends ParamGenerator {
     }
     return newJobTuningInfo;
   }
-
 }

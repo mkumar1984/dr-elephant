@@ -60,9 +60,10 @@ public abstract class JobCompleteDetector {
     logger.debug("fetching started executions");
     List<TuningJobExecution> tuningJobExecutionList = new ArrayList<TuningJobExecution>();
     try {
-      tuningJobExecutionList =
-          TuningJobExecution.find.select("*").where().eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT)
-              .findList();
+      tuningJobExecutionList = TuningJobExecution.find.select("*")
+          .where()
+          .eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT)
+          .findList();
     } catch (NullPointerException e) {
       logger.error("Error in getStartedExecutions ", e);
     }

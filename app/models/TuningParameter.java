@@ -39,10 +39,7 @@ public class TuningParameter extends Model {
   private static final long serialVersionUID = 1L;
 
   public enum ParamValueType {
-    INT,
-    FLOAT,
-    DOUBLE,
-    BOOLEAN
+    INT, FLOAT, DOUBLE, BOOLEAN
   }
 
   public static class TABLE {
@@ -68,8 +65,7 @@ public class TuningParameter extends Model {
   public String paramName;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "tuning_algorithm", joinColumns = { @JoinColumn(name = "tuning_algorithm_id",
-      referencedColumnName = "id") })
+  @JoinTable(name = "tuning_algorithm", joinColumns = {@JoinColumn(name = "tuning_algorithm_id", referencedColumnName = "id")})
   public TuningAlgorithm tuningAlgorithm;
 
   @Column(nullable = false)
@@ -93,6 +89,6 @@ public class TuningParameter extends Model {
   @Column(nullable = false)
   public Integer isDerived;
 
-  public static Finder<Integer, TuningParameter> find = new Finder<Integer, TuningParameter>(Integer.class,
-      TuningParameter.class);
+  public static Finder<Integer, TuningParameter> find =
+      new Finder<Integer, TuningParameter>(Integer.class, TuningParameter.class);
 }

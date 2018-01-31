@@ -37,11 +37,7 @@ public class TuningJobExecution extends Model {
   private static final long serialVersionUID = -294471313051608818L;
 
   public enum ParamSetStatus {
-    CREATED,
-    SENT,
-    EXECUTED,
-    FITNESS_COMPUTED,
-    DISCARDED
+    CREATED, SENT, EXECUTED, FITNESS_COMPUTED, DISCARDED
   }
 
   public static class TABLE {
@@ -55,13 +51,11 @@ public class TuningJobExecution extends Model {
   }
 
   @OneToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "job_execution",
-      joinColumns = { @JoinColumn(name = "job_execution_id", referencedColumnName = "id") })
+  @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "job_execution_id", referencedColumnName = "id")})
   public JobExecution jobExecution;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "tuning_algorithm", joinColumns = { @JoinColumn(name = "tuning_algorithm_id",
-      referencedColumnName = "id") })
+  @JoinTable(name = "tuning_algorithm", joinColumns = {@JoinColumn(name = "tuning_algorithm_id", referencedColumnName = "id")})
   public TuningAlgorithm tuningAlgorithm;
 
   @Enumerated(EnumType.STRING)
@@ -72,6 +66,6 @@ public class TuningJobExecution extends Model {
 
   public Double fitness;
 
-  public static Model.Finder<Long, TuningJobExecution> find = new Model.Finder<Long, TuningJobExecution>(Long.class,
-      TuningJobExecution.class);
+  public static Model.Finder<Long, TuningJobExecution> find =
+      new Model.Finder<Long, TuningJobExecution>(Long.class, TuningJobExecution.class);
 }

@@ -41,11 +41,7 @@ public class JobExecution extends Model {
   private static final long serialVersionUID = 1L;
 
   public enum ExecutionState {
-    NOT_STARTED,
-    IN_PROGRESS,
-    SUCCEEDED,
-    FAILED,
-    CANCELLED
+    NOT_STARTED, IN_PROGRESS, SUCCEEDED, FAILED, CANCELLED
   }
 
   public static class TABLE {
@@ -90,14 +86,12 @@ public class JobExecution extends Model {
 
   @Column(nullable = true)
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "flow_execution", joinColumns = { @JoinColumn(name = "flow_execution_id",
-      referencedColumnName = "id") })
+  @JoinTable(name = "flow_execution", joinColumns = {@JoinColumn(name = "flow_execution_id", referencedColumnName = "id")})
   public FlowExecution flowExecution;
 
   @Column(nullable = false)
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "job_definition", joinColumns = { @JoinColumn(name = "job_definition_id",
-      referencedColumnName = "id") })
+  @JoinTable(name = "job_definition", joinColumns = {@JoinColumn(name = "job_definition_id", referencedColumnName = "id")})
   public JobDefinition job;
 
   @Column(nullable = true)
@@ -107,5 +101,4 @@ public class JobExecution extends Model {
   public Timestamp updatedTs;
 
   public static Finder<Long, JobExecution> find = new Finder<Long, JobExecution>(Long.class, JobExecution.class);
-
 }

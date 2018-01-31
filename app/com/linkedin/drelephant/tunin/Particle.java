@@ -44,7 +44,7 @@ public class Particle {
    * Sets the configuration values
    * @param candidate Configuration values
    */
-  public void setCandidate(List<Double> candidate){
+  public void setCandidate(List<Double> candidate) {
     this._candidate = candidate;
   }
 
@@ -52,7 +52,7 @@ public class Particle {
    * Returns the configuration values
    * @return Configuration values
    */
-  public List<Double> getCandidate(){
+  public List<Double> getCandidate() {
     return _candidate;
   }
 
@@ -60,7 +60,7 @@ public class Particle {
    * Sets fitness of the configuration
    * @param fitness Fitness
    */
-  public void setFitness(double fitness){
+  public void setFitness(double fitness) {
     this._fitness = fitness;
   }
 
@@ -68,7 +68,7 @@ public class Particle {
    * Returns the fitness of the configuration
    * @return fitness
    */
-  public double getFitness(){
+  public double getFitness() {
     return _fitness;
   }
 
@@ -76,7 +76,7 @@ public class Particle {
    * Sets the birthdate of the configuration
    * @param birthDate Birthdate
    */
-  public void setBirthdate(double birthDate){
+  public void setBirthdate(double birthDate) {
     this._birthdate = birthDate;
   }
 
@@ -84,7 +84,7 @@ public class Particle {
    * Returns the birthdate of the configuration
    * @return birth date
    */
-  public double getBirthdate(){
+  public double getBirthdate() {
     return _birthdate;
   }
 
@@ -100,7 +100,7 @@ public class Particle {
    * Returns maximize
    * @return Maximize
    */
-  public boolean getMaximize (){
+  public boolean getMaximize() {
     return _maximize;
   }
 
@@ -108,7 +108,7 @@ public class Particle {
    * Sets the param Set Id
    * @param paramSetId Param Set Id
    */
-  public void setPramSetId(Long paramSetId){
+  public void setPramSetId(Long paramSetId) {
     this._paramSetId = paramSetId;
   }
 
@@ -116,7 +116,7 @@ public class Particle {
    * Returns the param set id
    * @return the param set id
    */
-  public Long getParamSetId(){
+  public Long getParamSetId() {
     return _paramSetId;
   }
 }

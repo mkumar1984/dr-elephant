@@ -51,6 +51,6 @@ public class JobSavedState extends Model {
     return jobDefinitionId != null && savedState != null;
   }
 
-  public static Finder<Integer, JobSavedState> find = new Finder<Integer, JobSavedState>(Integer.class,
-      JobSavedState.class);
+  public static Finder<Integer, JobSavedState> find =
+      new Finder<Integer, JobSavedState>(Integer.class, JobSavedState.class);
 }

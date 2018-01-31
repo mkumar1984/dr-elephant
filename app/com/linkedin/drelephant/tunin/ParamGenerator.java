@@ -82,16 +82,14 @@ public abstract class ParamGenerator {
     List<TuningJobExecution> pendingParamExecutionList = new ArrayList<TuningJobExecution>();
     //Todo: Check if the find works correctly?
     try {
-      pendingParamExecutionList =
-          TuningJobExecution.find
-              .select("*")
-              .fetch(TuningJobExecution.TABLE.jobExecution, "*")
-              .where()
-              .or(Expr.or(Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.CREATED),
-                  Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.SENT)),
-                  Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.EXECUTED))
-              //.eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
-              .findList();
+      pendingParamExecutionList = TuningJobExecution.find.select("*")
+          .fetch(TuningJobExecution.TABLE.jobExecution, "*")
+          .where()
+          .or(Expr.or(Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.CREATED),
+              Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.SENT)),
+              Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.EXECUTED))
+          //.eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
+          .findList();
     } catch (NullPointerException e) {
       logger.info("ParamGenerator.fetchJobsForParamSuggestion: No pending executions found");
     }
@@ -106,9 +104,11 @@ public abstract class ParamGenerator {
     List<TuningJobDefinition> tuningJobDefinitionList = new ArrayList<TuningJobDefinition>();
 
     try {
-      tuningJobDefinitionList =
-          TuningJobDefinition.find.select("*").fetch(TuningJobDefinition.TABLE.job, "*").where()
-              .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findList();
+      tuningJobDefinitionList = TuningJobDefinition.find.select("*")
+          .fetch(TuningJobDefinition.TABLE.job, "*")
+          .where()
+          .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
+          .findList();
     } catch (NullPointerException e) {
       logger.error("No tuning enabled jobs found");
     }
@@ -150,43 +150,43 @@ public abstract class ParamGenerator {
     for (TuningJobDefinition tuningJobDefinition : tuninJobs) {
       JobDefinition job = tuningJobDefinition.job;
       logger.info("Getting tuning information for job: " + job.id);
-      List<TuningParameter> tuningParameterList =
-          TuningParameter.find
-              .where()
-              .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
-                  tuningJobDefinition.tuningAlgorithm.id).eq(TuningParameter.TABLE.isDerived, 0).findList();
+      List<TuningParameter> tuningParameterList = TuningParameter.find.where()
+          .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
+              tuningJobDefinition.tuningAlgorithm.id)
+          .eq(TuningParameter.TABLE.isDerived, 0)
+          .findList();
 
       try {
         logger.info("Trying to overwrite default parameters for job " + tuningJobDefinition.job.id);
-        TuningJobExecution defaultJobExecution =
-            TuningJobExecution.find
-                .where()
-                .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
-                    tuningJobDefinition.job.id).eq(TuningJobExecution.TABLE.isDefaultExecution, 1)
-                .orderBy(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc").setMaxRows(1)
-                .findUnique();
+        TuningJobExecution defaultJobExecution = TuningJobExecution.find.where()
+            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
+                tuningJobDefinition.job.id)
+            .eq(TuningJobExecution.TABLE.isDefaultExecution, 1)
+            .orderBy(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc")
+            .setMaxRows(1)
+            .findUnique();
         logger.info("Found default execution: " + Json.toJson(defaultJobExecution));
         if (defaultJobExecution != null && defaultJobExecution.jobExecution != null) {
-          List<JobSuggestedParamValue> jobSuggestedParamValueList =
-              JobSuggestedParamValue.find
-                  .where()
-                  .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
-                      defaultJobExecution.jobExecution.id).findList();
+          List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
+              .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
+                  defaultJobExecution.jobExecution.id)
+              .findList();
           logger.info("Found default params " + Json.toJson(jobSuggestedParamValueList));
           logger.info("Size: " + jobSuggestedParamValueList.size());
           if (jobSuggestedParamValueList.size() > 0) {
             Map<Integer, Double> defaultExecutionParamMap = new HashMap<Integer, Double>();
 
             for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-              defaultExecutionParamMap
-                  .put(jobSuggestedParamValue.tuningParameter.id, jobSuggestedParamValue.paramValue);
+              defaultExecutionParamMap.put(jobSuggestedParamValue.tuningParameter.id,
+                  jobSuggestedParamValue.paramValue);
             }
 
             for (TuningParameter tuningParameter : tuningParameterList) {
               Integer paramId = tuningParameter.id;
               if (defaultExecutionParamMap.containsKey(paramId)) {
-                logger.info("Updating value of param " + tuningParameter.paramName + " to "
-                    + defaultExecutionParamMap.get(paramId));
+                logger.info(
+                    "Updating value of param " + tuningParameter.paramName + " to " + defaultExecutionParamMap.get(
+                        paramId));
                 tuningParameter.defaultValue = defaultExecutionParamMap.get(paramId);
               }
             }
@@ -211,9 +211,11 @@ public abstract class ParamGenerator {
           Long paramSetId = particle.getParamSetId();
 
           logger.info("Param set id: " + paramSetId.toString());
-          TuningJobExecution tuningJobExecution =
-              TuningJobExecution.find.select("*").fetch(TuningJobExecution.TABLE.jobExecution, "*").where()
-                  .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id, paramSetId).findUnique();
+          TuningJobExecution tuningJobExecution = TuningJobExecution.find.select("*")
+              .fetch(TuningJobExecution.TABLE.jobExecution, "*")
+              .where()
+              .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id, paramSetId)
+              .findUnique();
 
           JobExecution jobExecution = tuningJobExecution.jobExecution;
 
@@ -315,16 +317,18 @@ public abstract class ParamGenerator {
         continue;
       }
 
-      TuningJobDefinition tuningJobDefinition =
-          TuningJobDefinition.find.select("*").fetch(TuningJobDefinition.TABLE.job, "*").where()
-              .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
-              .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findUnique();
+      TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
+          .fetch(TuningJobDefinition.TABLE.job, "*")
+          .where()
+          .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
+          .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
+          .findUnique();
 
-      List<TuningParameter> derivedParameterList =
-          TuningParameter.find
-              .where()
-              .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
-                  tuningJobDefinition.tuningAlgorithm.id).eq(TuningParameter.TABLE.isDerived, 1).findList();
+      List<TuningParameter> derivedParameterList = TuningParameter.find.where()
+          .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
+              tuningJobDefinition.tuningAlgorithm.id)
+          .eq(TuningParameter.TABLE.isDerived, 1)
+          .findList();
 
       logger.info("Derived params: " + Json.toJson(derivedParameterList));
 

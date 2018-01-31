@@ -67,7 +67,6 @@ public class FitnessComputeUtil {
     updateExecutionMetrics(completedExecutions);
     logger.info("Fitness updated");
     return completedExecutions;
-
   }
 
   /**
@@ -80,9 +79,10 @@ public class FitnessComputeUtil {
     List<TuningJobExecution> outputJobExecutions = new ArrayList<TuningJobExecution>();
 
     try {
-      jobExecutions =
-          TuningJobExecution.find.select("*").where()
-              .eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.EXECUTED).findList();
+      jobExecutions = TuningJobExecution.find.select("*")
+          .where()
+          .eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.EXECUTED)
+          .findList();
 
       for (TuningJobExecution tuningJobExecution : jobExecutions) {
         long diff = System.currentTimeMillis() - tuningJobExecution.jobExecution.updatedTs.getTime();
@@ -117,22 +117,24 @@ public class FitnessComputeUtil {
         JobDefinition job = jobExecution.job;
 
         // job id match and tuning enabled
-        TuningJobDefinition tuningJobDefinition =
-            TuningJobDefinition.find.select("*").fetch(TuningJobDefinition.TABLE.job, "*").where()
-                .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
-                .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findUnique();
+        TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
+            .fetch(TuningJobDefinition.TABLE.job, "*")
+            .where()
+            .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
+            .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
+            .findUnique();
 
         logger.debug("Job Execution Update: Flow Execution ID " + jobExecution.flowExecution.flowExecId + " Job ID "
             + jobExecution.jobExecId);
 
-        List<AppResult> results =
-            AppResult.find
-                .select("*")
-                .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
-                .fetch(
-                    AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS,
-                    "*").where().eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
-                .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId).findList();
+        List<AppResult> results = AppResult.find.select("*")
+            .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
+            .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS,
+                "*")
+            .where()
+            .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
+            .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId)
+            .findList();
 
         if (results != null && results.size() > 0) {
           Long totalExecutionTime = 0L;
@@ -168,8 +170,8 @@ public class FitnessComputeUtil {
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
-          } else if (jobExecution.resourceUsage > (tuningJobDefinition.averageResourceUsage
-              * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
+          } else if (jobExecution.resourceUsage > (
+              tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * totalInputBytesInBytes);
@@ -198,8 +200,8 @@ public class FitnessComputeUtil {
         }
       } catch (Exception e) {
         //String stackTrace = e.getStackTrace ().toString ();
-        logger.error(
-            "Error updating fitness of job_exec_id: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ", e);
+        logger.error("Error updating fitness of job_exec_id: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ",
+            e);
       }
     }
     logger.debug("Execution metrics updated");

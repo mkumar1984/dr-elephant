@@ -76,18 +76,18 @@ public class BaselineComputeUtil {
 
     logger.debug("Computing baseline for jobs: " + Json.toJson(tuningJobDefinition));
 
-    String sql =
-        "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
-            + "(SELECT job_exec_id, SUM(resource_used) AS resource_used, "
-            + "SUM(finish_time - start_time - total_delay) AS execution_time, " + "MAX(start_time) AS start_time "
-            + "FROM yarn_app_result WHERE job_def_id=:jobDefId " + "GROUP BY job_exec_id "
-            + "ORDER BY start_time DESC " + "LIMIT :num) temp";
+    String sql = "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
+        + "(SELECT job_exec_id, SUM(resource_used) AS resource_used, "
+        + "SUM(finish_time - start_time - total_delay) AS execution_time, " + "MAX(start_time) AS start_time "
+        + "FROM yarn_app_result WHERE job_def_id=:jobDefId " + "GROUP BY job_exec_id " + "ORDER BY start_time DESC "
+        + "LIMIT :num) temp";
 
     logger.debug("Running query for baseline computation " + sql);
 
-    SqlRow baseline =
-        Ebean.createSqlQuery(sql).setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
-            .setParameter("num", numJobsForBaseline).findUnique();
+    SqlRow baseline = Ebean.createSqlQuery(sql)
+        .setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
+        .setParameter("num", numJobsForBaseline)
+        .findUnique();
 
     Double avgResourceUsage = 0D;
     Double avgExecutionTime = 0D;
@@ -101,20 +101,20 @@ public class BaselineComputeUtil {
   }
 
   public Long getAvgInputSizeInBytes(String jobDefId) {
-    String sql =
-        "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
-            + "(SELECT job_exec_id, SUM(value) inputSizeInBytes, MAX(start_time) AS start_time "
-            + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr "
-            + "ON yar.id=yahr.yarn_app_result_id " + "INNER JOIN yarn_app_heuristic_result_details yahrd "
-            + "ON yahr.id=yahrd.yarn_app_heuristic_result_id " + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='"
-            + CommonConstantsHeuristic.MAPPER_SPEED + "' " + "AND yahrd.name='Total input size in MB' "
-            + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
+    String sql = "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
+        + "(SELECT job_exec_id, SUM(value) inputSizeInBytes, MAX(start_time) AS start_time "
+        + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr " + "ON yar.id=yahr.yarn_app_result_id "
+        + "INNER JOIN yarn_app_heuristic_result_details yahrd " + "ON yahr.id=yahrd.yarn_app_heuristic_result_id "
+        + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='" + CommonConstantsHeuristic.MAPPER_SPEED + "' "
+        + "AND yahrd.name='Total input size in MB' "
+        + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
 
     logger.debug("Running query for average input size computation " + sql);
 
-    SqlRow baseline =
-        Ebean.createSqlQuery(sql).setParameter("jobDefId", jobDefId).setParameter("num", numJobsForBaseline)
-            .findUnique();
+    SqlRow baseline = Ebean.createSqlQuery(sql)
+        .setParameter("jobDefId", jobDefId)
+        .setParameter("num", numJobsForBaseline)
+        .findUnique();
     Double avgInputSizeInBytes = baseline.getDouble("avgInputSizeInMB") * FileUtils.ONE_MB;
     return avgInputSizeInBytes.longValue();
   }

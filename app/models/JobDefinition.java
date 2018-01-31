@@ -31,6 +31,7 @@ import javax.persistence.Table;
 
 import play.db.ebean.Model;
 
+
 @Entity
 @Table(name = "job_definition")
 public class JobDefinition extends Model {
@@ -72,7 +73,7 @@ public class JobDefinition extends Model {
   public String jobDefUrl;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name="flow_definition", joinColumns={@JoinColumn(name ="flow_definition_id", referencedColumnName="id")})
+  @JoinTable(name = "flow_definition", joinColumns = {@JoinColumn(name = "flow_definition_id", referencedColumnName = "id")})
   public FlowDefinition flowDefinition;
 
   @Column(nullable = true)
@@ -81,6 +82,6 @@ public class JobDefinition extends Model {
   @Column(nullable = true)
   public Timestamp updatedTs;
 
-  public static Finder<Integer, JobDefinition> find = new Finder<Integer, JobDefinition>(Integer.class, JobDefinition.class);
-
+  public static Finder<Integer, JobDefinition> find =
+      new Finder<Integer, JobDefinition>(Integer.class, JobDefinition.class);
 }

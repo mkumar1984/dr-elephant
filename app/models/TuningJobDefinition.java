@@ -33,7 +33,6 @@ import play.db.ebean.Model;
 @Table(name = "tuning_job_definition")
 public class TuningJobDefinition extends Model {
 
-
   private static final long serialVersionUID = 1L;
 
   public static final int JOB_NAME_LIMIT = 1000;
@@ -54,16 +53,14 @@ public class TuningJobDefinition extends Model {
   }
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "job_definition", joinColumns = { @JoinColumn(name = "job_definition_id",
-      referencedColumnName = "id") })
+  @JoinTable(name = "job_definition", joinColumns = {@JoinColumn(name = "job_definition_id", referencedColumnName = "id")})
   public JobDefinition job;
 
   @Column(length = JOB_NAME_LIMIT, nullable = false)
   public String client;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "tuning_algorithm", joinColumns = { @JoinColumn(name = "tuning_algorithm_id",
-      referencedColumnName = "id") })
+  @JoinTable(name = "tuning_algorithm", joinColumns = {@JoinColumn(name = "tuning_algorithm_id", referencedColumnName = "id")})
   public TuningAlgorithm tuningAlgorithm;
 
   @Column(nullable = false)
@@ -91,13 +88,13 @@ public class TuningJobDefinition extends Model {
       return null;
     }
   }
-  public static Model.Finder<Integer, TuningJobDefinition> find = new Model.Finder<Integer, TuningJobDefinition>(
-      Integer.class, TuningJobDefinition.class);
 
-    @Column(nullable = false)
-    public Timestamp createdTs;
+  public static Model.Finder<Integer, TuningJobDefinition> find =
+      new Model.Finder<Integer, TuningJobDefinition>(Integer.class, TuningJobDefinition.class);
 
-    @Column(nullable = false)
-    public Timestamp updatedTs;
+  @Column(nullable = false)
+  public Timestamp createdTs;
 
+  @Column(nullable = false)
+  public Timestamp updatedTs;
 }

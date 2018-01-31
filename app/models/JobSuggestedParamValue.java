@@ -55,16 +55,13 @@ public class JobSuggestedParamValue extends Model {
   public Timestamp updatedTs;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "job_execution",
-      joinColumns = { @JoinColumn(name = "job_execution_id", referencedColumnName = "id") })
+  @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "job_execution_id", referencedColumnName = "id")})
   public JobExecution jobExecution;
 
   @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "tuning_parameter", joinColumns = { @JoinColumn(name = "tuning_parameter_id",
-      referencedColumnName = "id") })
+  @JoinTable(name = "tuning_parameter", joinColumns = {@JoinColumn(name = "tuning_parameter_id", referencedColumnName = "id")})
   public TuningParameter tuningParameter;
 
-  public static Finder<Long, JobSuggestedParamValue> find = new Finder<Long, JobSuggestedParamValue>(Long.class,
-      JobSuggestedParamValue.class);
-
+  public static Finder<Long, JobSuggestedParamValue> find =
+      new Finder<Long, JobSuggestedParamValue>(Long.class, JobSuggestedParamValue.class);
 }

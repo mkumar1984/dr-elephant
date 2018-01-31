@@ -40,10 +40,7 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
   private AzkabanJobStatusUtil _azkabanJobStatusUtil;
 
   public enum AzkabanJobStatus {
-    FAILED,
-    CANCELLED,
-    KILLED,
-    SUCCEEDED
+    FAILED, CANCELLED, KILLED, SUCCEEDED
   }
 
   /**
@@ -79,8 +76,8 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
                   tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
                   jobExecution.executionState = ExecutionState.FAILED;
                 }
-                if (job.getValue().equals(AzkabanJobStatus.CANCELLED.toString())
-                    || job.getValue().equals(AzkabanJobStatus.KILLED.toString())) {
+                if (job.getValue().equals(AzkabanJobStatus.CANCELLED.toString()) || job.getValue()
+                    .equals(AzkabanJobStatus.KILLED.toString())) {
                   tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
                   jobExecution.executionState = ExecutionState.CANCELLED;
                 }

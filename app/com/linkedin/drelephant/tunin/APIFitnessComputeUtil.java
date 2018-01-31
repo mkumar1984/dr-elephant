@@ -63,8 +63,8 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
   private long _currentTime = 0;
   private long _tokenUpdatedTime = 0;
 
-  private static final long TOKEN_UPDATE_INTERVAL = Statistics.MINUTE_IN_MS * 30 + new Random().nextLong()
-      % (3 * Statistics.MINUTE_IN_MS);
+  private static final long TOKEN_UPDATE_INTERVAL =
+      Statistics.MINUTE_IN_MS * 30 + new Random().nextLong() % (3 * Statistics.MINUTE_IN_MS);
   private static final long FETCH_DELAY = 60000;
 
   public APIFitnessComputeUtil() {
@@ -87,17 +87,18 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
         JobExecution jobExecution = tuningJobExecution.jobExecution;
         JobDefinition job = jobExecution.job;
 
-        URL jobExecURL =
-            new URL(new URL(drElephantURL), String.format("/rest/jobexec?id=%s",
-                URLEncoder.encode(jobExecution.jobExecId)));
+        URL jobExecURL = new URL(new URL(drElephantURL),
+            String.format("/rest/jobexec?id=%s", URLEncoder.encode(jobExecution.jobExecId)));
         HttpURLConnection conn = (HttpURLConnection) jobExecURL.openConnection();
         JsonNode allApps = _objectMapper.readTree(conn.getInputStream());
 
         // job id match and tuning enabled
-        TuningJobDefinition tuningJobDefinition =
-            TuningJobDefinition.find.select("*").fetch(TuningJobDefinition.TABLE.job, "*").where()
-                .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
-                .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findUnique();
+        TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
+            .fetch(TuningJobDefinition.TABLE.job, "*")
+            .where()
+            .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
+            .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
+            .findUnique();
 
         if (allApps != null && allApps.size() > 0) {
           Long totalExecutionTime = 0L;
@@ -107,8 +108,8 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
           for (JsonNode app : allApps) {
             logger.info("Job Execution Update: ApplicationID " + app.get("id").getTextValue());
             Long executionTime =
-                app.get("finishTime").getLongValue() - app.get("startTime").getLongValue()
-                    - app.get("totalDelay").getLongValue();
+                app.get("finishTime").getLongValue() - app.get("startTime").getLongValue() - app.get("totalDelay")
+                    .getLongValue();
             totalExecutionTime += executionTime;
             totalResourceUsed += app.get("resourceUsed").getDoubleValue();
             totalInputBytesInBytes += getTotalInputBytes(app.get("id").getTextValue());
@@ -131,8 +132,8 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
-          } else if (jobExecution.resourceUsage > (tuningJobDefinition.averageResourceUsage
-              * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
+          } else if (jobExecution.resourceUsage > (
+              tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * totalInputBytesInBytes);
@@ -160,8 +161,8 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
           }
         }
       } catch (Exception e) {
-        logger.error(
-            "Error updating fitness of job_exec_id: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ", e);
+        logger.error("Error updating fitness of job_exec_id: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ",
+            e);
       }
     }
     logger.debug("Execution metrics updated");
@@ -169,11 +170,16 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
 
   public Long getTotalInputBytes(String applicationID) throws IOException, AuthenticationException {
     applicationID = applicationID.replace("application_", "job_");
-    URL applicationURL =
-        new URL(new URL(jobHistoryServerURL), String.format("/ws/v1/history/mapreduce/jobs/%s/counters", applicationID));
+    URL applicationURL = new URL(new URL(jobHistoryServerURL),
+        String.format("/ws/v1/history/mapreduce/jobs/%s/counters", applicationID));
     HttpURLConnection conn = (HttpURLConnection) _authenticatedURL.openConnection(applicationURL, _token);
     JsonNode rootNode = _objectMapper.readTree(conn.getInputStream());
-    return rootNode.get("jobCounters").get("counterGroup").get(0).get("counter").get(5).get("totalCounterValue")
+    return rootNode.get("jobCounters")
+        .get("counterGroup")
+        .get(0)
+        .get("counter")
+        .get(5)
+        .get("totalCounterValue")
         .getLongValue();
   }
 

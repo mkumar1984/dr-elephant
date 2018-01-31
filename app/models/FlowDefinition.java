@@ -27,9 +27,8 @@ import play.db.ebean.Model;
 
 
 @Entity
-@Table(name="flow_definition")
-public class FlowDefinition  extends Model  {
-
+@Table(name = "flow_definition")
+public class FlowDefinition extends Model {
 
   private static final long serialVersionUID = -6227998928253066437L;
 
@@ -50,8 +49,8 @@ public class FlowDefinition  extends Model  {
   @Column(nullable = false)
   public String flowDefUrl;
 
-  public static Model.Finder<Integer, FlowDefinition>
-      find = new Model.Finder<Integer, FlowDefinition> (Integer.class, FlowDefinition.class);
+  public static Model.Finder<Integer, FlowDefinition> find =
+      new Model.Finder<Integer, FlowDefinition>(Integer.class, FlowDefinition.class);
 }
 
 
