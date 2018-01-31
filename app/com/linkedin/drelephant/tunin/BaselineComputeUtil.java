@@ -20,6 +20,7 @@ import java.util.List;
 
 import models.TuningJobDefinition;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
@@ -114,7 +115,7 @@ public class BaselineComputeUtil {
     SqlRow baseline =
         Ebean.createSqlQuery(sql).setParameter("jobDefId", jobDefId).setParameter("num", numJobsForBaseline)
             .findUnique();
-    Double avgInputSizeInBytes = baseline.getDouble("avgInputSizeInMB") * 1024 * 1024;
+    Double avgInputSizeInBytes = baseline.getDouble("avgInputSizeInMB") * FileUtils.ONE_MB;
     return avgInputSizeInBytes.longValue();
   }
 }

@@ -29,6 +29,7 @@ import models.TuningJobDefinition;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
@@ -129,12 +130,12 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
-                    * 1024.0 * 1024.0 * 1024 / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
+                    * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
           } else if (jobExecution.resourceUsage > (tuningJobDefinition.averageResourceUsage
               * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
-                    * 1024.0 * 1024.0 * 1024 / (100.0 * totalInputBytesInBytes);
+                    * FileUtils.ONE_GB / (100.0 * totalInputBytesInBytes);
           } else {
             tuningJobExecution.fitness = jobExecution.resourceUsage * 1024.0 * 1024.0 * 1024.0 / totalInputBytesInBytes;
           }
@@ -149,7 +150,7 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
-                    * 1024.0 * 1024.0 * 1024 / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
+                    * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
             jobExecution.executionTime = 0D;
             jobExecution.resourceUsage = 0D;
             jobExecution.inputSizeInBytes = 0D;

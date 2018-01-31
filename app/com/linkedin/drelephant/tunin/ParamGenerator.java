@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import models.*;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import play.libs.Json;
 import java.util.ArrayList;
@@ -428,7 +429,7 @@ public abstract class ParamGenerator {
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
         mrMapMemory = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
-        pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / (1024 * 1024);
+        pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
       }
     }
 

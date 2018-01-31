@@ -187,7 +187,7 @@ public class FitnessComputeUtil {
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
-                    * 1024.0 * 1024.0 * 1024 / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
+                    * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
             jobExecution.executionTime = 0D;
             jobExecution.resourceUsage = 0D;
             jobExecution.inputSizeInBytes = 0D;
@@ -218,7 +218,7 @@ public class FitnessComputeUtil {
           if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
             for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
               if (appHeuristicResultDetails.name.equals(CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB)) {
-                totalInputBytes += Math.round(Double.parseDouble(appHeuristicResultDetails.value) * 1024 * 1024);
+                totalInputBytes += Math.round(Double.parseDouble(appHeuristicResultDetails.value) * FileUtils.ONE_MB);
               }
             }
           }
