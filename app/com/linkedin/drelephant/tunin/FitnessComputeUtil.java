@@ -141,8 +141,6 @@ public class FitnessComputeUtil {
 
           for (AppResult appResult : results) {
             logger.info("Job Execution Update: ApplicationID " + appResult.id);
-            //            Long executionTime = appResult.finishTime - appResult.startTime - appResult.totalDelay;
-            //            totalExecutionTime += executionTime;
             totalResourceUsed += appResult.resourceUsed;
             totalInputBytesInBytes += getTotalInputBytes(appResult);
           }

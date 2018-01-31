@@ -27,7 +27,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "job_saved_state")
 public class JobSavedState extends Model {
-  /** */
+
   private static final long serialVersionUID = 1L;
 
   public static class TABLE {

@@ -50,7 +50,7 @@ public abstract class ParamGenerator {
    * @param jsonParticleList A list of  configurations (particles) in json
    * @return Particle List
    */
-  public List<Particle> jsonToParticleList(JsonNode jsonParticleList) {
+  private List<Particle> jsonToParticleList(JsonNode jsonParticleList) {
 
     List<Particle> particleList = new ArrayList<Particle>();
     if (jsonParticleList == null) {
@@ -71,7 +71,7 @@ public abstract class ParamGenerator {
    * Fetches the list to job which need new parameter suggestion
    * @return Job list
    */
-  public List<TuningJobDefinition> fetchJobsForParamSuggestion() {
+  private List<TuningJobDefinition> fetchJobsForParamSuggestion() {
 
     // Todo: [Important] Change the logic. This is very rigid. Ideally you should look at the param set ids in the saved state,
     // todo: [continuation] if their fitness is computed, pso can generate new params for the job
@@ -126,7 +126,7 @@ public abstract class ParamGenerator {
    * @param particleList Particle List
    * @return JsonNode
    */
-  public JsonNode particleListToJson(List<Particle> particleList) {
+  private JsonNode particleListToJson(List<Particle> particleList) {
     JsonNode jsonNode;
 
     if (particleList == null) {
@@ -143,7 +143,7 @@ public abstract class ParamGenerator {
    * @param tuninJobs Job List
    * @return Tuning information list
    */
-  public List<JobTuningInfo> getJobsTuningInfo(List<TuningJobDefinition> tuninJobs) {
+  private List<JobTuningInfo> getJobsTuningInfo(List<TuningJobDefinition> tuninJobs) {
 
     List<JobTuningInfo> jobTuningInfoList = new ArrayList<JobTuningInfo>();
     for (TuningJobDefinition tuningJobDefinition : tuninJobs) {
@@ -251,7 +251,7 @@ public abstract class ParamGenerator {
    * @param paramList Parameter List
    * @return Suggested Param Value List
    */
-  public List<JobSuggestedParamValue> getParamValueList(Particle particle, List<TuningParameter> paramList) {
+  private List<JobSuggestedParamValue> getParamValueList(Particle particle, List<TuningParameter> paramList) {
     logger.debug("Particle is: " + Json.toJson(particle));
     List<JobSuggestedParamValue> jobSuggestedParamValueList = new ArrayList<JobSuggestedParamValue>();
 
@@ -294,7 +294,7 @@ public abstract class ParamGenerator {
    *
    * @param jobTuningInfoList JobTuningInfo List
    */
-  public void updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
+  private void updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
 
     if (jobTuningInfoList == null) {
       logger.info("Tunerlist is null");
@@ -415,7 +415,7 @@ public abstract class ParamGenerator {
    * @param jobSuggestedParamValueList
    * @return true if the constraint is violated, false otherwise
    */
-  public boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+  private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
 
     Integer violations = 0;
     Double mrSortMemory = null;
@@ -456,7 +456,7 @@ public abstract class ParamGenerator {
    * Save the tuning info list to the database
    * @param jobTuningInfoList Tuning Info List
    */
-  public void saveTunerState(List<JobTuningInfo> jobTuningInfoList) {
+  private void saveTunerState(List<JobTuningInfo> jobTuningInfoList) {
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
       if (jobTuningInfo.getTunerState() == null) {
         continue;
@@ -475,7 +475,7 @@ public abstract class ParamGenerator {
    * Saved the list of suggested parameter values to database
    * @param jobSuggestedParamValueList Suggested Parameter Values List
    */
-  public void saveSuggestedParams(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+  private void saveSuggestedParams(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
     for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
       jobSuggestedParamValue.save();
     }
@@ -487,7 +487,7 @@ public abstract class ParamGenerator {
    * @return Param Set Id
    */
 
-  public Long saveSuggestedParamMetadata(TuningJobExecution tuningJobExecution) {
+  private Long saveSuggestedParamMetadata(TuningJobExecution tuningJobExecution) {
     logger.info("tuningExecution: " + Json.toJson(tuningJobExecution));
     tuningJobExecution.save();
     return tuningJobExecution.jobExecution.id;

@@ -33,7 +33,7 @@ import play.db.ebean.Model;
 @Table(name = "tuning_job_definition")
 public class TuningJobDefinition extends Model {
 
-  /** */
+
   private static final long serialVersionUID = 1L;
 
   public static final int JOB_NAME_LIMIT = 1000;
