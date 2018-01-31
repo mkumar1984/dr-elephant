@@ -86,14 +86,12 @@ public abstract class JobCompleteDetector {
    * @param jobExecutions JobExecution list
    * @return Update status
    */
-  private boolean updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
-    boolean updateStatus = true;
+  private void updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
     for (TuningJobExecution tuningJobExecution : jobExecutions) {
       JobExecution jobExecution = tuningJobExecution.jobExecution;
       logger.debug("Updating jobExecution: " + Json.toJson(jobExecution));
       jobExecution.update();
       tuningJobExecution.update();
     }
-    return updateStatus;
   }
 }
