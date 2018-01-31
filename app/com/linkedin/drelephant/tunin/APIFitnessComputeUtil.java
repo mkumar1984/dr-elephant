@@ -138,7 +138,7 @@ public class APIFitnessComputeUtil extends FitnessComputeUtil {
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * totalInputBytesInBytes);
           } else {
-            tuningJobExecution.fitness = jobExecution.resourceUsage * 1024.0 * 1024.0 * 1024.0 / totalInputBytesInBytes;
+            tuningJobExecution.fitness = jobExecution.resourceUsage * FileUtils.ONE_GB / totalInputBytesInBytes;
           }
           tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
           jobExecution.update();
