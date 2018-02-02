@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 
 import play.libs.Json;
 
+import com.linkedin.drelephant.AutoTuner;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.util.Utils;
@@ -53,7 +54,7 @@ public class FitnessComputeUtil {
 
   public FitnessComputeUtil() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    waitInterval = Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * 60000);
+    waitInterval = Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * AutoTuner.ONE_MIN);
   }
 
   /**
