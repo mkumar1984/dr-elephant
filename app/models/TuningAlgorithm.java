@@ -26,6 +26,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import com.avaje.ebean.annotation.UpdatedTimestamp;
+
 import play.db.ebean.Model;
 
 
@@ -74,6 +76,8 @@ public class TuningAlgorithm extends Model {
   public OptimizationMetric optimizationMetric;
 
   public Timestamp createdTs;
+
+  @UpdatedTimestamp
   public Timestamp updatedTs;
 
   public static Finder<Integer, TuningAlgorithm> find =

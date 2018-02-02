@@ -29,6 +29,8 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import com.avaje.ebean.annotation.UpdatedTimestamp;
+
 import play.db.ebean.Model;
 
 
@@ -84,6 +86,7 @@ public class TuningParameter extends Model {
   public Timestamp createdTs;
 
   @Column(nullable = false)
+  @UpdatedTimestamp
   public Timestamp updatedTs;
 
   @Column(nullable = false)

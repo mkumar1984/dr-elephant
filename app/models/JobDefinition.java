@@ -29,6 +29,8 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import com.avaje.ebean.annotation.UpdatedTimestamp;
+
 import play.db.ebean.Model;
 
 
@@ -80,6 +82,7 @@ public class JobDefinition extends Model {
   public Timestamp createdTs;
 
   @Column(nullable = true)
+  @UpdatedTimestamp
   public Timestamp updatedTs;
 
   public static Finder<Integer, JobDefinition> find =

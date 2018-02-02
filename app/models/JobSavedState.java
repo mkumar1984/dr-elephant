@@ -17,11 +17,16 @@
 package models;
 
 import java.sql.Timestamp;
+
 import javax.persistence.Column;
+
 import play.db.ebean.Model;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+
+import com.avaje.ebean.annotation.UpdatedTimestamp;
 
 
 @Entity
@@ -45,6 +50,8 @@ public class JobSavedState extends Model {
   public byte[] savedState;
 
   public Timestamp createdTs;
+
+  @UpdatedTimestamp
   public Timestamp updatedTs;
 
   public boolean isValid() {
