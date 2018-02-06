@@ -89,7 +89,7 @@ class restartable_pso(inspyred.ec.EvolutionaryComputation):
         self._previous_population = population[:]
         return offspring
 
-    def evolve(self, generator, evaluator, pop_size=100, seeds=None, initial_fit = None,
+    def evolve(self, generator, evaluator, pop_size=100, seeds=None, initial_fit=None,
                maximize=True, bounder=None, **args):
         """Perform the evolution.
 
@@ -165,10 +165,10 @@ class restartable_pso(inspyred.ec.EvolutionaryComputation):
                 self.population.append(ind)
             else:
                 self.logger.warning(
-                        'excluding candidate {0} because fitness received as '
-                        'None'.format(cs))
+                    'excluding candidate {0} because fitness received as '
+                    'None'.format(cs))
         self.logger.debug(
-                'population size is now {0}'.format(len(self.population)))
+            'population size is now {0}'.format(len(self.population)))
 
         self.num_evaluations = len(initial_fit)
         self.num_generations = 0
@@ -180,23 +180,23 @@ class restartable_pso(inspyred.ec.EvolutionaryComputation):
                                      args=self._kwargs)
         self.logger.debug('archive size is now {0}'.format(len(self.archive)))
         self.logger.debug(
-                'population size is now {0}'.format(len(self.population)))
+            'population size is now {0}'.format(len(self.population)))
 
         if isinstance(self.observer, collections.Iterable):
             for obs in self.observer:
                 self.logger.debug(
-                        'observation using {0} at generation {1} and '
-                        'evaluation {'
-                        '2}'.format(obs.__name__, self.num_generations,
-                                    self.num_evaluations))
+                    'observation using {0} at generation {1} and '
+                    'evaluation {'
+                    '2}'.format(obs.__name__, self.num_generations,
+                                self.num_evaluations))
                 obs(population=list(self.population),
                     num_generations=self.num_generations,
                     num_evaluations=self.num_evaluations, args=self._kwargs)
         else:
             self.logger.debug(
-                    'observation using {0} at generation {1} and evaluation {'
-                    '2}'.format(self.observer.__name__, self.num_generations,
-                                self.num_evaluations))
+                'observation using {0} at generation {1} and evaluation {'
+                '2}'.format(self.observer.__name__, self.num_generations,
+                            self.num_evaluations))
             self.observer(population=list(self.population),
                           num_generations=self.num_generations,
                           num_evaluations=self.num_evaluations,
@@ -207,9 +207,9 @@ class restartable_pso(inspyred.ec.EvolutionaryComputation):
                                          self.num_evaluations):
             # Select individuals.
             self.logger.debug(
-                    'selection using {0} at generation {1} and evaluation {'
-                    '2}'.format(self.selector.__name__, self.num_generations,
-                                self.num_evaluations))
+                'selection using {0} at generation {1} and evaluation {'
+                '2}'.format(self.selector.__name__, self.num_generations,
+                            self.num_evaluations))
             parents = self.selector(random=self._random,
                                     population=list(self.population),
                                     args=self._kwargs)
@@ -220,30 +220,30 @@ class restartable_pso(inspyred.ec.EvolutionaryComputation):
             if isinstance(self.variator, collections.Iterable):
                 for op in self.variator:
                     self.logger.debug(
-                            'variation using {0} at generation {1} and '
-                            'evaluation '
-                            '{2}'.format(op.__name__, self.num_generations,
-                                         self.num_evaluations))
+                        'variation using {0} at generation {1} and '
+                        'evaluation '
+                        '{2}'.format(op.__name__, self.num_generations,
+                                     self.num_evaluations))
                     offspring_cs = op(random=self._random,
                                       candidates=offspring_cs,
                                       args=self._kwargs)
             else:
                 self.logger.debug(
-                        'variation using {0} at generation {1} and evaluation '
-                        '{2}'.format(self.variator.__name__,
-                                     self.num_generations,
-                                     self.num_evaluations))
+                    'variation using {0} at generation {1} and evaluation '
+                    '{2}'.format(self.variator.__name__,
+                                 self.num_generations,
+                                 self.num_evaluations))
                 offspring_cs = self.variator(random=self._random,
                                              candidates=offspring_cs,
                                              args=self._kwargs)
             self.logger.debug(
-                    'created {0} offspring'.format(len(offspring_cs)))
+                'created {0} offspring'.format(len(offspring_cs)))
 
             # Evaluate offspring.
             self.logger.debug(
-                    'evaluation using {0} at generation {1} and evaluation {'
-                    '2}'.format(evaluator.__name__, self.num_generations,
-                                self.num_evaluations))
+                'evaluation using {0} at generation {1} and evaluation {'
+                '2}'.format(evaluator.__name__, self.num_generations,
+                            self.num_evaluations))
             offspring_fit = evaluator(candidates=offspring_cs,
                                       args=self._kwargs)
             offspring = []
@@ -254,72 +254,70 @@ class restartable_pso(inspyred.ec.EvolutionaryComputation):
                     offspring.append(off)
                 else:
                     self.logger.warning(
-                            'excluding candidate {0} because fitness '
-                            'received as '
-                            'None'.format(cs))
+                        'excluding candidate {0} because fitness '
+                        'received as '
+                        'None'.format(cs))
             self.num_evaluations += len(offspring_fit)
 
             # Replace individuals.
             self.logger.debug(
-                    'replacement using {0} at generation {1} and evaluation {'
-                    '2}'.format(self.replacer.__name__, self.num_generations,
-                                self.num_evaluations))
+                'replacement using {0} at generation {1} and evaluation {'
+                '2}'.format(self.replacer.__name__, self.num_generations,
+                            self.num_evaluations))
             self.population = self.replacer(random=self._random,
                                             population=self.population,
                                             parents=parents,
                                             offspring=offspring,
                                             args=self._kwargs)
             self.logger.debug(
-                    'population size is now {0}'.format(len(self.population)))
+                'population size is now {0}'.format(len(self.population)))
 
             # Migrate individuals.
             self.logger.debug(
-                    'migration using {0} at generation {1} and evaluation {'
-                    '2}'.format(self.migrator.__name__, self.num_generations,
-                                self.num_evaluations))
+                'migration using {0} at generation {1} and evaluation {'
+                '2}'.format(self.migrator.__name__, self.num_generations,
+                            self.num_evaluations))
             self.population = self.migrator(random=self._random,
                                             population=self.population,
                                             args=self._kwargs)
             self.logger.debug(
-                    'population size is now {0}'.format(len(self.population)))
+                'population size is now {0}'.format(len(self.population)))
 
             # Archive individuals.
             self.logger.debug(
-                    'archival using {0} at generation {1} and evaluation {'
-                    '2}'.format(self.archiver.__name__, self.num_generations,
-                                self.num_evaluations))
+                'archival using {0} at generation {1} and evaluation {'
+                '2}'.format(self.archiver.__name__, self.num_generations,
+                            self.num_evaluations))
             # self.archive = self.archiver(random=self._random,
             #                              archive=self.archive,
             #                              population=list(self.population),
             #                              args=self._kwargs)
             self.logger.debug(
-                    'archive size is now {0}'.format(len(self.archive)))
+                'archive size is now {0}'.format(len(self.archive)))
             self.logger.debug(
-                    'population size is now {0}'.format(len(self.population)))
+                'population size is now {0}'.format(len(self.population)))
 
             self.num_generations += 1
             if isinstance(self.observer, collections.Iterable):
                 for obs in self.observer:
                     self.logger.debug(
-                            'observation using {0} at generation {1} and '
-                            'evaluation {2}'.format(obs.__name__,
-                                                    self.num_generations,
-                                                    self.num_evaluations))
+                        'observation using {0} at generation {1} and '
+                        'evaluation {2}'.format(obs.__name__,
+                                                self.num_generations,
+                                                self.num_evaluations))
                     obs(population=list(self.population),
                         num_generations=self.num_generations,
                         num_evaluations=self.num_evaluations,
                         args=self._kwargs)
             else:
                 self.logger.debug(
-                        'observation using {0} at generation {1} and '
-                        'evaluation {2}'.format(self.observer.__name__,
-                                                self.num_generations,
-                                                self.num_evaluations))
+                    'observation using {0} at generation {1} and '
+                    'evaluation {2}'.format(self.observer.__name__,
+                                            self.num_generations,
+                                            self.num_evaluations))
                 self.observer(population=list(self.population),
                               num_generations=self.num_generations,
                               num_evaluations=self.num_evaluations,
                               args=self._kwargs)
-
-        #print self.archive
 
         return self.population
