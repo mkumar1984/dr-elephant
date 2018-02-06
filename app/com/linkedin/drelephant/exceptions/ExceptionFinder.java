@@ -16,13 +16,17 @@
 
 package com.linkedin.drelephant.exceptions;
 
+import com.linkedin.drelephant.clients.WorkflowClient;
 import com.linkedin.drelephant.configurations.scheduler.SchedulerConfigurationData;
 import com.linkedin.drelephant.security.HadoopSecurity;
 import com.linkedin.drelephant.util.InfoExtractor;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.PrivilegedAction;
+
 import javax.naming.AuthenticationException;
+
 import org.apache.log4j.Logger;
 
 import java.net.MalformedURLException;

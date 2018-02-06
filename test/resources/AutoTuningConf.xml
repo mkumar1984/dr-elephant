@@ -49,17 +49,17 @@
   </property>
   <property>
     <name>python.root.dir</name>
-    <value>/path/to/python/executable</value>
+    <value>/home/mkumar1/work/code/autotuning/bin/python</value>
     <description>Root directory for python</description>
   </property>
   <property>
     <name>pso.script.path</name>
-    <value>/path/to/pso_param_generation.py</value>
+    <value>/home/mkumar1/work/code/dr-elephant/app/com/linkedin/drelephant/tunin/pso/pso_param_generation.py</value>
     <description>PSO script path</description>
   </property>
   <property>
     <name>dr.elephant.api.url</name>
     <value>http://ltx1-holdemdre01.grid.linkedin.com:8080</value>
-    <description>API URL for Dr Elephant. Optional. This is needed only if you are using APIFitnessComputeUtil to get fitness from Dr Elephant APIs</description>
+    <description>API URL for Dr Elephant</description>
   </property>
 </configuration>

@@ -14,16 +14,15 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.clients.azkaban;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+import com.linkedin.drelephant.clients.WorkflowClient;
 import com.linkedin.drelephant.configurations.scheduler.SchedulerConfigurationData;
-import com.linkedin.drelephant.exceptions.WorkflowClient;
-import com.linkedin.drelephant.exceptions.azkaban.AzkabanWorkflowClient;
 import com.linkedin.drelephant.util.InfoExtractor;
 
 
@@ -46,7 +45,7 @@ public class AzkabanJobStatusUtil {
     SchedulerConfigurationData schedulerData = InfoExtractor.getSchedulerData(scheduler);
 
     if (schedulerData == null) {
-      throw new RuntimeException(String.format("Cannot find scheduler %s", scheduler));
+      throw new RuntimeException(String.format("Cannot find scheduler %s for url %s", scheduler, url));
     }
 
     if (!schedulerData.getParamMap().containsKey(USERNAME)) {

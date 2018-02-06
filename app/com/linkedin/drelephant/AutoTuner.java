@@ -38,7 +38,7 @@ import com.linkedin.drelephant.util.Utils;
  */
 public class AutoTuner implements Runnable {
 
-  private static final long ONE_MIN = 60 * 1000;
+  public static final long ONE_MIN = 60 * 1000;
   private static final Logger logger = Logger.getLogger(AutoTuner.class);
   private static final long DEFAULT_METRICS_COMPUTATION_INTERVAL = ONE_MIN / 5;
 

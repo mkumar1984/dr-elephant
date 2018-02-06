@@ -14,11 +14,13 @@
  * the License.
  */
 
-package com.linkedin.drelephant.exceptions.azkaban;
+package com.linkedin.drelephant.clients.azkaban;
 
+import com.linkedin.drelephant.clients.WorkflowClient;
 import com.linkedin.drelephant.exceptions.JobState;
 import com.linkedin.drelephant.exceptions.LoggingEvent;
-import com.linkedin.drelephant.exceptions.WorkflowClient;
+import com.linkedin.drelephant.exceptions.azkaban.AzkabanJobLogAnalyzer;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,10 +48,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
