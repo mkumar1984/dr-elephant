@@ -41,6 +41,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.util.Utils;
 
+import controllers.AutoTuningMetricsController;
+
 
 /**
  * This class processes the API requests and returns param suggestion as response
@@ -157,6 +159,7 @@ public class AutoTuningAPIHelper {
     //If new job for tuning, update db with new job configuration
     if (tuningJobDefinition == null) {
       logger.debug("New job encountered, creating new entry. ");
+      AutoTuningMetricsController.markNewAutoTuningJob();
       tuningJobDefinition = addNewJobForTuning(tuningInput);
     }
 
@@ -175,6 +178,7 @@ public class AutoTuningAPIHelper {
 
     //If no new parameter set for suggestion, create a new suggestion with default parameter
     if (tuningJobExecution == null) {
+      AutoTuningMetricsController.markParamSetNotFound();
       tuningJobExecution = createDefaultJobExecution(tuningJobDefinition);
     }
 

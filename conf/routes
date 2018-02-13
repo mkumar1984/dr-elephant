@@ -60,6 +60,7 @@ POST       /rest/getCurrentRunParameters        controllers.Application.getCurre
 # Metrics calls
 GET        /ping                                controllers.MetricsController.ping()
 GET        /metrics                             controllers.MetricsController.index()
+GET        /tuneinmetrics                       controllers.AutoTuningMetricsController.index()
 GET        /healthcheck                         controllers.MetricsController.healthcheck()
 
 # Map static resources from the /public folder to the /assets URL path

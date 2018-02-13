@@ -18,7 +18,7 @@ package controllers;
 
 import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
-
+import com.codahale.metrics.Timer;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.linkedin.drelephant.ElephantContext;
@@ -893,6 +893,7 @@ public class Application extends Controller {
    * @return
    */
   public static Result getCurrentRunParameters() {
+    final Timer.Context context = AutoTuningMetricsController.getCurrentRunParametersTimerContext();
     String jsonString = request().body().asJson().toString();
     logger.debug("Started processing getCurrentRunParameters request with following parameters " + jsonString);
     ObjectMapper mapper = new ObjectMapper();
@@ -956,10 +957,12 @@ public class Application extends Controller {
       tuningInput.setAllowedMaxExecutionTimePercent(allowedMaxExecutionTimePercent);
       tuningInput.setAllowedMaxResourceUsagePercent(allowedMaxResourceUsagePercent);
       return getCurrentRunParameters(tuningInput);
-
     } catch (Exception e) {
+      AutoTuningMetricsController.markGetCurrentRunParametersFailures();
       logger.error("Exception", e);
       return notFound("Error parsing input ");
+    }finally{
+      context.stop();
     }
   }
 
@@ -970,6 +973,7 @@ public class Application extends Controller {
       logger.info("Output params " + outputParams);
       return ok(Json.toJson(outputParams));
     } else {
+      AutoTuningMetricsController.markGetCurrentRunParametersFailures();
       return notFound("Unable to find parameters. Job id: " + tuningInput.getJobDefId() + " Flow id: "
           + tuningInput.getFlowDefId());
     }

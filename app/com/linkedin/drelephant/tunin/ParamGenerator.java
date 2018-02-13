@@ -19,13 +19,21 @@ package com.linkedin.drelephant.tunin;
 import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.util.HashMap;
 import java.util.Map;
+
 import models.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
+import controllers.AutoTuningMetricsController;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+
 import play.libs.Json;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -299,10 +307,13 @@ public abstract class ParamGenerator {
    */
   private void updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
 
+
     if (jobTuningInfoList == null) {
       logger.info("Tunerlist is null");
       return;
     }
+
+    int paramSetNotGeneratedJobs=jobTuningInfoList.size();
 
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
 
@@ -339,9 +350,12 @@ public abstract class ParamGenerator {
         continue;
       }
 
+      paramSetNotGeneratedJobs--;
+
       List<Particle> suggestedPopulation = jsonToParticleList(jsonSuggestedPopulation);
 
       for (Particle suggestedParticle : suggestedPopulation) {
+        AutoTuningMetricsController.markParamSetGenerated();
         List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(suggestedParticle, paramList);
 
         // yaha pe derived para mka value derive karke usko jobSuggestedParamValueList me append karte ja
@@ -409,6 +423,7 @@ public abstract class ParamGenerator {
       String updatedStringTunerState = Json.stringify(updatedJsonTunerState);
       jobTuningInfo.setTunerState(updatedStringTunerState);
     }
+    AutoTuningMetricsController.setParamSetGenerateWaitJobs(paramSetNotGeneratedJobs);
     saveTunerState(jobTuningInfoList);
   }
 

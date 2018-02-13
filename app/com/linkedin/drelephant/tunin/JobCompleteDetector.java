@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import models.JobExecution;
+import models.JobExecution.ExecutionState;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
 
 import org.apache.log4j.Logger;
 
+import controllers.AutoTuningMetricsController;
 import play.libs.Json;
 
 
@@ -48,8 +50,25 @@ public abstract class JobCompleteDetector {
     List<TuningJobExecution> runningExecutions = getStartedExecutions();
     List<TuningJobExecution> completedExecutions = getCompletedExecutions(runningExecutions);
     updateExecutionStatus(completedExecutions);
+    updateMetrics(completedExecutions);
     logger.info("Finished JobCompleteDetector");
     return completedExecutions;
+  }
+
+  /**
+   * This method is for updating metrics for auto tuning monitoring for job completion daemon
+   * @param completedExecutions
+   */
+  private void updateMetrics(List<TuningJobExecution> completedExecutions) {
+    for (TuningJobExecution tuningJobExecution : completedExecutions) {
+      if (tuningJobExecution.paramSetState == ParamSetStatus.EXECUTED) {
+        if (tuningJobExecution.jobExecution.executionState == ExecutionState.SUCCEEDED) {
+          AutoTuningMetricsController.markSuccessfulJobs();
+        } else if (tuningJobExecution.jobExecution.executionState == ExecutionState.FAILED) {
+          AutoTuningMetricsController.markFailedJobs();
+        }
+      }
+    }
   }
 
   /**
@@ -60,10 +79,9 @@ public abstract class JobCompleteDetector {
     logger.debug("fetching started executions");
     List<TuningJobExecution> tuningJobExecutionList = new ArrayList<TuningJobExecution>();
     try {
-      tuningJobExecutionList = TuningJobExecution.find.select("*")
-          .where()
-          .eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT)
-          .findList();
+      tuningJobExecutionList =
+          TuningJobExecution.find.select("*").where().eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT)
+              .findList();
     } catch (NullPointerException e) {
       logger.error("Error in getStartedExecutions ", e);
     }

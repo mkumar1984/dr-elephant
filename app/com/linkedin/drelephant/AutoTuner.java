@@ -28,6 +28,8 @@ import com.linkedin.drelephant.tunin.PSOParamGenerator;
 import com.linkedin.drelephant.tunin.ParamGenerator;
 import com.linkedin.drelephant.util.Utils;
 
+import controllers.AutoTuningMetricsController;
+
 
 /**
  *This class is the AutoTuner Daemon class which runs following thing in order.
@@ -54,6 +56,7 @@ public class AutoTuner implements Runnable {
         Utils.getNonNegativeLong(configuration, AUTO_TUNING_DAEMON_WAIT_INTERVAL, DEFAULT_METRICS_COMPUTATION_INTERVAL);
 
     try {
+      AutoTuningMetricsController.init();
       BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
       JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
       FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();

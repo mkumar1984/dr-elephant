@@ -32,6 +32,8 @@ import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.util.Utils;
 
+import controllers.AutoTuningMetricsController;
+
 
 /**
  * This class does baseline computation once the job is enabled for auto tuning.
@@ -47,20 +49,37 @@ public class BaselineComputeUtil {
 
   public BaselineComputeUtil() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    _numJobsForBaseline = Utils.getNonNegativeInt(configuration, BASELINE_EXECUTION_COUNT, NUM_JOBS_FOR_BASELINE_DEFAULT);
+    _numJobsForBaseline =
+        Utils.getNonNegativeInt(configuration, BASELINE_EXECUTION_COUNT, NUM_JOBS_FOR_BASELINE_DEFAULT);
   }
 
   public List<TuningJobDefinition> computeBaseline() {
-    try {
-      List<TuningJobDefinition> tuningJobDefinitions = getJobForBaselineComputation();
-      for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
+    List<TuningJobDefinition> tuningJobDefinitions = getJobForBaselineComputation();
+    for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
+      try {
         updateBaselineForJob(tuningJobDefinition);
+      } catch (Exception e) {
+        logger.error("Error in computing baseline for ", e);
       }
-      return tuningJobDefinitions;
-    } catch (Exception e) {
-      logger.error("Error in computing baseline for ", e);
     }
-    return null;
+    updateMetrics(tuningJobDefinitions);
+    return tuningJobDefinitions;
+  }
+
+  /**
+   * This method update metrics for auto tuning monitoring for baseline computation
+   * @param tuningJobDefinitions
+   */
+  private void updateMetrics(List<TuningJobDefinition> tuningJobDefinitions) {
+    int baselineComputeWaitJobs = 0;
+    for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
+      if (tuningJobDefinition.averageResourceUsage == null) {
+        baselineComputeWaitJobs++;
+      } else {
+        AutoTuningMetricsController.markBaselineComputed();
+      }
+    }
+    AutoTuningMetricsController.setBaselineComputeWaitJobs(baselineComputeWaitJobs);
   }
 
   private List<TuningJobDefinition> getJobForBaselineComputation() {
@@ -77,18 +96,18 @@ public class BaselineComputeUtil {
 
     logger.debug("Computing baseline for jobs: " + Json.toJson(tuningJobDefinition));
 
-    String sql = "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
-        + "(SELECT job_exec_id, SUM(resource_used) AS resource_used, "
-        + "SUM(finish_time - start_time - total_delay) AS execution_time, " + "MAX(start_time) AS start_time "
-        + "FROM yarn_app_result WHERE job_def_id=:jobDefId " + "GROUP BY job_exec_id " + "ORDER BY start_time DESC "
-        + "LIMIT :num) temp";
+    String sql =
+        "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
+            + "(SELECT job_exec_id, SUM(resource_used) AS resource_used, "
+            + "SUM(finish_time - start_time - total_delay) AS execution_time, " + "MAX(start_time) AS start_time "
+            + "FROM yarn_app_result WHERE job_def_id=:jobDefId " + "GROUP BY job_exec_id "
+            + "ORDER BY start_time DESC " + "LIMIT :num) temp";
 
     logger.debug("Running query for baseline computation " + sql);
 
-    SqlRow baseline = Ebean.createSqlQuery(sql)
-        .setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
-        .setParameter("num", _numJobsForBaseline)
-        .findUnique();
+    SqlRow baseline =
+        Ebean.createSqlQuery(sql).setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
+            .setParameter("num", _numJobsForBaseline).findUnique();
 
     Double avgResourceUsage = 0D;
     Double avgExecutionTime = 0D;
@@ -102,20 +121,20 @@ public class BaselineComputeUtil {
   }
 
   private Long getAvgInputSizeInBytes(String jobDefId) {
-    String sql = "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
-        + "(SELECT job_exec_id, SUM(value) inputSizeInBytes, MAX(start_time) AS start_time "
-        + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr " + "ON yar.id=yahr.yarn_app_result_id "
-        + "INNER JOIN yarn_app_heuristic_result_details yahrd " + "ON yahr.id=yahrd.yarn_app_heuristic_result_id "
-        + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='" + CommonConstantsHeuristic.MAPPER_SPEED + "' "
-        + "AND yahrd.name='Total input size in MB' "
-        + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
+    String sql =
+        "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
+            + "(SELECT job_exec_id, SUM(value) inputSizeInBytes, MAX(start_time) AS start_time "
+            + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr "
+            + "ON yar.id=yahr.yarn_app_result_id " + "INNER JOIN yarn_app_heuristic_result_details yahrd "
+            + "ON yahr.id=yahrd.yarn_app_heuristic_result_id " + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='"
+            + CommonConstantsHeuristic.MAPPER_SPEED + "' " + "AND yahrd.name='Total input size in MB' "
+            + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
 
     logger.debug("Running query for average input size computation " + sql);
 
-    SqlRow baseline = Ebean.createSqlQuery(sql)
-        .setParameter("jobDefId", jobDefId)
-        .setParameter("num", _numJobsForBaseline)
-        .findUnique();
+    SqlRow baseline =
+        Ebean.createSqlQuery(sql).setParameter("jobDefId", jobDefId).setParameter("num", _numJobsForBaseline)
+            .findUnique();
     Double avgInputSizeInBytes = baseline.getDouble("avgInputSizeInMB") * FileUtils.ONE_MB;
     return avgInputSizeInBytes.longValue();
   }
