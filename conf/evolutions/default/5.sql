@@ -69,10 +69,10 @@ create index index_tp_algo_id on tuning_parameter (tuning_algorithm_id);
  */
 CREATE TABLE IF NOT EXISTS flow_definition (
   id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
-  flow_def_id varchar(1000) NOT NULL COMMENT 'unique flow definition id from scheduler like azkaban, oozie, appworx etc',
-  flow_def_url varchar(1000) NOT NULL COMMENT 'flow definition URL from scheduler like azkaban, oozie, appworx etc',
+  flow_def_id varchar(700) NOT NULL COMMENT 'unique flow definition id from scheduler like azkaban, oozie, appworx etc',
+  flow_def_url varchar(700) NOT NULL COMMENT 'flow definition URL from scheduler like azkaban, oozie, appworx etc',
   PRIMARY KEY (id),
-  UNIQUE KEY flow_def_id (flow_def_id(700))
+  UNIQUE KEY flow_def_id (flow_def_id)
 ) ENGINE=InnoDB AUTO_INCREMENT=10000;
 
 /**
@@ -82,16 +82,16 @@ CREATE TABLE IF NOT EXISTS flow_definition (
  */
 CREATE TABLE IF NOT EXISTS job_definition (
   id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
-  job_def_id varchar(1000) NOT NULL COMMENT 'unique job definition id from scheduler like azkaban, oozie etc',
+  job_def_id varchar(700) NOT NULL COMMENT 'unique job definition id from scheduler like azkaban, oozie etc',
   flow_definition_id int(10) unsigned NOT NULL COMMENT 'foreign key from flow_definition table',
-  job_name varchar(1000) DEFAULT NULL COMMENT 'name of the job',
-  job_def_url varchar(1000) NOT NULL COMMENT 'job definition URL from scheduler like azkaban, oozie, appworx etc',
+  job_name varchar(700) DEFAULT NULL COMMENT 'name of the job',
+  job_def_url varchar(700) NOT NULL COMMENT 'job definition URL from scheduler like azkaban, oozie, appworx etc',
   scheduler varchar(100) NOT NULL COMMENT 'name of the scheduler like azkaban. oozie ',
   username varchar(100) NOT NULL COMMENT 'name of the user',
   created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY job_def_id (job_def_id(700)),
+  UNIQUE KEY job_def_id (job_def_id) ,
   CONSTRAINT job_definition_ibfk_1 FOREIGN KEY (flow_definition_id) REFERENCES flow_definition (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=100000;
 
@@ -124,8 +124,8 @@ create index index_tjd_tuning_algorithm_id on tuning_job_definition (tuning_algo
  */
 CREATE TABLE IF NOT EXISTS flow_execution (
   id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
-  flow_exec_id varchar(1000) NOT NULL COMMENT 'unique flow execution id from scheduler like azkaban, oozie etc ',
-  flow_exec_url varchar(1000) NOT NULL COMMENT 'execution url from scheduler like azkaban, oozie etc',
+  flow_exec_id varchar(700) NOT NULL COMMENT 'unique flow execution id from scheduler like azkaban, oozie etc ',
+  flow_exec_url varchar(700) NOT NULL COMMENT 'execution url from scheduler like azkaban, oozie etc',
   flow_definition_id int(10) unsigned NOT NULL COMMENT 'foreign key from flow_definition table',
   PRIMARY KEY (id),
   CONSTRAINT flow_execution_ibfk_1 FOREIGN KEY (flow_definition_id) REFERENCES flow_definition (id)
@@ -140,8 +140,8 @@ create index index_fe_flow_definition_id on flow_execution (flow_definition_id);
  */
 CREATE TABLE IF NOT EXISTS job_execution (
   id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
-  job_exec_id varchar(1000) DEFAULT NULL COMMENT 'unique job execution id from scheduler like azkaban, oozie etc',
-  job_exec_url varchar(1000) DEFAULT NULL COMMENT 'job execution url from scheduler like azkaban, oozie etc',
+  job_exec_id varchar(700) DEFAULT NULL COMMENT 'unique job execution id from scheduler like azkaban, oozie etc',
+  job_exec_url varchar(700) DEFAULT NULL COMMENT 'job execution url from scheduler like azkaban, oozie etc',
   job_definition_id int(10) unsigned NOT NULL COMMENT 'foreign key from job_definition table',
   flow_execution_id int(10) unsigned DEFAULT NULL COMMENT 'foreign key from flow_execution table',
   execution_state enum('SUCCEEDED','FAILED','NOT_STARTED','IN_PROGRESS','CANCELLED') DEFAULT NULL COMMENT 'current state of execution of the job ',
@@ -155,8 +155,8 @@ CREATE TABLE IF NOT EXISTS job_execution (
   CONSTRAINT job_execution_ibfk_2 FOREIGN KEY (flow_execution_id) REFERENCES flow_execution (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=1000;
 
-create index index_je_job_exec_id on job_execution (job_exec_id(700));
-create index index_je_job_exec_url on job_execution (job_exec_url(700));
+create index index_je_job_exec_id on job_execution (job_exec_id);
+create index index_je_job_exec_url on job_execution (job_exec_url);
 create index index_je_job_definition_id on job_execution (job_definition_id);
 create index index_je_flow_execution_id on job_execution (flow_execution_id);
 

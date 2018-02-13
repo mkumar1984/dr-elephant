@@ -962,7 +962,10 @@ public class Application extends Controller {
       logger.error("Exception", e);
       return notFound("Error parsing input ");
     }finally{
-      context.stop();
+      if(context!=null)
+      {
+        context.stop();
+      }
     }
   }
 

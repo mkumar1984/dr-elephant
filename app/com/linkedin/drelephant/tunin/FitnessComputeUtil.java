@@ -83,6 +83,7 @@ public class FitnessComputeUtil {
       if (tuningJobExecution.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED) == false) {
         fitnessNotUpdated++;
       } else {
+        AutoTuningMetricsController.markFitnessComputedJobs();
       }
     }
     AutoTuningMetricsController.setFitnessComputeWaitJobs(fitnessNotUpdated);

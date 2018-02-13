@@ -5,7 +5,9 @@ import static com.codahale.metrics.MetricRegistry.name;
 import org.apache.log4j.Logger;
 
 import play.Configuration;
+import play.libs.Json;
 import play.mvc.Controller;
+import play.mvc.Result;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
@@ -16,16 +18,19 @@ import com.linkedin.drelephant.AutoTuner;
 
 
 public class AutoTuningMetricsController extends Controller {
+
+  private static final String METRICS_NOT_ENABLED = "Metrics not enabled";
+
   private static MetricRegistry _metricRegistry = null;
   private static final Logger logger = Logger.getLogger(AutoTuningMetricsController.class);
 
-  private static int _fitnessComputeWaitJobs = -1;
-  private static int _baselineComputeWaitJobs = -1;
-  private static int _azkabanStatusUpdateWaitJobs = -1;
+  private static int _fitnessComputeWaitExecutions = -1;
+  private static int _baselineComputeWaitExecutions = -1;
+  private static int _azkabanStatusUpdateWaitExecutions = -1;
   private static int _paramSetGenerateWaitJobs = -1;
 
   private static Meter _getCurrentRunParametersFailures;
-  private static Meter _fitnessComputedJobs;
+  private static Meter _fitnessComputedExecutions;
   private static Meter _successfulExecutions;
   private static Meter _failedExecutions;
   private static Meter _paramSetGenerated;
@@ -59,7 +64,7 @@ public class AutoTuningMetricsController extends Controller {
         _metricRegistry.meter(name(Application.class, "getCurrentRunParametersFailures", "count"));
 
     //Daemon counters
-    _fitnessComputedJobs = _metricRegistry.meter(name(className, "fitnessComputedJobs", "count"));
+    _fitnessComputedExecutions = _metricRegistry.meter(name(className, "fitnessComputedJobs", "count"));
     _successfulExecutions = _metricRegistry.meter(name(className, "successfulJobs", "count"));
     _failedExecutions = _metricRegistry.meter(name(className, "failedJobs", "count"));
     _paramSetGenerated = _metricRegistry.meter(name(className, "paramSetGenerated", "count"));
@@ -70,21 +75,21 @@ public class AutoTuningMetricsController extends Controller {
     _metricRegistry.register(name(className, "fitnessComputeWaitJobs", "size"), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return _fitnessComputeWaitJobs;
+        return _fitnessComputeWaitExecutions;
       }
     });
 
     _metricRegistry.register(name(className, "baselineComputeWaitJobs", "size"), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return _baselineComputeWaitJobs;
+        return _baselineComputeWaitExecutions;
       }
     });
 
     _metricRegistry.register(name(className, "azkabanStatusUpdateWaitJobs", "size"), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return _azkabanStatusUpdateWaitJobs;
+        return _azkabanStatusUpdateWaitExecutions;
       }
     });
 
@@ -96,15 +101,15 @@ public class AutoTuningMetricsController extends Controller {
     });
   }
   public static void setFitnessComputeWaitJobs(int fitnessComputeWaitJobs) {
-    _fitnessComputeWaitJobs = fitnessComputeWaitJobs;
+    _fitnessComputeWaitExecutions = fitnessComputeWaitJobs;
   }
 
   public static void setBaselineComputeWaitJobs(int baselineComputeWaitJobs) {
-    _baselineComputeWaitJobs = baselineComputeWaitJobs;
+    _baselineComputeWaitExecutions = baselineComputeWaitJobs;
   }
 
   public static void setAzkabanStatusUpdateWaitJobs(int azkabanStatusUpdateWaitJobs) {
-    _azkabanStatusUpdateWaitJobs = azkabanStatusUpdateWaitJobs;
+    _azkabanStatusUpdateWaitExecutions = azkabanStatusUpdateWaitJobs;
   }
 
   public static void setParamSetGenerateWaitJobs(int paramSetGenerateWaitJobs) {
@@ -140,8 +145,8 @@ public class AutoTuningMetricsController extends Controller {
   }
 
   public static void markFitnessComputedJobs() {
-    if (_fitnessComputedJobs != null) {
-      _fitnessComputedJobs.mark();
+    if (_fitnessComputedExecutions != null) {
+      _fitnessComputedExecutions.mark();
     }
   }
 
@@ -158,7 +163,26 @@ public class AutoTuningMetricsController extends Controller {
   }
 
   public static Context getCurrentRunParametersTimerContext() {
-    return _getCurrentRunParametersTimer.time();
+    if(_getCurrentRunParametersTimer!=null)
+    {
+      return _getCurrentRunParametersTimer.time();
+    }else
+    {
+      return null;
+    }
   }
 
+  /**
+   * The endpoint /metrics
+   * Endpoint can be queried if metrics is enabled.
+   *
+   * @return Will return all the metrics in Json format.
+   */
+  public static Result index() {
+    if (_metricRegistry != null) {
+      return ok(Json.toJson(_metricRegistry));
+    } else {
+      return ok(Json.toJson(METRICS_NOT_ENABLED));
+    }
+  }
 }
