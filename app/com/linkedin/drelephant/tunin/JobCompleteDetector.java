@@ -89,7 +89,7 @@ public abstract class JobCompleteDetector {
   private void updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
     for (TuningJobExecution tuningJobExecution : jobExecutions) {
       JobExecution jobExecution = tuningJobExecution.jobExecution;
-      logger.debug("Updating jobExecution: " + Json.toJson(jobExecution));
+      logger.info("Updating jobExecution: " + Json.toJson(jobExecution));
       jobExecution.update();
       tuningJobExecution.update();
     }

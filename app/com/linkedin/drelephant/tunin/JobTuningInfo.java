@@ -42,7 +42,7 @@ class JobTuningInfo {
    * Sets the job being tuned
    * @param tuningJob Job
    */
-  void setTuningJob(JobDefinition tuningJob) {
+  public void setTuningJob(JobDefinition tuningJob) {
     this._tuningJob = tuningJob;
   }
 
@@ -50,7 +50,7 @@ class JobTuningInfo {
    * Returns the job being tuned
    * @return Job
    */
-  JobDefinition getTuningJob() {
+  public JobDefinition getTuningJob() {
     return _tuningJob;
   }
 
@@ -58,7 +58,7 @@ class JobTuningInfo {
    * Sets the string tuner state
    * @param stringTunerState String tuner state
    */
-  void setTunerState(String stringTunerState) {
+  public void setTunerState(String stringTunerState) {
     this._tunerState = stringTunerState;
   }
 
@@ -66,7 +66,7 @@ class JobTuningInfo {
    * Returns string tuner state
    * @return String tuner state
    */
-  String getTunerState() {
+  public String getTunerState() {
     return _tunerState;
   }
 
@@ -74,7 +74,7 @@ class JobTuningInfo {
    * Sets parameters to tune
    * @param parameters Parameters to tune
    */
-  void setParametersToTune(List<TuningParameter> parameters) {
+  public void setParametersToTune(List<TuningParameter> parameters) {
     this._parametersToTune = parameters;
   }
 
@@ -82,7 +82,7 @@ class JobTuningInfo {
    * Returns parameters to tune
    * @return Parameters to tune
    */
-  List<TuningParameter> getParametersToTune() {
+  public List<TuningParameter> getParametersToTune() {
     return _parametersToTune;
   }
 }

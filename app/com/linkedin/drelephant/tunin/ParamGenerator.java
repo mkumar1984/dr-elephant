@@ -88,7 +88,7 @@ public abstract class ParamGenerator {
           .or(Expr.or(Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.CREATED),
               Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.SENT)),
               Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.EXECUTED))
-          //.eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
+          .eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
           .findList();
     } catch (NullPointerException e) {
       logger.info("ParamGenerator.fetchJobsForParamSuggestion: No pending executions found");
@@ -141,13 +141,13 @@ public abstract class ParamGenerator {
 
   /**
    * Returns the tuning information for the jobs
-   * @param tuninJobs Job List
+   * @param tuningJobs Job List
    * @return Tuning information list
    */
-  private List<JobTuningInfo> getJobsTuningInfo(List<TuningJobDefinition> tuninJobs) {
+  private List<JobTuningInfo> getJobsTuningInfo(List<TuningJobDefinition> tuningJobs) {
 
     List<JobTuningInfo> jobTuningInfoList = new ArrayList<JobTuningInfo>();
-    for (TuningJobDefinition tuningJobDefinition : tuninJobs) {
+    for (TuningJobDefinition tuningJobDefinition : tuningJobs) {
       JobDefinition job = tuningJobDefinition.job;
       logger.info("Getting tuning information for job: " + job.id);
       List<TuningParameter> tuningParameterList = TuningParameter.find.where()
@@ -197,6 +197,8 @@ public abstract class ParamGenerator {
       }
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
+
+      logger.info("Tuning parameter list: " + Json.toJson(tuningParameterList));
       jobTuningInfo.setParametersToTune(tuningParameterList);
 
       JobSavedState jobSavedState = JobSavedState.find.byId(job.id);
@@ -243,6 +245,8 @@ public abstract class ParamGenerator {
       if (!validSavedState) {
         jobTuningInfo.setTunerState("{}");
       }
+
+      logger.info("Adding JobTuningInfo " + Json.toJson(jobTuningInfo));
       jobTuningInfoList.add(jobTuningInfo);
     }
     return jobTuningInfoList;

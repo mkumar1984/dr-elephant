@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS flow_definition (
   flow_def_id varchar(1000) NOT NULL COMMENT 'unique flow definition id from scheduler like azkaban, oozie, appworx etc',
   flow_def_url varchar(1000) NOT NULL COMMENT 'flow definition URL from scheduler like azkaban, oozie, appworx etc',
   PRIMARY KEY (id),
-  UNIQUE KEY flow_def_id (flow_def_id(700))
+  UNIQUE KEY flow_def_id (flow_def_id(100))
 ) ENGINE=InnoDB AUTO_INCREMENT=10000;
 
 /**
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS job_definition (
   created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY job_def_id (job_def_id(700)),
+  UNIQUE KEY job_def_id (job_def_id(100)),
   CONSTRAINT job_definition_ibfk_1 FOREIGN KEY (flow_definition_id) REFERENCES flow_definition (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=100000;
 
@@ -155,8 +155,8 @@ CREATE TABLE IF NOT EXISTS job_execution (
   CONSTRAINT job_execution_ibfk_2 FOREIGN KEY (flow_execution_id) REFERENCES flow_execution (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=1000;
 
-create index index_je_job_exec_id on job_execution (job_exec_id(700));
-create index index_je_job_exec_url on job_execution (job_exec_url(700));
+create index index_je_job_exec_id on job_execution (job_exec_id(100));
+create index index_je_job_exec_url on job_execution (job_exec_url(100));
 create index index_je_job_definition_id on job_execution (job_definition_id);
 create index index_je_flow_execution_id on job_execution (flow_execution_id);
 

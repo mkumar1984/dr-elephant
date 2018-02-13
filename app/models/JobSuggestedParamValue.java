@@ -16,6 +16,7 @@
 
 package models;
 
+import com.avaje.ebean.annotation.UpdatedTimestamp;
 import java.sql.Timestamp;
 
 import javax.persistence.CascadeType;
@@ -52,6 +53,8 @@ public class JobSuggestedParamValue extends Model {
   public Integer id;
   public Double paramValue;
   public Timestamp createdTs;
+
+  @UpdatedTimestamp
   public Timestamp updatedTs;
 
   @ManyToOne(cascade = CascadeType.ALL)

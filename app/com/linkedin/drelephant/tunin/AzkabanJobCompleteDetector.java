@@ -63,7 +63,7 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
 
         JobExecution jobExecution = tuningJobExecution.jobExecution;
 
-        logger.debug("Checking completion for job execution: " + Json.toJson(tuningJobExecution));
+        logger.info("Checking completion for job execution: " + Json.toJson(tuningJobExecution));
 
         if (_azkabanJobStatusUtil == null) {
           logger.info("Initializing  AzkabanJobStatusUtil");
