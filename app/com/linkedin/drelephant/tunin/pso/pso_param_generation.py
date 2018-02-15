@@ -43,6 +43,11 @@ PARAMETER_DEFAULT_VALUE_KEY = 'defaultValue'
 PARAMETER_MAX_VALUE_KEY = 'maxValue'
 PARAMETER_MIN_VALUE_KEY = 'minValue'
 
+INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE = (0.5, 0.8)
+INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE = (1.05, 1.1)
+INITIAL_DERIVED_SORT_MEMORY_PARAM_RANGE = (0.0, 0.25)
+POPULATION_SIZE = 3
+
 
 # The below method is intentionally commented
 # Todo: Update the below method to implement step size
@@ -120,16 +125,26 @@ def initial_population_generator(random, args):
     else:
         initial_population = [random.uniform(x, y) for x, y in param_value_range]
         if iteration % 2 == 1:
-            initial_population[map_memory_index] = random.uniform(0.5, 0.8) * param_default_value[map_memory_index]
-            initial_population[reduce_memory_index] = random.uniform(0.5, 0.8) * param_default_value[
-                reduce_memory_index]
+            initial_population[map_memory_index] = random.uniform(INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[0],
+                                                                  INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[1]) * \
+                                                   param_default_value[map_memory_index]
+            initial_population[reduce_memory_index] = random.uniform(INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[0],
+                                                                     INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[1]) * \
+                                                      param_default_value[
+                                                          reduce_memory_index]
 
         if iteration % 2 == 0:
-            initial_population[map_memory_index] = random.uniform(1.05, 1.1) * param_default_value[map_memory_index]
-            initial_population[reduce_memory_index] = random.uniform(1.05, 1.1) * param_default_value[
-                reduce_memory_index]
+            initial_population[map_memory_index] = random.uniform(INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[0],
+                                                                  INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[1]) * \
+                                                   param_default_value[map_memory_index]
+            initial_population[reduce_memory_index] = random.uniform(INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[0],
+                                                                     INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[1]) * \
+                                                      param_default_value[
+                                                          reduce_memory_index]
 
-        initial_population[sort_memory_index] = random.uniform(0.0, 0.25) * initial_population[map_memory_index]
+        initial_population[sort_memory_index] = random.uniform(INITIAL_DERIVED_SORT_MEMORY_PARAM_RANGE[0],
+                                                               INITIAL_DERIVED_SORT_MEMORY_PARAM_RANGE[1]) * initial_population[
+                                                    map_memory_index]
         initial_population[max_combined_split_size_index] = param_default_value[max_combined_split_size_index]
         iteration += 1
 
@@ -245,9 +260,10 @@ def main(json_tuning_state, display=False):
         pso.observer = inspyred.ec.observers.default_observer
         pso.terminator = inspyred.ec.terminators.evaluation_termination
         pso.topology = inspyred.swarm.topologies.ring_topology
-        population = pso.evolve(generator=initial_population_generator, evaluator=dummy_fitness_evaluator, pop_size=3,
+        population = pso.evolve(generator=initial_population_generator, evaluator=dummy_fitness_evaluator,
+                                pop_size=POPULATION_SIZE,
                                 bounder=bounder,
-                                maximize=False, max_evaluations=3, **args)
+                                maximize=False, max_evaluations=POPULATION_SIZE, **args)
 
         tuning_state = generate_tuning_state(pso, pseudo_random_number_generator, population)
         print tuning_state
@@ -272,9 +288,9 @@ def main(json_tuning_state, display=False):
 
         population = pso.evolve(seeds=[cs.candidate for cs in initial_population],
                                 initial_fit=[cs.fitness for cs in initial_population],
-                                generator=None, evaluator=dummy_fitness_evaluator, pop_size=3,
+                                generator=None, evaluator=dummy_fitness_evaluator, pop_size=POPULATION_SIZE,
                                 bounder=bounder,
-                                maximize=False, max_evaluations=6, **args)
+                                maximize=False, max_evaluations=2 * POPULATION_SIZE, **args)
         tuning_state = generate_tuning_state(pso, pseudo_random_number_generator, population)
         print tuning_state
 
