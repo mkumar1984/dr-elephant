@@ -4,9 +4,7 @@ import argparse
 import time
 import json
 import imp
-
-restartable_pso = imp.load_source('restartable_pso',
-                                  '/Users/aragrawa/development/dr-elephant/app/com/linkedin/drelephant/tunin/pso/restartable_pso.py')
+import restartable_pso
 
 param_value_range = []
 param_step_size = []
