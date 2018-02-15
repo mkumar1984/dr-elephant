@@ -71,6 +71,7 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
         }
 
         try {
+          Thread.sleep(2000);
           Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
           if (jobStatus != null) {
             for (Map.Entry<String, String> job : jobStatus.entrySet()) {

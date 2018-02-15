@@ -34,7 +34,7 @@
   </property>
   <property>
     <name>autotuning.daemon.wait.interval.ms</name>
-    <value>60000</value>
+    <value>600</value>
     <description>Auto tuning daemon wait interval</description>
   </property>
   <property>
@@ -44,7 +44,7 @@
   </property>
   <property>
     <name>fitness.compute.wait_interval.ms</name>
-    <value>1800000</value>
+    <value>180</value>
     <description>Wait time after the job is completed for fitness computation</description>
   </property>
   <property>

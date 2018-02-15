@@ -98,8 +98,8 @@ public class BaselineComputeUtil {
 
     String sql =
         "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
-            + "(SELECT job_exec_id, SUM(resource_used) AS resource_used, "
-            + "SUM(finish_time - start_time - total_delay) AS execution_time, " + "MAX(start_time) AS start_time "
+            + "(SELECT job_exec_id, SUM(resource_used/(1024 * 3600)) AS resource_used, "
+            + "SUM((finish_time - start_time - total_delay)/(1000 * 60))  AS execution_time, " + "MAX(start_time) AS start_time "
             + "FROM yarn_app_result WHERE job_def_id=:jobDefId " + "GROUP BY job_exec_id "
             + "ORDER BY start_time DESC " + "LIMIT :num) temp";
 
@@ -111,8 +111,8 @@ public class BaselineComputeUtil {
 
     Double avgResourceUsage = 0D;
     Double avgExecutionTime = 0D;
-    avgResourceUsage = baseline.getDouble("resource_used") / (1024 * 3600);
-    avgExecutionTime = baseline.getDouble("execution_time") / (1000 * 60);
+    avgResourceUsage = baseline.getDouble("resource_used") ;
+    avgExecutionTime = baseline.getDouble("execution_time") ;
     tuningJobDefinition.averageExecutionTime = avgExecutionTime;
     tuningJobDefinition.averageResourceUsage = avgResourceUsage;
     tuningJobDefinition.averageInputSizeInBytes = getAvgInputSizeInBytes(tuningJobDefinition.job.jobDefId);
@@ -123,7 +123,7 @@ public class BaselineComputeUtil {
   private Long getAvgInputSizeInBytes(String jobDefId) {
     String sql =
         "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
-            + "(SELECT job_exec_id, SUM(value) inputSizeInBytes, MAX(start_time) AS start_time "
+            + "(SELECT job_exec_id, SUM(cast(value as decimal)) inputSizeInBytes, MAX(start_time) AS start_time "
             + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr "
             + "ON yar.id=yahr.yarn_app_result_id " + "INNER JOIN yarn_app_heuristic_result_details yahrd "
             + "ON yahr.id=yahrd.yarn_app_heuristic_result_id " + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='"

@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.linkedin.drelephant.AutoTuner;
+import com.linkedin.drelephant.tunin.BaselineComputeUtil;
 import com.linkedin.drelephant.tunin.FitnessComputeUtil;
+import com.linkedin.drelephant.tunin.JobCompleteDetector;
 import com.linkedin.drelephant.util.Utils;
 
 import common.DBTestUtil;
@@ -35,7 +37,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import models.JobDefinition;
 import models.JobExecution;
+import models.JobExecution.ExecutionState;
+import models.TuningJobDefinition;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
 
@@ -138,6 +143,31 @@ public class RestAPITest {
         assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.map.memory.mb").asDouble()>0);
         assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.reduce.memory.mb").asDouble()>0);
         assertTrue("Get current run param output size did not match", jsonResponse.size()==9);
+
+        TuningJobExecution tuningJobExecution = TuningJobExecution.find.select("*")
+            .fetch(TuningJobExecution.TABLE.jobExecution, "*")
+            .fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
+            .where()
+            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
+                "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0").findUnique();
+
+        tuningJobExecution.paramSetState=ParamSetStatus.EXECUTED;
+        tuningJobExecution.jobExecution.executionState=ExecutionState.SUCCEEDED;
+        tuningJobExecution.update();
+
+        FitnessComputeUtil fitnessComputeUtil=new FitnessComputeUtil();
+        fitnessComputeUtil.updateFitness();
+
+        tuningJobExecution = TuningJobExecution.find.select("*")
+            .fetch(TuningJobExecution.TABLE.jobExecution, "*")
+            .fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
+            .where()
+            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
+                "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0")
+                .findUnique();
+
+        assertTrue("Fitness not computed", tuningJobExecution.paramSetState==ParamSetStatus.FITNESS_COMPUTED);
+        assertTrue("Fitness not computed and have zero value", tuningJobExecution.fitness>0);
       }
     });
   }
@@ -146,7 +176,7 @@ public class RestAPITest {
   public void testRestGetCurrentRunParametersNewJob() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new Runnable() {
       public void run() {
-        //populateAutoTuningTestData1();
+        populateAutoTuningTestData1();
 
         JsonNode jsonNode=getTestGetCurrentRunParameterNewData();
         final WS.Response response = WS.url(BASE_URL + REST_GET_CURRENT_RUN_PARAMETERS).
@@ -154,12 +184,30 @@ public class RestAPITest {
 
         final JsonNode jsonResponse = response.asJson();
 
-        logger.info("Output of getCurrentRunParameters ");
-        logger.info(jsonResponse.toString());
-
         assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.map.memory.mb").asDouble()==2048D);
         assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.reduce.memory.mb").asDouble()==2048D);
         assertTrue("Get current run param output size did not match", jsonResponse.size()==2);
+
+        TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
+            .where()
+            .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId,
+                "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry")
+                .findUnique();
+
+        assertTrue("New Job Not created  ", tuningJobDefinition.job.jobName.equals("countByCountryFlowSmallNew_countByCountry"));
+
+        BaselineComputeUtil baselineComputeUtil=new BaselineComputeUtil();
+        baselineComputeUtil.computeBaseline();
+
+        tuningJobDefinition = TuningJobDefinition.find.select("*")
+            .where()
+            .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId,
+                "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry")
+                .findUnique();
+
+        assertTrue("Baseline not computed:averageResourceUsage  ", tuningJobDefinition.averageResourceUsage>0);
+        assertTrue("Baseline not computed:averageInputSizeInBytes  ", tuningJobDefinition.averageInputSizeInBytes>0);
+        assertTrue("Baseline not computed:averageExecutionTime  ", tuningJobDefinition.averageExecutionTime>0);
       }
     });
   }

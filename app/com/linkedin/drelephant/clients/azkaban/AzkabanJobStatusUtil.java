@@ -21,7 +21,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.Map;
 
-import com.linkedin.drelephant.clients.WorkflowClient;
 import com.linkedin.drelephant.configurations.scheduler.SchedulerConfigurationData;
 import com.linkedin.drelephant.util.InfoExtractor;
 

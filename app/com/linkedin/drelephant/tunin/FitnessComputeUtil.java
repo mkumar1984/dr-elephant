@@ -165,6 +165,7 @@ public class FitnessComputeUtil {
             totalInputBytesInBytes += getTotalInputBytes(appResult);
           }
 
+
           Long totalRunTime = Utils.getTotalRuntime(results);
           Long totalDelay = Utils.getTotalWaittime(results);
           totalExecutionTime = totalRunTime - totalDelay;
@@ -180,6 +181,14 @@ public class FitnessComputeUtil {
           logger.debug("Job execution " + jobExecution.resourceUsage);
           logger.debug("Job details: AvgResourceUsage " + tuningJobDefinition.averageResourceUsage
               + ", allowedMaxResourceUsagePercent: " + tuningJobDefinition.allowedMaxResourceUsagePercent);
+
+          if(tuningJobDefinition.averageResourceUsage==null && totalExecutionTime!=0)
+          {
+            tuningJobDefinition.averageResourceUsage=jobExecution.resourceUsage;
+            tuningJobDefinition.averageExecutionTime=jobExecution.executionTime;
+            tuningJobDefinition.averageInputSizeInBytes=jobExecution.inputSizeInBytes.longValue();
+            tuningJobDefinition.update();
+          }
 
           //Compute fitness
           if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)

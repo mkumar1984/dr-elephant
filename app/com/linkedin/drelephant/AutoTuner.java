@@ -58,12 +58,12 @@ public class AutoTuner implements Runnable {
     try {
       AutoTuningMetricsController.init();
       BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
-      JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
       FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
       ParamGenerator paramGenerator = new PSOParamGenerator();
       while (!Thread.currentThread().isInterrupted()) {
         try {
           baselineComputeUtil.computeBaseline();
+          JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
           jobCompleteDetector.updateCompletedExecutions();
           fitnessComputeUtil.updateFitness();
           paramGenerator.getParams();
