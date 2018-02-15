@@ -93,4 +93,16 @@ public class TestConstants {
   public static final long TEST_SCORE = 0;
   public static final String TEST_SEVERITY = "NONE";
 
+  // Tuning constant
+  public static final String JSON_CURRENT_POPULATION_KEY = "current_population";
+  public static final String JSON_PREVIOUS_POPULATION_KEY = "prev_population";
+  public static final String JSON_ARCHIVE_KEY = "archive";
+  public static final String JSON_RND_STATE_KEY = "rnd_state";
+  public static final int SWARM_SIZE = 3;
+  public static final String JSON_PARTICLE_CANDIDATE_KEY = "_candidate";
+  public static final String JSON_PARTICLE_BIRTHDATE_KEY = "birthdate";
+  public static final String JSON_PARTICLE_MAXIMIZE_KEY = "maximize";
+  public static final String JSON_PARTICLE_FITNESS_KEY = "fitness";
+
+
 }
