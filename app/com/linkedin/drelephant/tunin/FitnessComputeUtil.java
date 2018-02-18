@@ -174,12 +174,13 @@ public class FitnessComputeUtil {
             jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
             jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
             jobExecution.inputSizeInBytes = totalInputBytesInBytes;
-            logger.info("Job Execution Update: UpdatedValue " + totalExecutionTime + ":" + totalResourceUsed + ":"
+
+            logger.info("Job Execution Update: UpdatedValue " + totalExecutionTime + ", " + totalResourceUsed + ", "
                 + totalInputBytesInBytes);
           }
-
-          logger.debug("Job execution " + jobExecution.resourceUsage);
-          logger.debug("Job details: AvgResourceUsage " + tuningJobDefinition.averageResourceUsage
+          
+          logger.info("Job execution " + Json.toJson(jobExecution));
+          logger.info("Job details: AvgResourceUsage " + tuningJobDefinition.averageResourceUsage
               + ", allowedMaxResourceUsagePercent: " + tuningJobDefinition.allowedMaxResourceUsagePercent);
 
           if(tuningJobDefinition.averageResourceUsage==null && totalExecutionTime!=0)
@@ -193,12 +194,14 @@ public class FitnessComputeUtil {
           //Compute fitness
           if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)
               || jobExecution.executionState.equals(JobExecution.ExecutionState.CANCELLED)) {
+            logger.info("Job execution failed or cancelled");
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
           } else if (jobExecution.resourceUsage > (tuningJobDefinition.averageResourceUsage
               * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
+            logger.info("Resource usage violates constraint on metrics");
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * totalInputBytesInBytes);

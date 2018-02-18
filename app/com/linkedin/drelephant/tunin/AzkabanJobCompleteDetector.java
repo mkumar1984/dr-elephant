@@ -92,6 +92,9 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
                 }
                 if (tuningJobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
                   completedExecutions.add(tuningJobExecution);
+                  logger.info("Added completed execution");
+                } else{
+                  logger.info("Not added completed execution");
                 }
               }
             }

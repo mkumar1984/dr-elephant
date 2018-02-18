@@ -53,16 +53,22 @@ public class BaselineComputeUtil {
         Utils.getNonNegativeInt(configuration, BASELINE_EXECUTION_COUNT, NUM_JOBS_FOR_BASELINE_DEFAULT);
   }
 
+  /**
+   * Computes baseline for the jobs new to auto tuning
+   * @return tuningJobDefinition
+   */
   public List<TuningJobDefinition> computeBaseline() {
+    logger.info("Starting baseline computation");
     List<TuningJobDefinition> tuningJobDefinitions = getJobForBaselineComputation();
     for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
       try {
         updateBaselineForJob(tuningJobDefinition);
       } catch (Exception e) {
-        logger.error("Error in computing baseline for ", e);
+        logger.error("Error in computing baseline for job: " + Json.toJson(tuningJobDefinition), e);
       }
     }
     updateMetrics(tuningJobDefinitions);
+    logger.info("Baseline computation complete");
     return tuningJobDefinitions;
   }
 
@@ -82,19 +88,25 @@ public class BaselineComputeUtil {
     AutoTuningMetricsController.setBaselineComputeWaitJobs(baselineComputeWaitJobs);
   }
 
+  /**
+   * Fetches the jobs whose baseline is to be computed.
+   * This is done by returning the jobs with null average resource usage
+   * @return List of jobs whose baseline needs to be added
+   */
   private List<TuningJobDefinition> getJobForBaselineComputation() {
-    logger.info("Starting Computing baseline for jobs: ");
-
     List<TuningJobDefinition> tuningJobDefinitions =
         TuningJobDefinition.find.where().eq(TuningJobDefinition.TABLE.averageResourceUsage, null).findList();
-    logger.debug("Computing baseline for jobs: " + Json.toJson(tuningJobDefinitions));
-    logger.info("Baseline computing finished.");
     return tuningJobDefinitions;
   }
 
+  /**
+   * Adds baseline metric values for a job
+   * @param tuningJobDefinition Job for which baseline is to be added
+   */
   private void updateBaselineForJob(TuningJobDefinition tuningJobDefinition) {
 
-    logger.debug("Computing baseline for jobs: " + Json.toJson(tuningJobDefinition));
+    logger.info("Computing baseline for job: " + Json.toJson(tuningJobDefinition));
+
 
     String sql =
         "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
@@ -105,9 +117,10 @@ public class BaselineComputeUtil {
 
     logger.debug("Running query for baseline computation " + sql);
 
-    SqlRow baseline =
-        Ebean.createSqlQuery(sql).setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
-            .setParameter("num", _numJobsForBaseline).findUnique();
+    SqlRow baseline = Ebean.createSqlQuery(sql)
+        .setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
+        .setParameter("num", _numJobsForBaseline)
+        .findUnique();
 
     Double avgResourceUsage = 0D;
     Double avgExecutionTime = 0D;
@@ -116,10 +129,16 @@ public class BaselineComputeUtil {
     tuningJobDefinition.averageExecutionTime = avgExecutionTime;
     tuningJobDefinition.averageResourceUsage = avgResourceUsage;
     tuningJobDefinition.averageInputSizeInBytes = getAvgInputSizeInBytes(tuningJobDefinition.job.jobDefId);
+
     logger.debug("Resource usage " + avgResourceUsage + " Execution Time " + avgExecutionTime);
     tuningJobDefinition.update();
   }
 
+  /**
+   * Returns the average input size in bytes of a job (over last _numJobsForBaseline executions)
+   * @param jobDefId job definition id of the job
+   * @return average input size in bytes as long
+   */
   private Long getAvgInputSizeInBytes(String jobDefId) {
     String sql =
         "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
@@ -132,9 +151,10 @@ public class BaselineComputeUtil {
 
     logger.debug("Running query for average input size computation " + sql);
 
-    SqlRow baseline =
-        Ebean.createSqlQuery(sql).setParameter("jobDefId", jobDefId).setParameter("num", _numJobsForBaseline)
-            .findUnique();
+    SqlRow baseline = Ebean.createSqlQuery(sql)
+        .setParameter("jobDefId", jobDefId)
+        .setParameter("num", _numJobsForBaseline)
+        .findUnique();
     Double avgInputSizeInBytes = baseline.getDouble("avgInputSizeInMB") * FileUtils.ONE_MB;
     return avgInputSizeInBytes.longValue();
   }
