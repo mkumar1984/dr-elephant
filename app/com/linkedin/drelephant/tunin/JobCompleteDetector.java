@@ -61,10 +61,10 @@ public abstract class JobCompleteDetector {
    */
   private void updateMetrics(List<TuningJobExecution> completedExecutions) {
     for (TuningJobExecution tuningJobExecution : completedExecutions) {
-      if (tuningJobExecution.paramSetState == ParamSetStatus.EXECUTED) {
-        if (tuningJobExecution.jobExecution.executionState == ExecutionState.SUCCEEDED) {
+      if (tuningJobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
+        if (tuningJobExecution.jobExecution.executionState.equals(ExecutionState.SUCCEEDED)) {
           AutoTuningMetricsController.markSuccessfulJobs();
-        } else if (tuningJobExecution.jobExecution.executionState == ExecutionState.FAILED) {
+        } else if (tuningJobExecution.jobExecution.executionState.equals(ExecutionState.FAILED)) {
           AutoTuningMetricsController.markFailedJobs();
         }
       }

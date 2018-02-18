@@ -959,7 +959,7 @@ public class Application extends Controller {
       return getCurrentRunParameters(tuningInput);
     } catch (Exception e) {
       AutoTuningMetricsController.markGetCurrentRunParametersFailures();
-      logger.error("Exception", e);
+      logger.error("Exception parsing input: ", e);
       return notFound("Error parsing input ");
     }finally{
       if(context!=null)
