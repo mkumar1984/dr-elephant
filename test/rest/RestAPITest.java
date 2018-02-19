@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.linkedin.drelephant.AutoTuner;
-import com.linkedin.drelephant.tunin.BaselineComputeUtil;
-import com.linkedin.drelephant.tunin.FitnessComputeUtil;
-import com.linkedin.drelephant.tunin.JobCompleteDetector;
+import com.linkedin.drelephant.tuning.BaselineComputeUtil;
+import com.linkedin.drelephant.tuning.FitnessComputeUtil;
+import com.linkedin.drelephant.tuning.JobCompleteDetector;
 import com.linkedin.drelephant.util.Utils;
 
 import common.DBTestUtil;
