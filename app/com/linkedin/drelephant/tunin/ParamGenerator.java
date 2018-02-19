@@ -163,7 +163,7 @@ public abstract class ParamGenerator {
     List<JobTuningInfo> jobTuningInfoList = new ArrayList<JobTuningInfo>();
     for (TuningJobDefinition tuningJobDefinition : tuningJobs) {
       JobDefinition job = tuningJobDefinition.job;
-      logger.info("Getting tuning information for job: " + job.id);
+      logger.info("Getting tuning information for job: " + job.jobDefId);
       List<TuningParameter> tuningParameterList = TuningParameter.find.where()
           .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
               tuningJobDefinition.tuningAlgorithm.id)
@@ -171,7 +171,7 @@ public abstract class ParamGenerator {
           .findList();
 
       try {
-        logger.info("Trying to overwrite default parameters for job " + tuningJobDefinition.job.id);
+        logger.info("Fetching default parameter values for job " + tuningJobDefinition.job.jobDefId);
         TuningJobExecution defaultJobExecution = TuningJobExecution.find.where()
             .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
                 tuningJobDefinition.job.id)
@@ -179,14 +179,12 @@ public abstract class ParamGenerator {
             .orderBy(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc")
             .setMaxRows(1)
             .findUnique();
-        logger.info("Found default execution: " + Json.toJson(defaultJobExecution));
         if (defaultJobExecution != null && defaultJobExecution.jobExecution != null) {
           List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
               .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
                   defaultJobExecution.jobExecution.id)
               .findList();
-          logger.info("Found default params " + Json.toJson(jobSuggestedParamValueList));
-          logger.info("Size: " + jobSuggestedParamValueList.size());
+
           if (jobSuggestedParamValueList.size() > 0) {
             Map<Integer, Double> defaultExecutionParamMap = new HashMap<Integer, Double>();
 
@@ -207,14 +205,11 @@ public abstract class ParamGenerator {
           }
         }
       } catch (NullPointerException e) {
-        logger.error("Error extracting default params for job with id= " + tuningJobDefinition.job.id, e);
+        logger.error("Error extracting default value of params for job " + tuningJobDefinition.job.jobDefId, e);
       }
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
-
-      logger.info("Tuning parameter list: " + Json.toJson(tuningParameterList));
       jobTuningInfo.setParametersToTune(tuningParameterList);
-
       JobSavedState jobSavedState = JobSavedState.find.byId(job.id);
 
       boolean validSavedState = true;
@@ -251,11 +246,10 @@ public abstract class ParamGenerator {
           jobTuningInfo.setTunerState(savedState);
         }
       } else {
-        logger.info("Saved state empty for job with id: " + job.id);
+        logger.info("Saved state empty for job: " + job.jobDefId);
         validSavedState = false;
       }
 
-      logger.info("Is the state valid:" + validSavedState);
       if (!validSavedState) {
         jobTuningInfo.setTunerState("{}");
       }
@@ -317,23 +311,23 @@ public abstract class ParamGenerator {
    */
   private void updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
 
+    logger.info("Updating new parameter suggestion in database");
     if (jobTuningInfoList == null) {
-      logger.info("Tunerlist is null");
+      logger.info("No new parameter suggestion to update");
       return;
     }
 
     int paramSetNotGeneratedJobs = jobTuningInfoList.size();
 
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
-
-      //logger.info("Tuner state: " + Json.toJson(jobTuningInfo));
+      logger.info("Updating new parameter suggestion for job:"  + jobTuningInfo.getTuningJob().jobDefId);
 
       JobDefinition job = jobTuningInfo.getTuningJob();
       List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
       String stringTunerState = jobTuningInfo.getTunerState();
 
       if (stringTunerState == null) {
-        logger.error("Suggested param set is empty for job id: " + job.id);
+        logger.error("Suggested parameter suggestion is empty for job id: " + job.jobDefId);
         continue;
       }
 
@@ -350,8 +344,6 @@ public abstract class ParamGenerator {
           .eq(TuningParameter.TABLE.isDerived, 1)
           .findList();
 
-      logger.info("Derived params: " + Json.toJson(derivedParameterList));
-
       JsonNode jsonTunerState = Json.parse(stringTunerState);
       JsonNode jsonSuggestedPopulation = jsonTunerState.get(JSON_CURRENT_POPULATION_KEY);
 
@@ -367,8 +359,6 @@ public abstract class ParamGenerator {
         AutoTuningMetricsController.markParamSetGenerated();
         List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(suggestedParticle, paramList);
 
-        // yaha pe derived para mka value derive karke usko jobSuggestedParamValueList me append karte ja
-
         Map<String, Double> jobSuggestedParamValueMap = new HashMap<String, Double>();
         for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
           jobSuggestedParamValueMap.put(jobSuggestedParamValue.tuningParameter.paramName,
@@ -376,7 +366,7 @@ public abstract class ParamGenerator {
         }
 
         for (TuningParameter derivedParameter : derivedParameterList) {
-          logger.info("Computing value of derived params");
+          logger.info("Computing value of derived param: " + derivedParameter.paramName);
           Double paramValue = null;
           if (derivedParameter.paramName.equals("mapreduce.reduce.java.opts")) {
             String parentParamName = "mapreduce.reduce.memory.mb";
@@ -410,6 +400,7 @@ public abstract class ParamGenerator {
         tuningJobExecution.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         tuningJobExecution.isDefaultExecution = false;
         if (isParamConstraintViolated(jobSuggestedParamValueList)) {
+          logger.info("Parameter constraint violated. Applying penalty.");
           tuningJobExecution.paramSetState = TuningJobExecution.ParamSetStatus.FITNESS_COMPUTED;
           tuningJobExecution.fitness =
               3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
@@ -445,6 +436,7 @@ public abstract class ParamGenerator {
    * @return true if the constraint is violated, false otherwise
    */
   private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+    logger.info("Checking whether parameter values are within constraints");
 
     Integer violations = 0;
     Double mrSortMemory = null;
@@ -463,20 +455,24 @@ public abstract class ParamGenerator {
 
     if (mrSortMemory != null && mrMapMemory != null) {
       if (mrSortMemory > 0.6 * mrMapMemory) {
+        logger.info("Constraint violated: Sort memory > 60% of map memory");
         violations++;
       }
       if (mrMapMemory - mrSortMemory < 768) {
+        logger.info("Constraint violated: Map memory - sort memory < 768 mb");
         violations++;
       }
     }
 
     if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
+      logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory" )
       violations++;
     }
 
     if (violations == 0) {
       return false;
     } else {
+      logger.info("Number of constraint(s) violated: " + violations);
       return true;
     }
   }
@@ -517,7 +513,6 @@ public abstract class ParamGenerator {
    */
 
   private Long saveSuggestedParamMetadata(TuningJobExecution tuningJobExecution) {
-    logger.info("tuningExecution: " + Json.toJson(tuningJobExecution));
     tuningJobExecution.save();
     return tuningJobExecution.jobExecution.id;
   }

@@ -16,10 +16,13 @@
 
 package com.linkedin.drelephant.tunin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.util.Utils;
+import controllers.AutoTuningMetricsController;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import models.FlowDefinition;
 import models.FlowExecution;
 import models.JobDefinition;
@@ -31,17 +34,8 @@ import models.TuningJobDefinition;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
 import models.TuningParameter;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
-
-import play.libs.Json;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.util.Utils;
-
-import controllers.AutoTuningMetricsController;
 
 
 /**
@@ -64,6 +58,7 @@ public class AutoTuningAPIHelper {
    * @return
    */
   private TuningJobExecution createDefaultJobExecution(TuningJobDefinition tuningJobDefinition) {
+    logger.info("Creating an execution with default parameter values for job: " + tuningJobDefinition.job.jobDefId);
 
     //Get default execution from DB and clone that to create a new default execution
     TuningJobExecution tuningJobExecutionDefault = TuningJobExecution.find.select("*")
@@ -87,7 +82,7 @@ public class AutoTuningAPIHelper {
     tuningJobExecution.paramSetState = ParamSetStatus.CREATED;
     tuningJobExecution.save();
 
-    logger.debug("New Default tuning execution: " + Json.toJson(tuningJobExecution));
+    logger.debug("Execution with default parameter created with execution id: " + tuningJobExecution.jobExecution.id);
 
     List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
         .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
@@ -144,7 +139,7 @@ public class AutoTuningAPIHelper {
    * @return Parameter Suggestion
    */
   public Map<String, Double> getCurrentRunParameters(TuningInput tuningInput) {
-    logger.info("Parameter suggestion request from execution: " + tuningInput.getJobExecId());
+    logger.info("Parameter suggestion request for execution: " + tuningInput.getJobExecId());
     setDefaultValue(tuningInput);
 
     String jobDefId = tuningInput.getJobDefId();
@@ -230,7 +225,7 @@ public class AutoTuningAPIHelper {
     jobExecution.executionState = ExecutionState.IN_PROGRESS;
     jobExecution.flowExecution = flowExecution;
 
-    logger.debug("Saving job execution" + Json.toJson(jobExecution));
+    logger.debug("Saving job execution" + jobExecution.jobExecId);
 
     jobExecution.save();
 
