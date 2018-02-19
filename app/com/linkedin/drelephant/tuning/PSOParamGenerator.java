@@ -38,16 +38,33 @@ public class PSOParamGenerator extends ParamGenerator {
 
   private final Logger logger = Logger.getLogger(PSOParamGenerator.class);
   private static final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
-  private static final String PYTHON_ROOT_DIR_CONF = "python.root.dir";
-  private static final String TUNING_SCRIPT_PATH_CONF = "pso.script.path";
+  private static final String PYTHON_PATH_CONF = "python.path";
+  private static final String PSO_DIR_PATH_ENV_VARIABLE = "PSO_DIR_PATH";
+  private static final String PYTHON_PATH_ENV_VARIABLE = "PYTHONPATH";
 
-  private String PYTHON_ROOT_DIR = null;
+
+  private String PYTHON_PATH = null;
   private String TUNING_SCRIPT_PATH = null;
 
   public PSOParamGenerator() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    PYTHON_ROOT_DIR = configuration.get(PYTHON_ROOT_DIR_CONF);
-    TUNING_SCRIPT_PATH = configuration.get(TUNING_SCRIPT_PATH_CONF);
+    PYTHON_PATH = configuration.get(PYTHON_PATH_CONF);
+    if (PYTHON_PATH == null){
+      PYTHON_PATH = System.getenv(PYTHON_PATH_ENV_VARIABLE);
+    }
+    String PSO_DIR_PATH = System.getenv(PSO_DIR_PATH_ENV_VARIABLE);
+
+    if(PSO_DIR_PATH == null){
+      throw new NullPointerException("Couldn't find directory containing PSO scripts");
+    }
+
+    TUNING_SCRIPT_PATH = PSO_DIR_PATH + "/pso_param_generation.py";
+    logger.info("Tuning script path: " + TUNING_SCRIPT_PATH);
+    logger.info("Python path: " + PYTHON_PATH);
+
+    if(PYTHON_PATH == null){
+      throw new NullPointerException("Python path is null");
+    }
   }
 
   /**
@@ -75,7 +92,7 @@ public class PSOParamGenerator extends ParamGenerator {
       logger.info(
           "Calling PSO with StringTunerState= " + stringTunerState + "\nand Parameters to tune: " + parametersToTune);
       Process p = Runtime.getRuntime()
-          .exec(PYTHON_ROOT_DIR + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune);
+          .exec(PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune);
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();

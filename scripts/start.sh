@@ -30,9 +30,11 @@ function check_config() {
 }
 
 # Save project root dir
-script_path=`which $0`
-script_dir=`dirname $script_path`
-project_root=$script_dir/../
+project_root=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )
+
+scripts_dir=$project_root/scripts
+echo "Scripts directory: $scripts_dir"
+export PSO_DIR_PATH=$scripts_dir/pso
 
 # User could set an environmental variable, ELEPHANT_CONF_DIR, or pass an optional argument(config file path)
 if [ -z "$1" ]; then
