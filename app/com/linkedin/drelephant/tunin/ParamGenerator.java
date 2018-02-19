@@ -84,7 +84,7 @@ public abstract class ParamGenerator {
 
     // Todo: [Important] Change the logic. This is very rigid. Ideally you should look at the param set ids in the saved state,
     // todo: [continuation] if their fitness is computed, pso can generate new params for the job
-    logger.info("Fetching job list to suggest parameters");
+    logger.info("Checking which jobs need new parameter suggestion");
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
 
     List<TuningJobExecution> pendingParamExecutionList = new ArrayList<TuningJobExecution>();
@@ -99,7 +99,7 @@ public abstract class ParamGenerator {
           .eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
           .findList();
     } catch (NullPointerException e) {
-      logger.info("ParamGenerator.fetchJobsForParamSuggestion: No pending executions found");
+      logger.info("None of the non-default executions are in CREATED, SENT OR EXECUTED state");
     }
 
     List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
@@ -118,7 +118,7 @@ public abstract class ParamGenerator {
           .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
           .findList();
     } catch (NullPointerException e) {
-      logger.error("No tuning enabled jobs found");
+      logger.error("No auto-tuning enabled jobs found");
     }
 
     for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitionList) {
@@ -126,7 +126,13 @@ public abstract class ParamGenerator {
         jobsForParamSuggestion.add(tuningJobDefinition);
       }
     }
-    logger.info("Job list to suggest parameters:" + Json.toJson(jobsForParamSuggestion));
+    if(jobsForParamSuggestion.size()>0){
+      for(TuningJobDefinition tuningJobDefinition: jobsForParamSuggestion){
+        logger.info("New parameter suggestion needed for job:" + tuningJobDefinition.job.jobName);
+      }
+    } else {
+      logger.info("None of the jobs need new parameter suggestion");
+    }
     return jobsForParamSuggestion;
   }
 
@@ -311,13 +317,12 @@ public abstract class ParamGenerator {
    */
   private void updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
 
-
     if (jobTuningInfoList == null) {
       logger.info("Tunerlist is null");
       return;
     }
 
-    int paramSetNotGeneratedJobs=jobTuningInfoList.size();
+    int paramSetNotGeneratedJobs = jobTuningInfoList.size();
 
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
 

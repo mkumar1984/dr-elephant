@@ -16,9 +16,13 @@
 
 package com.linkedin.drelephant.tunin;
 
+import com.linkedin.drelephant.AutoTuner;
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
+import com.linkedin.drelephant.util.Utils;
+import controllers.AutoTuningMetricsController;
 import java.util.ArrayList;
 import java.util.List;
-
 import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
@@ -27,19 +31,9 @@ import models.JobExecution;
 import models.TuningJobDefinition;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
-
-import play.libs.Json;
-
-import com.linkedin.drelephant.AutoTuner;
-import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
-import com.linkedin.drelephant.util.Utils;
-
-import controllers.AutoTuningMetricsController;
 
 
 /**
@@ -65,10 +59,9 @@ public class FitnessComputeUtil {
    * @return List of job execution
    */
   public List<TuningJobExecution> updateFitness() {
-    logger.info("Updating fitness");
+    logger.info("Computing and updating fitness for completed executions");
     List<TuningJobExecution> completedExecutions = getCompletedExecutions();
     updateExecutionMetrics(completedExecutions);
-    logger.info("Fitness updated");
     updateMetrics(completedExecutions);
     return completedExecutions;
   }
@@ -94,7 +87,7 @@ public class FitnessComputeUtil {
    * @return List of job execution
    */
   private List<TuningJobExecution> getCompletedExecutions() {
-    logger.debug("Inside getCompletedExecutions jobs");
+    logger.info("Fetching completed executions whose fitness are yet to be computed");
     List<TuningJobExecution> jobExecutions = new ArrayList<TuningJobExecution>();
     List<TuningJobExecution> outputJobExecutions = new ArrayList<TuningJobExecution>();
 
@@ -106,19 +99,20 @@ public class FitnessComputeUtil {
 
       for (TuningJobExecution tuningJobExecution : jobExecutions) {
         long diff = System.currentTimeMillis() - tuningJobExecution.jobExecution.updatedTs.getTime();
-        logger.debug("CurrentMillis " + System.currentTimeMillis() + ", Job update time "
+        logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
             + tuningJobExecution.jobExecution.updatedTs.getTime());
         if (diff < waitInterval) {
-          logger.debug("Delaying fitness compute for job " + tuningJobExecution.jobExecution.jobExecId);
+          logger.debug("Delaying fitness compute for execution: " + tuningJobExecution.jobExecution.jobExecId);
         } else {
-          logger.debug("Adding job for fitness compute " + tuningJobExecution.jobExecution.jobExecId);
+          logger.debug("Adding execution " + tuningJobExecution.jobExecution.jobExecId + " for fitness computation");
           outputJobExecutions.add(tuningJobExecution);
         }
       }
     } catch (NullPointerException e) {
-      logger.error("No completed executions found for computing fitness", e);
+      logger.error("No completed execution found for which fitness is to be computed", e);
     }
-    logger.debug("Finished getCompletedExecutions jobs");
+    logger.info("Number of completed execution fetched for fitness computation: " + outputJobExecutions.size());
+    logger.debug("Finished fetching completed executions for fitness computation");
     return outputJobExecutions;
   }
 
@@ -127,10 +121,9 @@ public class FitnessComputeUtil {
    * @param completedExecutions List of completed executions
    */
   protected void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
-    logger.debug("Updating execution metrics");
     for (TuningJobExecution tuningJobExecution : completedExecutions) {
 
-      logger.debug("Completed executions before updating metric: " + Json.toJson(tuningJobExecution));
+      logger.info("Updating execution metrics and fitness for execution: " + tuningJobExecution.jobExecution.jobExecId);
 
       try {
         JobExecution jobExecution = tuningJobExecution.jobExecution;
@@ -143,9 +136,6 @@ public class FitnessComputeUtil {
             .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
             .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
             .findUnique();
-
-        logger.debug("Job Execution Update: Flow Execution ID " + jobExecution.flowExecution.flowExecId + " Job ID "
-            + jobExecution.jobExecId);
 
         List<AppResult> results = AppResult.find.select("*")
             .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
@@ -162,11 +152,9 @@ public class FitnessComputeUtil {
           Double totalInputBytesInBytes = 0D;
 
           for (AppResult appResult : results) {
-            logger.info("Job Execution Update: ApplicationID " + appResult.id);
             totalResourceUsed += appResult.resourceUsed;
             totalInputBytesInBytes += getTotalInputBytes(appResult);
           }
-
 
           Long totalRunTime = Utils.getTotalRuntime(results);
           Long totalDelay = Utils.getTotalWaittime(results);
@@ -177,33 +165,30 @@ public class FitnessComputeUtil {
             jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
             jobExecution.inputSizeInBytes = totalInputBytesInBytes;
 
-            logger.info("Job Execution Update: UpdatedValue " + totalExecutionTime + ", " + totalResourceUsed + ", "
-                + totalInputBytesInBytes);
+            logger.info(
+                "Metric Values for execution " + jobExecution.jobExecId + ": Execution time = " + totalExecutionTime
+                    + ", Resource usage = " + totalResourceUsed + " and total input size = " + totalInputBytesInBytes);
           }
 
-          logger.info("Job execution " + Json.toJson(jobExecution));
-          logger.info("Job details: AvgResourceUsage " + tuningJobDefinition.averageResourceUsage
-              + ", allowedMaxResourceUsagePercent: " + tuningJobDefinition.allowedMaxResourceUsagePercent);
-
-          if(tuningJobDefinition.averageResourceUsage==null && totalExecutionTime!=0)
-          {
-            tuningJobDefinition.averageResourceUsage=jobExecution.resourceUsage;
-            tuningJobDefinition.averageExecutionTime=jobExecution.executionTime;
-            tuningJobDefinition.averageInputSizeInBytes=jobExecution.inputSizeInBytes.longValue();
+          if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
+            tuningJobDefinition.averageResourceUsage = jobExecution.resourceUsage;
+            tuningJobDefinition.averageExecutionTime = jobExecution.executionTime;
+            tuningJobDefinition.averageInputSizeInBytes = jobExecution.inputSizeInBytes.longValue();
             tuningJobDefinition.update();
           }
 
           //Compute fitness
           if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)
               || jobExecution.executionState.equals(JobExecution.ExecutionState.CANCELLED)) {
-            logger.info("Job execution failed or cancelled");
+            logger.info("Execution " + jobExecution.jobExecId + " failed/cancelled. Applying penalty");
             // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
           } else if (jobExecution.resourceUsage > (
+              // Todo: Check execution time constraint as well
               tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
-            logger.info("Resource usage violates constraint on metrics");
+            logger.info("Execution " + jobExecution.jobExecId + " violates constraint on resource usage");
             tuningJobExecution.fitness =
                 3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
                     * FileUtils.ONE_GB / (100.0 * totalInputBytesInBytes);
@@ -213,8 +198,6 @@ public class FitnessComputeUtil {
           tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
           jobExecution.update();
           tuningJobExecution.update();
-
-          logger.debug("Completed executions after updating metrics: " + Json.toJson(tuningJobExecution));
         } else {
           if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)
               || jobExecution.executionState.equals(JobExecution.ExecutionState.CANCELLED)) {
@@ -231,12 +214,11 @@ public class FitnessComputeUtil {
           }
         }
       } catch (Exception e) {
-        //String stackTrace = e.getStackTrace ().toString ();
-        logger.error("Error updating fitness of job_exec_id: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ",
+        logger.error("Error updating fitness of execution: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ",
             e);
       }
     }
-    logger.debug("Execution metrics updated");
+    logger.info("Execution metrics updated");
   }
 
   /**

@@ -16,23 +16,18 @@
 
 package com.linkedin.drelephant.tunin;
 
-import java.util.List;
-
-import models.TuningJobDefinition;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.log4j.Logger;
-
-import play.libs.Json;
-
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.SqlRow;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.util.Utils;
-
 import controllers.AutoTuningMetricsController;
+import java.util.ArrayList;
+import java.util.List;
+import models.TuningJobDefinition;
+import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -64,7 +59,7 @@ public class BaselineComputeUtil {
       try {
         updateBaselineForJob(tuningJobDefinition);
       } catch (Exception e) {
-        logger.error("Error in computing baseline for job: " + Json.toJson(tuningJobDefinition), e);
+        logger.error("Error in computing baseline for job: " + tuningJobDefinition.job.jobName, e);
       }
     }
     updateMetrics(tuningJobDefinitions);
@@ -94,8 +89,14 @@ public class BaselineComputeUtil {
    * @return List of jobs whose baseline needs to be added
    */
   private List<TuningJobDefinition> getJobForBaselineComputation() {
-    List<TuningJobDefinition> tuningJobDefinitions =
-        TuningJobDefinition.find.where().eq(TuningJobDefinition.TABLE.averageResourceUsage, null).findList();
+    logger.info("Fetching jobs for which baseline metrics need to be computed");
+    List<TuningJobDefinition> tuningJobDefinitions = new ArrayList<TuningJobDefinition>();
+    try {
+      tuningJobDefinitions =
+          TuningJobDefinition.find.where().eq(TuningJobDefinition.TABLE.averageResourceUsage, null).findList();
+    } catch (NullPointerException e) {
+      logger.info("There are no jobs for which baseline has to be computed", e);
+    }
     return tuningJobDefinitions;
   }
 
@@ -105,15 +106,13 @@ public class BaselineComputeUtil {
    */
   private void updateBaselineForJob(TuningJobDefinition tuningJobDefinition) {
 
-    logger.info("Computing baseline for job: " + Json.toJson(tuningJobDefinition));
+    logger.info("Computing and updating baseline metric values for job: " + tuningJobDefinition.job.jobName);
 
-
-    String sql =
-        "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
-            + "(SELECT job_exec_id, SUM(resource_used/(1024 * 3600)) AS resource_used, "
-            + "SUM((finish_time - start_time - total_delay)/(1000 * 60))  AS execution_time, " + "MAX(start_time) AS start_time "
-            + "FROM yarn_app_result WHERE job_def_id=:jobDefId " + "GROUP BY job_exec_id "
-            + "ORDER BY start_time DESC " + "LIMIT :num) temp";
+    String sql = "SELECT AVG(resource_used) AS resource_used, AVG(execution_time) AS execution_time FROM "
+        + "(SELECT job_exec_id, SUM(resource_used/(1024 * 3600)) AS resource_used, "
+        + "SUM((finish_time - start_time - total_delay)/(1000 * 60))  AS execution_time, "
+        + "MAX(start_time) AS start_time " + "FROM yarn_app_result WHERE job_def_id=:jobDefId "
+        + "GROUP BY job_exec_id " + "ORDER BY start_time DESC " + "LIMIT :num) temp";
 
     logger.debug("Running query for baseline computation " + sql);
 
@@ -124,14 +123,16 @@ public class BaselineComputeUtil {
 
     Double avgResourceUsage = 0D;
     Double avgExecutionTime = 0D;
-    avgResourceUsage = baseline.getDouble("resource_used") ;
-    avgExecutionTime = baseline.getDouble("execution_time") ;
+    avgResourceUsage = baseline.getDouble("resource_used");
+    avgExecutionTime = baseline.getDouble("execution_time");
     tuningJobDefinition.averageExecutionTime = avgExecutionTime;
     tuningJobDefinition.averageResourceUsage = avgResourceUsage;
     tuningJobDefinition.averageInputSizeInBytes = getAvgInputSizeInBytes(tuningJobDefinition.job.jobDefId);
 
-    logger.debug("Resource usage " + avgResourceUsage + " Execution Time " + avgExecutionTime);
+    logger.debug("Baseline metric values: Average resource usage=" + avgResourceUsage + " and Average execution time="
+        + avgExecutionTime);
     tuningJobDefinition.update();
+    logger.info("Updated baseline metric value for job: " + tuningJobDefinition.job.jobName);
   }
 
   /**
@@ -140,14 +141,13 @@ public class BaselineComputeUtil {
    * @return average input size in bytes as long
    */
   private Long getAvgInputSizeInBytes(String jobDefId) {
-    String sql =
-        "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
-            + "(SELECT job_exec_id, SUM(cast(value as decimal)) inputSizeInBytes, MAX(start_time) AS start_time "
-            + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr "
-            + "ON yar.id=yahr.yarn_app_result_id " + "INNER JOIN yarn_app_heuristic_result_details yahrd "
-            + "ON yahr.id=yahrd.yarn_app_heuristic_result_id " + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='"
-            + CommonConstantsHeuristic.MAPPER_SPEED + "' " + "AND yahrd.name='Total input size in MB' "
-            + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
+    String sql = "SELECT AVG(inputSizeInBytes) as avgInputSizeInMB FROM "
+        + "(SELECT job_exec_id, SUM(cast(value as decimal)) inputSizeInBytes, MAX(start_time) AS start_time "
+        + "FROM yarn_app_result yar INNER JOIN yarn_app_heuristic_result yahr " + "ON yar.id=yahr.yarn_app_result_id "
+        + "INNER JOIN yarn_app_heuristic_result_details yahrd " + "ON yahr.id=yahrd.yarn_app_heuristic_result_id "
+        + "WHERE job_def_id=:jobDefId AND yahr.heuristic_name='" + CommonConstantsHeuristic.MAPPER_SPEED + "' "
+        + "AND yahrd.name='Total input size in MB' "
+        + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
 
     logger.debug("Running query for average input size computation " + sql);
 
