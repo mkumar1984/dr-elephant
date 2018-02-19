@@ -52,7 +52,7 @@
     <value>http://ltx1-holdemdre01.grid.linkedin.com:8080</value>
     <description>API URL for Dr Elephant</description>
   </property>
-  <!--If PYTHONPATH environment variable is set then the below property is optional, else it is required for auto-tuning-->
+  <!--The below property is optional-->
   <!--<property>-->
   <!--<name>python.path</name>-->
   <!--<value>/usr/bin/python</value>-->

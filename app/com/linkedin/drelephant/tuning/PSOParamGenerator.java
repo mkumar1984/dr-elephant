@@ -42,29 +42,27 @@ public class PSOParamGenerator extends ParamGenerator {
   private static final String PSO_DIR_PATH_ENV_VARIABLE = "PSO_DIR_PATH";
   private static final String PYTHON_PATH_ENV_VARIABLE = "PYTHONPATH";
 
-
   private String PYTHON_PATH = null;
   private String TUNING_SCRIPT_PATH = null;
 
   public PSOParamGenerator() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     PYTHON_PATH = configuration.get(PYTHON_PATH_CONF);
-    if (PYTHON_PATH == null){
+    if (PYTHON_PATH == null) {
       PYTHON_PATH = System.getenv(PYTHON_PATH_ENV_VARIABLE);
     }
     String PSO_DIR_PATH = System.getenv(PSO_DIR_PATH_ENV_VARIABLE);
 
-    if(PSO_DIR_PATH == null){
+    if (PSO_DIR_PATH == null) {
       throw new NullPointerException("Couldn't find directory containing PSO scripts");
-    }
 
+    }
+    if (PYTHON_PATH == null) {
+      PYTHON_PATH = "python";
+    }
     TUNING_SCRIPT_PATH = PSO_DIR_PATH + "/pso_param_generation.py";
     logger.info("Tuning script path: " + TUNING_SCRIPT_PATH);
     logger.info("Python path: " + PYTHON_PATH);
-
-    if(PYTHON_PATH == null){
-      throw new NullPointerException("Python path is null");
-    }
   }
 
   /**
