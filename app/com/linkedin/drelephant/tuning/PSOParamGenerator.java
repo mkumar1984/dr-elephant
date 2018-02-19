@@ -55,7 +55,6 @@ public class PSOParamGenerator extends ParamGenerator {
 
     if (PSO_DIR_PATH == null) {
       throw new NullPointerException("Couldn't find directory containing PSO scripts");
-
     }
     if (PYTHON_PATH == null) {
       PYTHON_PATH = "python";

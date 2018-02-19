@@ -48,7 +48,7 @@ public class AutoTuner implements Runnable {
 
   public void run() {
 
-    logger.info("Started AutoTuner thread ");
+    logger.info("Starting Auto Tuning thread");
     HDFSContext.load();
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
 
@@ -75,6 +75,6 @@ public class AutoTuner implements Runnable {
     } catch (Exception e) {
       logger.error("Error in auto tuner thread ", e);
     }
-    logger.info("Shutdown AutoTuner thread ");
+    logger.info("Auto tuning thread shutting down");
   }
 }

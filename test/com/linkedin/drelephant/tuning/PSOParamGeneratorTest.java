@@ -182,7 +182,7 @@ public class PSOParamGeneratorTest {
         List<TuningJobExecution> tuningJobExecutionList = TuningJobExecution.find.where()
             .eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.CREATED)
             .findList();
-        assertEquals("Swarm size did not match", SWARM_SIZE ,tuningJobExecutionList.size());
+        assertEquals("Swarm size did not match", SWARM_SIZE, tuningJobExecutionList.size());
 
         TuningJobExecution tuningJobExecution = tuningJobExecutionList.get(0);
 

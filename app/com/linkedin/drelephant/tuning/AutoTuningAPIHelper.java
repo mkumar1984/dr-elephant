@@ -173,7 +173,8 @@ public class AutoTuningAPIHelper {
 
     //If no new parameter set for suggestion, create a new suggestion with default parameter
     if (tuningJobExecution == null) {
-      logger.info("Returning default parameters as no parameter suggestion found for job: " + tuningJobDefinition.job.jobName);
+      logger.info(
+          "Returning default parameters as no parameter suggestion found for job: " + tuningJobDefinition.job.jobName);
       AutoTuningMetricsController.markParamSetNotFound();
       tuningJobExecution = createDefaultJobExecution(tuningJobDefinition);
     }
