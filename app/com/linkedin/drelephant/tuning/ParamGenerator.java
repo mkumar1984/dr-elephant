@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.tuning;
 
 import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;

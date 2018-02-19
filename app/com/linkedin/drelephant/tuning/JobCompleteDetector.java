@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.tuning;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;

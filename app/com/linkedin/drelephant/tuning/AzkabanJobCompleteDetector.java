@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.tuning;
 
 import com.linkedin.drelephant.clients.azkaban.AzkabanJobStatusUtil;
 import java.net.MalformedURLException;

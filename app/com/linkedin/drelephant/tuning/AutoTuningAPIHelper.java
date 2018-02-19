@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.tuning;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkedin.drelephant.ElephantContext;
