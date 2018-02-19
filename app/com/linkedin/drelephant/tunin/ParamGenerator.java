@@ -126,8 +126,8 @@ public abstract class ParamGenerator {
         jobsForParamSuggestion.add(tuningJobDefinition);
       }
     }
-    if(jobsForParamSuggestion.size()>0){
-      for(TuningJobDefinition tuningJobDefinition: jobsForParamSuggestion){
+    if (jobsForParamSuggestion.size() > 0) {
+      for (TuningJobDefinition tuningJobDefinition : jobsForParamSuggestion) {
         logger.info("New parameter suggestion needed for job:" + tuningJobDefinition.job.jobName);
       }
     } else {
@@ -320,7 +320,7 @@ public abstract class ParamGenerator {
     int paramSetNotGeneratedJobs = jobTuningInfoList.size();
 
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
-      logger.info("Updating new parameter suggestion for job:"  + jobTuningInfo.getTuningJob().jobDefId);
+      logger.info("Updating new parameter suggestion for job:" + jobTuningInfo.getTuningJob().jobDefId);
 
       JobDefinition job = jobTuningInfo.getTuningJob();
       List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
@@ -465,7 +465,7 @@ public abstract class ParamGenerator {
     }
 
     if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
-      logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory" )
+      logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
       violations++;
     }
 
