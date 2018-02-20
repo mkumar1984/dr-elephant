@@ -266,7 +266,7 @@ def main(json_tuning_state, display=False):
                                 maximize=False, max_evaluations=POPULATION_SIZE, **args)
 
         tuning_state = generate_tuning_state(pso, pseudo_random_number_generator, population)
-        print tuning_state
+        print(tuning_state)
 
     else:
         archive = json_to_individual_object(tuning_state[TUNING_STATE_ARCHIVE_KEY])
@@ -292,7 +292,7 @@ def main(json_tuning_state, display=False):
                                 bounder=bounder,
                                 maximize=False, max_evaluations=2 * POPULATION_SIZE, **args)
         tuning_state = generate_tuning_state(pso, pseudo_random_number_generator, population)
-        print tuning_state
+        print(tuning_state)
 
 
 if __name__ == '__main__':
