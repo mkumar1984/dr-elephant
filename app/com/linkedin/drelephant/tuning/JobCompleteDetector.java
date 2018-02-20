@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.tuning;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -46,12 +46,12 @@ public abstract class JobCompleteDetector {
    * @throws URISyntaxException
    */
   public List<TuningJobExecution> updateCompletedExecutions() throws MalformedURLException, URISyntaxException {
-    logger.info("Starting JobCompleteDetector");
+    logger.info("Checking execution status");
     List<TuningJobExecution> runningExecutions = getStartedExecutions();
     List<TuningJobExecution> completedExecutions = getCompletedExecutions(runningExecutions);
     updateExecutionStatus(completedExecutions);
     updateMetrics(completedExecutions);
-    logger.info("Finished JobCompleteDetector");
+    logger.info("Finished updating execution status");
     return completedExecutions;
   }
 
@@ -76,16 +76,17 @@ public abstract class JobCompleteDetector {
    * @return JobExecution list
    */
   private List<TuningJobExecution> getStartedExecutions() {
-    logger.debug("fetching started executions");
+    logger.info("Fetching the executions which were running");
     List<TuningJobExecution> tuningJobExecutionList = new ArrayList<TuningJobExecution>();
     try {
-      tuningJobExecutionList =
-          TuningJobExecution.find.select("*").where().eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT)
-              .findList();
+      tuningJobExecutionList = TuningJobExecution.find.select("*")
+          .where()
+          .eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT)
+          .findList();
     } catch (NullPointerException e) {
-      logger.error("Error in getStartedExecutions ", e);
+      logger.info("None of the executions were running ", e);
     }
-    logger.debug("started executions fetched");
+    logger.info("Number of executions which were in running state: " + tuningJobExecutionList.size());
     return tuningJobExecutionList;
   }
 
@@ -105,9 +106,10 @@ public abstract class JobCompleteDetector {
    * @return Update status
    */
   private void updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
+    logger.info("Updating status of executions completed since last iteration");
     for (TuningJobExecution tuningJobExecution : jobExecutions) {
       JobExecution jobExecution = tuningJobExecution.jobExecution;
-      logger.info("Updating jobExecution: " + Json.toJson(jobExecution));
+      logger.info("Updating execution status to EXECUTED for the execution: " + jobExecution.jobExecId);
       jobExecution.update();
       tuningJobExecution.update();
     }

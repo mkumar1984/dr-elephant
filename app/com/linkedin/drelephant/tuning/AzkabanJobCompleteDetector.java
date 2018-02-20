@@ -14,24 +14,19 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.tuning;
 
+import com.linkedin.drelephant.clients.azkaban.AzkabanJobStatusUtil;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import models.JobExecution;
 import models.JobExecution.ExecutionState;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
-
-import org.apache.log4j.*;
-
-import com.linkedin.drelephant.clients.azkaban.AzkabanJobStatusUtil;
-
-import play.libs.Json;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -56,14 +51,14 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
    */
   protected List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions)
       throws MalformedURLException, URISyntaxException {
-    logger.debug("Fetching completed executions" + Json.toJson(jobExecutions));
+    logger.info("Fetching the list of executions completed since last iteration");
     List<TuningJobExecution> completedExecutions = new ArrayList<TuningJobExecution>();
     try {
       for (TuningJobExecution tuningJobExecution : jobExecutions) {
 
         JobExecution jobExecution = tuningJobExecution.jobExecution;
 
-        logger.info("Checking completion for job execution: " + Json.toJson(tuningJobExecution));
+        logger.info("Checking current status of started execution: " + tuningJobExecution.jobExecution.jobExecId);
 
         if (_azkabanJobStatusUtil == null) {
           logger.info("Initializing  AzkabanJobStatusUtil");
@@ -92,21 +87,24 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
                 }
                 if (tuningJobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
                   completedExecutions.add(tuningJobExecution);
+                  logger.info("Execution " + tuningJobExecution.jobExecution.jobExecId + " is completed");
+                } else {
+                  logger.info("Execution " + tuningJobExecution.jobExecution.jobExecId + " is still in running state");
                 }
               }
             }
           } else {
-            logger.debug("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
+            logger.info("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
           }
         } catch (Exception e) {
-          logger.error("Error get status for execution with id: " + jobExecution.id, e);
+          logger.error("Error in checking status of execution: " + jobExecution.jobExecId, e);
         }
       }
     } catch (Exception e) {
-      logger.error("Error in getCompletedExecutions ", e);
+      logger.error("Error in fetching list of completed executions", e);
       e.printStackTrace();
     }
-    logger.debug("Completed executions fetched");
+    logger.info("Number of executions completed since last iteration: " + completedExecutions.size());
     return completedExecutions;
   }
 }

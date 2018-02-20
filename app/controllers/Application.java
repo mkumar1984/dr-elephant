@@ -75,8 +75,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.linkedin.drelephant.tunin.AutoTuningAPIHelper;
-import com.linkedin.drelephant.tunin.TuningInput;
+import com.linkedin.drelephant.tuning.AutoTuningAPIHelper;
+import com.linkedin.drelephant.tuning.TuningInput;
 
 
 public class Application extends Controller {

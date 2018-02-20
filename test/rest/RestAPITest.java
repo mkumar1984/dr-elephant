@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.linkedin.drelephant.AutoTuner;
-import com.linkedin.drelephant.tunin.BaselineComputeUtil;
-import com.linkedin.drelephant.tunin.FitnessComputeUtil;
-import com.linkedin.drelephant.tunin.JobCompleteDetector;
+import com.linkedin.drelephant.tuning.BaselineComputeUtil;
+import com.linkedin.drelephant.tuning.FitnessComputeUtil;
+import com.linkedin.drelephant.tuning.JobCompleteDetector;
 import com.linkedin.drelephant.util.Utils;
 
 import common.DBTestUtil;
@@ -55,6 +55,7 @@ import play.GlobalSettings;
 import play.libs.Json;
 import play.libs.WS;
 import play.test.FakeApplication;
+
 import static common.DBTestUtil.*;
 import static common.TestConstants.*;
 import static org.junit.Assert.assertTrue;
@@ -131,7 +132,7 @@ public class RestAPITest {
       public void run() {
         populateAutoTuningTestData1();
 
-        JsonNode jsonNode=getTestGetCurrentRunParameterData();
+        JsonNode jsonNode = getTestGetCurrentRunParameterData();
         final WS.Response response = WS.url(BASE_URL + REST_GET_CURRENT_RUN_PARAMETERS).
             post(jsonNode).get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
 
@@ -140,22 +141,25 @@ public class RestAPITest {
         logger.info("Output of getCurrentRunParameters ");
         logger.info(jsonResponse.toString());
 
-        assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.map.memory.mb").asDouble()>0);
-        assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.reduce.memory.mb").asDouble()>0);
-        assertTrue("Get current run param output size did not match", jsonResponse.size()==9);
+        assertTrue("Get current run param output did not match",
+            jsonResponse.path("mapreduce.map.memory.mb").asDouble() > 0);
+        assertTrue("Get current run param output did not match",
+            jsonResponse.path("mapreduce.reduce.memory.mb").asDouble() > 0);
+        assertTrue("Get current run param output size did not match", jsonResponse.size() == 9);
 
         TuningJobExecution tuningJobExecution = TuningJobExecution.find.select("*")
             .fetch(TuningJobExecution.TABLE.jobExecution, "*")
             .fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
             .where()
             .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
-                "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0").findUnique();
+                "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0")
+            .findUnique();
 
-        tuningJobExecution.paramSetState=ParamSetStatus.EXECUTED;
-        tuningJobExecution.jobExecution.executionState=ExecutionState.SUCCEEDED;
+        tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
+        tuningJobExecution.jobExecution.executionState = ExecutionState.SUCCEEDED;
         tuningJobExecution.update();
 
-        FitnessComputeUtil fitnessComputeUtil=new FitnessComputeUtil();
+        FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
         fitnessComputeUtil.updateFitness();
 
         tuningJobExecution = TuningJobExecution.find.select("*")
@@ -164,10 +168,10 @@ public class RestAPITest {
             .where()
             .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
                 "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0")
-                .findUnique();
+            .findUnique();
 
-        assertTrue("Fitness not computed", tuningJobExecution.paramSetState==ParamSetStatus.FITNESS_COMPUTED);
-        assertTrue("Fitness not computed and have zero value", tuningJobExecution.fitness>0);
+        assertTrue("Fitness not computed", tuningJobExecution.paramSetState == ParamSetStatus.FITNESS_COMPUTED);
+        assertTrue("Fitness not computed and have zero value", tuningJobExecution.fitness > 0);
       }
     });
   }
@@ -178,41 +182,44 @@ public class RestAPITest {
       public void run() {
         populateAutoTuningTestData1();
 
-        JsonNode jsonNode=getTestGetCurrentRunParameterNewData();
+        JsonNode jsonNode = getTestGetCurrentRunParameterNewData();
         final WS.Response response = WS.url(BASE_URL + REST_GET_CURRENT_RUN_PARAMETERS).
             post(jsonNode).get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
 
         final JsonNode jsonResponse = response.asJson();
 
-        assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.map.memory.mb").asDouble()==2048D);
-        assertTrue("Get current run param output did not match", jsonResponse.path("mapreduce.reduce.memory.mb").asDouble()==2048D);
-        assertTrue("Get current run param output size did not match", jsonResponse.size()==2);
+        assertTrue("Get current run param output did not match",
+            jsonResponse.path("mapreduce.map.memory.mb").asDouble() == 2048D);
+        assertTrue("Get current run param output did not match",
+            jsonResponse.path("mapreduce.reduce.memory.mb").asDouble() == 2048D);
+        assertTrue("Get current run param output size did not match", jsonResponse.size() == 2);
 
         TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
             .where()
             .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId,
                 "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry")
-                .findUnique();
+            .findUnique();
 
-        assertTrue("New Job Not created  ", tuningJobDefinition.job.jobName.equals("countByCountryFlowSmallNew_countByCountry"));
+        assertTrue("New Job Not created  ",
+            tuningJobDefinition.job.jobName.equals("countByCountryFlowSmallNew_countByCountry"));
 
-        BaselineComputeUtil baselineComputeUtil=new BaselineComputeUtil();
+        BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
         baselineComputeUtil.computeBaseline();
 
         tuningJobDefinition = TuningJobDefinition.find.select("*")
             .where()
             .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId,
                 "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry")
-                .findUnique();
+            .findUnique();
 
-        assertTrue("Baseline not computed:averageResourceUsage  ", tuningJobDefinition.averageResourceUsage>0);
-        assertTrue("Baseline not computed:averageInputSizeInBytes  ", tuningJobDefinition.averageInputSizeInBytes>0);
-        assertTrue("Baseline not computed:averageExecutionTime  ", tuningJobDefinition.averageExecutionTime>0);
+        assertTrue("Baseline not computed:averageResourceUsage  ", tuningJobDefinition.averageResourceUsage > 0);
+        assertTrue("Baseline not computed:averageInputSizeInBytes  ", tuningJobDefinition.averageInputSizeInBytes > 0);
+        assertTrue("Baseline not computed:averageExecutionTime  ", tuningJobDefinition.averageExecutionTime > 0);
       }
     });
   }
-  private JsonNode getTestGetCurrentRunParameterNewData()
-  {
+
+  private JsonNode getTestGetCurrentRunParameterNewData() {
     Map<String, String> params = new HashMap<String, String>();
     Map<String, Double> paramValueMap = new HashMap<String, Double>();
     paramValueMap.put("mapreduce.map.memory.mb", 2048D);
@@ -221,14 +228,20 @@ public class RestAPITest {
     String jobParamsJson = gson.toJson(paramValueMap);
 
     params.put("projectName", "AzkabanHelloPigTest");
-    params.put("flowDefId", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew");
-    params.put("jobDefId", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry");
+    params.put("flowDefId",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew");
+    params.put("jobDefId",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry");
     params.put("flowExecId", "https://elephant.linkedin.com:8443/executor?execid=5221700");
-    params.put("jobExecId", "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmallNew_countByCountry&attempt=0");
-    params.put("flowDefUrl", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew");
-    params.put("jobDefUrl", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry");
+    params.put("jobExecId",
+        "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmallNew_countByCountry&attempt=0");
+    params.put("flowDefUrl",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew");
+    params.put("jobDefUrl",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmallNew&job=countByCountryFlowSmallNew_countByCountry");
     params.put("flowExecUrl", "https://elephant.linkedin.com:8443/executor?execid=5221700");
-    params.put("jobExecUrl", "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmallNew_countByCountry&attempt=0");
+    params.put("jobExecUrl",
+        "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmallNew_countByCountry&attempt=0");
     params.put("jobName", "countByCountryFlowSmallNew_countByCountry");
     params.put("defaultParams", jobParamsJson);
     params.put("scheduler", "azkaban");
@@ -238,11 +251,11 @@ public class RestAPITest {
     params.put("userName", "mkumar1");
     params.put("isRetry", "false");
     params.put("skipExecutionForOptimization", "false");
-    JsonNode jsonNode=new ObjectMapper().valueToTree(params);
+    JsonNode jsonNode = new ObjectMapper().valueToTree(params);
     return jsonNode;
   }
-  private JsonNode getTestGetCurrentRunParameterData()
-  {
+
+  private JsonNode getTestGetCurrentRunParameterData() {
     Map<String, String> params = new HashMap<String, String>();
     Map<String, Double> paramValueMap = new HashMap<String, Double>();
     paramValueMap.put("mapreduce.map.memory.mb", 2048D);
@@ -251,14 +264,20 @@ public class RestAPITest {
     String jobParamsJson = gson.toJson(paramValueMap);
 
     params.put("projectName", "AzkabanHelloPigTest");
-    params.put("flowDefId", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall");
-    params.put("jobDefId", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall&job=countByCountryFlowSmall_countByCountry");
+    params.put("flowDefId",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall");
+    params.put("jobDefId",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall&job=countByCountryFlowSmall_countByCountry");
     params.put("flowExecId", "https://elephant.linkedin.com:8443/executor?execid=5221700");
-    params.put("jobExecId", "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0");
-    params.put("flowDefUrl", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall");
-    params.put("jobDefUrl", "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall&job=countByCountryFlowSmall_countByCountry");
+    params.put("jobExecId",
+        "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0");
+    params.put("flowDefUrl",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall");
+    params.put("jobDefUrl",
+        "https://elephant.linkedin.com:8443/manager?project=AzkabanHelloPigTest&flow=countByCountryFlowSmall&job=countByCountryFlowSmall_countByCountry");
     params.put("flowExecUrl", "https://elephant.linkedin.com:8443/executor?execid=5221700");
-    params.put("jobExecUrl", "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0");
+    params.put("jobExecUrl",
+        "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0");
     params.put("jobName", "countByCountryFlowSmall_countByCountry");
     params.put("defaultParams", jobParamsJson);
     params.put("scheduler", "azkaban");
@@ -268,9 +287,10 @@ public class RestAPITest {
     params.put("userName", "mkumar1");
     params.put("isRetry", "false");
     params.put("skipExecutionForOptimization", "false");
-    JsonNode jsonNode=new ObjectMapper().valueToTree(params);
+    JsonNode jsonNode = new ObjectMapper().valueToTree(params);
     return jsonNode;
   }
+
   /**
    * <p>
    * Rest API - Performs search by job execution ID
@@ -834,10 +854,14 @@ public class RestAPITest {
     running(testServer(TEST_SERVER_PORT, fakeApp), new Runnable() {
       public void run() {
         populateTestData();
-        final WS.Response response = WS.url(BASE_URL + REST_SEARCH_RESULTS).
-            setQueryParameter("username", "growth").setQueryParameter("finishTimeBegin", "1460980723925")
-            .setQueryParameter("finishTimeEnd", "1460980723928").
-                get().get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
+        final WS.Response response = WS.url(BASE_URL + REST_SEARCH_RESULTS)
+            .
+                setQueryParameter("username", "growth")
+            .setQueryParameter("finishTimeBegin", "1460980723925")
+            .setQueryParameter("finishTimeEnd", "1460980723928")
+            .
+                get()
+            .get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
         Iterator<JsonNode> searchNode = response.asJson().elements();
         testRestSearchGeneric(searchNode);
       }

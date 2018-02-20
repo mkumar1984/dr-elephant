@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tunin;
+package com.linkedin.drelephant.tuning;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.linkedin.drelephant.ElephantContext;
@@ -38,16 +38,30 @@ public class PSOParamGenerator extends ParamGenerator {
 
   private final Logger logger = Logger.getLogger(PSOParamGenerator.class);
   private static final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
-  private static final String PYTHON_ROOT_DIR_CONF = "python.root.dir";
-  private static final String TUNING_SCRIPT_PATH_CONF = "pso.script.path";
+  private static final String PYTHON_PATH_CONF = "python.path";
+  private static final String PSO_DIR_PATH_ENV_VARIABLE = "PSO_DIR_PATH";
+  private static final String PYTHON_PATH_ENV_VARIABLE = "PYTHONPATH";
 
-  private String PYTHON_ROOT_DIR = null;
+  private String PYTHON_PATH = null;
   private String TUNING_SCRIPT_PATH = null;
 
   public PSOParamGenerator() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    PYTHON_ROOT_DIR = configuration.get(PYTHON_ROOT_DIR_CONF);
-    TUNING_SCRIPT_PATH = configuration.get(TUNING_SCRIPT_PATH_CONF);
+    PYTHON_PATH = configuration.get(PYTHON_PATH_CONF);
+    if (PYTHON_PATH == null) {
+      PYTHON_PATH = System.getenv(PYTHON_PATH_ENV_VARIABLE);
+    }
+    String PSO_DIR_PATH = System.getenv(PSO_DIR_PATH_ENV_VARIABLE);
+
+    if (PSO_DIR_PATH == null) {
+      throw new NullPointerException("Couldn't find directory containing PSO scripts");
+    }
+    if (PYTHON_PATH == null) {
+      PYTHON_PATH = "python";
+    }
+    TUNING_SCRIPT_PATH = PSO_DIR_PATH + "/pso_param_generation.py";
+    logger.info("Tuning script path: " + TUNING_SCRIPT_PATH);
+    logger.info("Python path: " + PYTHON_PATH);
   }
 
   /**
@@ -56,41 +70,40 @@ public class PSOParamGenerator extends ParamGenerator {
    * @return Updated job tuning information
    */
   public JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo) {
+    logger.info("Generating param set for job: " + jobTuningInfo.getTuningJob().jobName);
 
     JobTuningInfo newJobTuningInfo = new JobTuningInfo();
     newJobTuningInfo.setTuningJob(jobTuningInfo.getTuningJob());
     newJobTuningInfo.setParametersToTune(jobTuningInfo.getParametersToTune());
 
-    JsonNode jsonTunerState = Json.toJson(jobTuningInfo);
-    logger.info("Json Tuner State: " + jsonTunerState);
-    String parametersToTune = jsonTunerState.get(PARAMS_TO_TUNE_FIELD_NAME).toString();
-
+    JsonNode jsonJobTuningInfo = Json.toJson(jobTuningInfo);
+    logger.info("Job Tuning Info for " + jobTuningInfo.getTuningJob().jobName + ": " + jsonJobTuningInfo);
+    String parametersToTune = jsonJobTuningInfo.get(PARAMS_TO_TUNE_FIELD_NAME).toString();
+    logger.info("Parameters to tune for job: " + parametersToTune);
     String stringTunerState = jobTuningInfo.getTunerState();
     stringTunerState = stringTunerState.replaceAll("\\s+", "");
 
     List<String> error = new ArrayList<String>();
 
     try {
-      logger.debug("Running PSO python script with following parameters: ");
-      logger.debug("StringTunerState: " + stringTunerState);
-      logger.debug("Parameters to tune: " + parametersToTune);
+      logger.info(
+          "Calling PSO with StringTunerState= " + stringTunerState + "\nand Parameters to tune: " + parametersToTune);
       Process p = Runtime.getRuntime()
-          .exec(PYTHON_ROOT_DIR + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune);
+          .exec(PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune);
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();
-      logger.debug("Output from pso script: " + updatedStringTunerState);
+      logger.info("Output from PSO script: " + updatedStringTunerState);
       newJobTuningInfo.setTunerState(updatedStringTunerState);
       String errorLine;
       while ((errorLine = errorStream.readLine()) != null) {
         error.add(errorLine);
       }
-
       if (error.size() != 0) {
-        logger.error("Error running python script: " + error.toString());
+        logger.error("Error in python script running PSO: " + error.toString());
       }
     } catch (IOException e) {
-      logger.error("Error in generateParamSet", e);
+      logger.error("Error in generateParamSet()", e);
     }
     return newJobTuningInfo;
   }
