@@ -25,7 +25,7 @@ public class AutoTuningMetricsController extends Controller {
   private static final Logger logger = Logger.getLogger(AutoTuningMetricsController.class);
 
   private static int _fitnessComputeWaitExecutions = -1;
-  private static int _baselineComputeWaitExecutions = -1;
+  private static int _baselineComputeWaitJobs = -1;
   private static int _azkabanStatusUpdateWaitExecutions = -1;
   private static int _paramSetGenerateWaitJobs = -1;
 
@@ -56,44 +56,45 @@ public class AutoTuningMetricsController extends Controller {
 
     _metricRegistry = new MetricRegistry();
 
-    String className = AutoTuner.class.getSimpleName();
+    String autoTunerClassName = AutoTuner.class.getSimpleName();
+    String apiClassName = Application.class.getSimpleName();
 
     //API timer and failed counts
-    _getCurrentRunParametersTimer = _metricRegistry.timer(name(Application.class, "getCurrentRunParametersResponses"));
+    _getCurrentRunParametersTimer = _metricRegistry.timer(name(apiClassName, "getCurrentRunParametersResponses"));
     _getCurrentRunParametersFailures =
-        _metricRegistry.meter(name(Application.class, "getCurrentRunParametersFailures", "count"));
+        _metricRegistry.meter(name(apiClassName, "getCurrentRunParametersFailures", "count"));
 
     //Daemon counters
-    _fitnessComputedExecutions = _metricRegistry.meter(name(className, "fitnessComputedJobs", "count"));
-    _successfulExecutions = _metricRegistry.meter(name(className, "successfulJobs", "count"));
-    _failedExecutions = _metricRegistry.meter(name(className, "failedJobs", "count"));
-    _paramSetGenerated = _metricRegistry.meter(name(className, "paramSetGenerated", "count"));
-    _baselineComputed = _metricRegistry.meter(name(className, "baselineComputed", "count"));
-    _paramSetNotFound = _metricRegistry.meter(name(className, "paramSetNotFound", "count"));
-    _newAutoTuningJob = _metricRegistry.meter(name(className, "newAutoTuningJob", "count"));
+    _fitnessComputedExecutions = _metricRegistry.meter(name(autoTunerClassName, "fitnessComputedExecutions", "count"));
+    _successfulExecutions = _metricRegistry.meter(name(autoTunerClassName, "successfulExecutions", "count"));
+    _failedExecutions = _metricRegistry.meter(name(autoTunerClassName, "failedExecutions", "count"));
+    _paramSetGenerated = _metricRegistry.meter(name(autoTunerClassName, "paramSetGenerated", "count"));
+    _baselineComputed = _metricRegistry.meter(name(autoTunerClassName, "baselineComputed", "count"));
+    _paramSetNotFound = _metricRegistry.meter(name(autoTunerClassName, "paramSetNotFound", "count"));
+    _newAutoTuningJob = _metricRegistry.meter(name(autoTunerClassName, "newAutoTuningJob", "count"));
 
-    _metricRegistry.register(name(className, "fitnessComputeWaitJobs", "size"), new Gauge<Integer>() {
+    _metricRegistry.register(name(autoTunerClassName, "fitnessComputeWaitExecutions", "size"), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
         return _fitnessComputeWaitExecutions;
       }
     });
 
-    _metricRegistry.register(name(className, "baselineComputeWaitJobs", "size"), new Gauge<Integer>() {
+    _metricRegistry.register(name(autoTunerClassName, "baselineComputeWaitJobs", "size"), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return _baselineComputeWaitExecutions;
+        return _baselineComputeWaitJobs;
       }
     });
 
-    _metricRegistry.register(name(className, "azkabanStatusUpdateWaitJobs", "size"), new Gauge<Integer>() {
+    _metricRegistry.register(name(autoTunerClassName, "azkabanStatusUpdateWaitExecutions", "size"), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
         return _azkabanStatusUpdateWaitExecutions;
       }
     });
 
-    _metricRegistry.register(name(className, "paramSetGenerateWaitJobs", "size"), new Gauge<Integer>() {
+    _metricRegistry.register(name(autoTunerClassName, "paramSetGenerateWaitJobs", "size"), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
         return _paramSetGenerateWaitJobs;
@@ -105,7 +106,7 @@ public class AutoTuningMetricsController extends Controller {
   }
 
   public static void setBaselineComputeWaitJobs(int baselineComputeWaitJobs) {
-    _baselineComputeWaitExecutions = baselineComputeWaitJobs;
+    _baselineComputeWaitJobs = baselineComputeWaitJobs;
   }
 
   public static void setAzkabanStatusUpdateWaitJobs(int azkabanStatusUpdateWaitJobs) {
