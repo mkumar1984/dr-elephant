@@ -254,10 +254,6 @@ public class InfoExtractor {
    * @return The Workflow cient based on the workflow url
    */
   public static WorkflowClient getWorkflowClientInstance(String scheduler, String url) {
-    if (!getSchedulersConfiguredForException().contains(scheduler)) {
-      throw new RuntimeException(String.format("Scheduler %s is not configured for Exception fingerprinting ", scheduler));
-    }
-
     for (SchedulerConfigurationData data : _configuredSchedulers) {
       if (data.getSchedulerName().equals(scheduler)) {
         try {

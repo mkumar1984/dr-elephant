@@ -71,6 +71,11 @@ public class ExceptionFinder {
     // get the schedulerData
     SchedulerConfigurationData schedulerData = InfoExtractor.getSchedulerData(scheduler);
 
+    if (schedulerData.getParamMap().containsKey("exception_enabled")
+        && schedulerData.getParamMap().get("exception_enabled").equals("true")) {
+      throw new RuntimeException(String.format("Scheduler %s is not configured for Exception fingerprinting ",
+          scheduler));
+    }
 
     if(schedulerData==null) {
       throw new RuntimeException(String.format("Cannot find scheduler %s", scheduler));
