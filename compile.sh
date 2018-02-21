@@ -147,6 +147,8 @@ cp $stop_script ${DIST_NAME}/bin/
 
 cp -r $app_conf ${DIST_NAME}
 
+mkdir ${DIST_NAME}/scripts/
+
 cp -r $pso_dir ${DIST_NAME}/scripts/
 
 zip -r ${DIST_NAME}.zip ${DIST_NAME}
