@@ -141,6 +141,7 @@ trap "exit" SIGINT SIGTERM
 start_script=${project_root}/scripts/start.sh
 stop_script=${project_root}/scripts/stop.sh
 app_conf=${project_root}/app-conf
+pso_dir=${project_root}/scripts/pso
 
 # Echo the value of pwd in the script so that it is clear what is being removed.
 rm -rf ${project_root}/dist
@@ -165,6 +166,10 @@ cp $start_script ${DIST_NAME}/bin/
 cp $stop_script ${DIST_NAME}/bin/
 
 cp -r $app_conf ${DIST_NAME}
+
+mkdir ${DIST_NAME}/scripts/
+
+cp -r $pso_dir ${DIST_NAME}/scripts/
 
 zip -r ${DIST_NAME}.zip ${DIST_NAME}
 
