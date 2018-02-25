@@ -62,11 +62,10 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
 
         if (_azkabanJobStatusUtil == null) {
           logger.info("Initializing  AzkabanJobStatusUtil");
-          _azkabanJobStatusUtil = new AzkabanJobStatusUtil(jobExecution.flowExecution.flowExecId);
+          _azkabanJobStatusUtil = new AzkabanJobStatusUtil();
         }
 
         try {
-          Thread.sleep(2000);
           Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
           if (jobStatus != null) {
             for (Map.Entry<String, String> job : jobStatus.entrySet()) {

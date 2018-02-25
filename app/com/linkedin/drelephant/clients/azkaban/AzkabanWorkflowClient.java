@@ -91,6 +91,7 @@ public class AzkabanWorkflowClient implements WorkflowClient {
   private String _sessionId;
   private String _username;
   private String _password;
+  private long _sessionUpdatedTime = 0;
 
   private String AZKABAN_LOG_OFFSET = "0";
   private String AZKABAN_LOG_LENGTH_LIMIT = "9999999"; // limit the log limit to 10 mb
@@ -173,6 +174,14 @@ public class AzkabanWorkflowClient implements WorkflowClient {
       logger.error("Unexpected error encountered while decoding headless challenge " + headlessChallenge + e.toString());
     }
     login(username, decodedPwd);
+  }
+
+  public long getSessionUpdatedTime() {
+    return _sessionUpdatedTime;
+  }
+
+  public void setSessionUpdatedTime(long sessionUpdatedTime) {
+    _sessionUpdatedTime = sessionUpdatedTime;
   }
 
   /**
