@@ -128,7 +128,7 @@ public abstract class ParamGenerator {
     }
     if (jobsForParamSuggestion.size() > 0) {
       for (TuningJobDefinition tuningJobDefinition : jobsForParamSuggestion) {
-        logger.info("New parameter suggestion needed for job:" + tuningJobDefinition.job.jobName);
+        logger.info("New parameter suggestion needed for job: " + tuningJobDefinition.job.jobName);
       }
     } else {
       logger.info("None of the jobs need new parameter suggestion");
@@ -209,6 +209,7 @@ public abstract class ParamGenerator {
       }
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
+      jobTuningInfo.setJobType(tuningJobDefinition.tuningAlgorithm.jobType);
       jobTuningInfo.setParametersToTune(tuningParameterList);
       JobSavedState jobSavedState = JobSavedState.find.byId(job.id);
 
@@ -399,7 +400,7 @@ public abstract class ParamGenerator {
         tuningJobExecution.jobExecution = jobExecution;
         tuningJobExecution.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         tuningJobExecution.isDefaultExecution = false;
-        if (isParamConstraintViolated(jobSuggestedParamValueList)) {
+        if (isParamConstraintViolated(jobSuggestedParamValueList, tuningJobExecution.tuningAlgorithm.jobType)) {
           logger.info("Parameter constraint violated. Applying penalty.");
           tuningJobExecution.paramSetState = TuningJobExecution.ParamSetStatus.FITNESS_COMPUTED;
           tuningJobExecution.fitness =
@@ -435,38 +436,40 @@ public abstract class ParamGenerator {
    * @param jobSuggestedParamValueList
    * @return true if the constraint is violated, false otherwise
    */
-  private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+  private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList, TuningAlgorithm.JobType jobType) {
     logger.info("Checking whether parameter values are within constraints");
-
     Integer violations = 0;
-    Double mrSortMemory = null;
-    Double mrMapMemory = null;
-    Double pigMaxCombinedSplitSize = null;
 
-    for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-      if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
-        mrSortMemory = jobSuggestedParamValue.paramValue;
-      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
-        mrMapMemory = jobSuggestedParamValue.paramValue;
-      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
-        pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
+    if(jobType.equals(TuningAlgorithm.JobType.PIG)){
+      Double mrSortMemory = null;
+      Double mrMapMemory = null;
+      Double pigMaxCombinedSplitSize = null;
+
+      for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
+        if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
+          mrSortMemory = jobSuggestedParamValue.paramValue;
+        } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
+          mrMapMemory = jobSuggestedParamValue.paramValue;
+        } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
+          pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
+        }
       }
-    }
 
-    if (mrSortMemory != null && mrMapMemory != null) {
-      if (mrSortMemory > 0.6 * mrMapMemory) {
-        logger.info("Constraint violated: Sort memory > 60% of map memory");
+      if (mrSortMemory != null && mrMapMemory != null) {
+        if (mrSortMemory > 0.6 * mrMapMemory) {
+          logger.info("Constraint violated: Sort memory > 60% of map memory");
+          violations++;
+        }
+        if (mrMapMemory - mrSortMemory < 768) {
+          logger.info("Constraint violated: Map memory - sort memory < 768 mb");
+          violations++;
+        }
+      }
+
+      if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
+        logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
         violations++;
       }
-      if (mrMapMemory - mrSortMemory < 768) {
-        logger.info("Constraint violated: Map memory - sort memory < 768 mb");
-        violations++;
-      }
-    }
-
-    if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
-      logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
-      violations++;
     }
 
     if (violations == 0) {

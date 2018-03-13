@@ -25,6 +25,7 @@ param_step_size = []
 param_default_value = []
 param_name = []
 iteration = 0
+job_type = ""
 
 LARGE_DUMMY_FITNESS = 10000
 
@@ -38,8 +39,14 @@ PARAM_MAPREDUCE_INPUT_FILEINPUTFORMAT_SPLIT_MAXSIZE = 'mapreduce.input.fileinput
 PARAM_MAPREDUCE_MAP_JAVA_OPTS = 'mapreduce.map.java.opts'
 PARAM_MAPREDUCE_REDUCE_JAVA_OPTS = 'mapreduce.reduce.java.opts'
 
+PARAM_SPARK_EXECUTOR_MEMORY = "spark.executor.memory"
+PARAM_SPARK_MEMORY_STORAGE_FRACTION = "spark.memory.storageFraction"
+PARAM_SPARK_MEMORY_FRACTION = "spark.memory.fraction"
+PARAM_SPARK_EXECUTOR_CORES = "spark.executor.cores"
+
 ARG_TUNING_STATE_KEY = 'json_tuning_state'
 ARG_PARAMETERS_TO_TUNE_KEY = 'parameters_to_tune'
+ARG_JOB_TYPE = "job_type"
 
 TUNING_STATE_ARCHIVE_KEY = 'archive'
 TUNING_STATE_PREV_POPULATION_KEY = 'prev_population'
@@ -118,17 +125,25 @@ def initial_population_generator(random, args):
 
     for i in range(0, len(param_name)):
         if param_name[i] == PARAM_MAPREDUCE_TASK_IO_SORT_FACTOR:
-            sort_factor_index = i
+            mr_sort_factor_index = i
         elif param_name[i] == PARAM_MAPREDUCE_TASK_IO_SORT_MB:
-            sort_memory_index = i
+            mr_sort_memory_index = i
         elif param_name[i] == PARAM_MAPREDUCE_MAP_SORT_SPILL_PERCENT:
-            spill_percent_index = i
+            mr_spill_percent_index = i
         elif param_name[i] == PARAM_MAPREDUCE_MAP_MEMORY_MB:
-            map_memory_index = i
+            mr_map_memory_index = i
         elif param_name[i] == PARAM_MAPREDUCE_REDUCE_MEMORY_MB:
-            reduce_memory_index = i
+            mr_reduce_memory_index = i
         elif param_name[i] == PARAM_PIG_MAX_COMBINED_SPLIT_SIZE:
-            max_combined_split_size_index = i
+            pig_max_combined_split_size_index = i
+        elif param_name[i] == PARAM_SPARK_EXECUTOR_MEMORY:
+            spark_executor_memory_index = i
+        elif param_name[i] == PARAM_SPARK_MEMORY_FRACTION:
+            spark_memory_fraction = i
+        elif param_name[i] == PARAM_SPARK_MEMORY_STORAGE_FRACTION:
+            spark_memory_storage_fraction = i
+        elif param_name[i] == PARAM_SPARK_EXECUTOR_CORES:
+            spark_executor_cores = i
     global iteration
 
     if iteration == 0:
@@ -138,29 +153,35 @@ def initial_population_generator(random, args):
 
     else:
         initial_population = [random.uniform(x, y) for x, y in param_value_range]
-        if iteration % 2 == 1:
-            initial_population[map_memory_index] = random.uniform(INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[0],
-                                                                  INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[1]) * \
-                                                   param_default_value[map_memory_index]
-            initial_population[reduce_memory_index] = random.uniform(INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[0],
-                                                                     INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[1]) * \
-                                                      param_default_value[
-                                                          reduce_memory_index]
 
-        if iteration % 2 == 0:
-            initial_population[map_memory_index] = random.uniform(INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[0],
-                                                                  INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[1]) * \
-                                                   param_default_value[map_memory_index]
-            initial_population[reduce_memory_index] = random.uniform(INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[0],
-                                                                     INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[1]) * \
-                                                      param_default_value[
-                                                          reduce_memory_index]
+        if job_type == 'PIG':
+            if iteration % 2 == 1:
+                initial_population[mr_map_memory_index] = random.uniform(INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[0],
+                                                                         INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[1]) * \
+                                                          param_default_value[mr_map_memory_index]
+                initial_population[mr_reduce_memory_index] = random.uniform(INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[0],
+                                                                            INITIAL_DERIVED_LOWER_MEMORY_PARAM_RANGE[
+                                                                                1]) * \
+                                                             param_default_value[
+                                                                 mr_reduce_memory_index]
 
-        initial_population[sort_memory_index] = random.uniform(INITIAL_DERIVED_SORT_MEMORY_PARAM_RANGE[0],
-                                                               INITIAL_DERIVED_SORT_MEMORY_PARAM_RANGE[1]) * initial_population[
-                                                    map_memory_index]
-        initial_population[max_combined_split_size_index] = param_default_value[max_combined_split_size_index]
-        iteration += 1
+            if iteration % 2 == 0:
+                initial_population[mr_map_memory_index] = random.uniform(INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[0],
+                                                                         INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[1]) * \
+                                                          param_default_value[mr_map_memory_index]
+                initial_population[mr_reduce_memory_index] = random.uniform(INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[0],
+                                                                            INITIAL_DERIVED_UPPER_MEMORY_PARAM_RANGE[
+                                                                                1]) * \
+                                                             param_default_value[
+                                                                 mr_reduce_memory_index]
+
+            initial_population[mr_sort_memory_index] = random.uniform(INITIAL_DERIVED_SORT_MEMORY_PARAM_RANGE[0],
+                                                                      INITIAL_DERIVED_SORT_MEMORY_PARAM_RANGE[1]) * \
+                                                       initial_population[
+                                                           mr_map_memory_index]
+            initial_population[pig_max_combined_split_size_index] = param_default_value[
+                pig_max_combined_split_size_index]
+            iteration += 1
 
     for i in range(0, len(param_name)):
         (min_val, max_val) = param_value_range[i]
@@ -313,9 +334,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(ARG_TUNING_STATE_KEY, help='Saved tuning state object')
     parser.add_argument(ARG_PARAMETERS_TO_TUNE_KEY)
+    parser.add_argument(ARG_JOB_TYPE)
     args = parser.parse_args()
     json_tuning_state = args.json_tuning_state
     parameters_to_tune = args.parameters_to_tune
+    job_type = args.job_type
     parameters_to_tune = json.loads(parameters_to_tune)
     initialize_params(parameters_to_tune)
     main(json_tuning_state)
