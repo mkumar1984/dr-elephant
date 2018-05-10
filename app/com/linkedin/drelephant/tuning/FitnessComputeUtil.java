@@ -20,8 +20,6 @@ import com.avaje.ebean.Expr;
 import com.linkedin.drelephant.AutoTuner;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
-import com.linkedin.drelephant.spark.heuristics.CommonConstantsSparkHeuristic;
-import com.linkedin.drelephant.util.MemoryFormatUtils;
 import com.linkedin.drelephant.util.Utils;
 import controllers.AutoTuningMetricsController;
 import java.util.ArrayList;
@@ -55,19 +53,8 @@ import org.apache.log4j.Logger;
  * adding a penalty.
  */
 public class FitnessComputeUtil {
-  public static final String SPARK_EXECUTOR_MEMORY_KEY = "spark.executor.memory";
   private static final Logger logger = Logger.getLogger(FitnessComputeUtil.class);
   private static final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
-  private static final String TOTAL_INPUT_BYTES_KEY = "totalInputBytes";
-  private static final String MAX_PEAK_EXECUTOR_JVM_USED_KEY = "maxPeakExecutorJVMUsed";
-  private static final String MAX_PEAK_EXECUTOR_UNIFIED_MEMORY_KEY = "maxPeakExecutorUnifiedMemory";
-  private static final String EXECUTOR_FRACTION_WITH_SPILLS_KEY = "executorFractionWithSpills";
-  private static final String MAX_EXECUTOR_MEMORY_SPILLED_KEY = "maxExecutorMemorySpilled";
-  private static final String SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD_KEY = "spark.yarn.executor.memoryOverhead";
-  private static final String SPARK_MEMORY_FRACTION_KEY = "spark.memory.fraction";
-  private static final String SPARK_MEMORY_STORAGE_FRACTION_KEY = "spark.memory.storageFraction";
-  private static final String STAGES_WITH_OOM_ERRORS_KEY = "stagesWithOOMErrors";
-  private static final String STAGES_WITH_OVERHEAD_MEMORY_ERRORS_KEY = "stagesWithOverheadMemoryErrors";
   private static final int MAX_TUNING_EXECUTIONS = 39;
   private static final int MIN_TUNING_EXECUTIONS = 18;
   private Long waitInterval;
@@ -338,9 +325,7 @@ public class FitnessComputeUtil {
 
           for (AppResult appResult : results) {
             totalResourceUsed += appResult.resourceUsed;
-            counterValuesMap = getCounterValues(appResult);
-            double tmp = counterValuesMap.get(TOTAL_INPUT_BYTES_KEY);
-            totalInputBytesInBytes += (long) tmp;
+            totalInputBytesInBytes += getTotalInputBytes(appResult);
           }
 
           Long totalRunTime = Utils.getTotalRuntime(results);
@@ -418,121 +403,21 @@ public class FitnessComputeUtil {
    * @param appResult appResult
    * @return total input size
    */
-  private Map<String, Double> getCounterValues(AppResult appResult) {
+  private Long getTotalInputBytes(AppResult appResult) {
     Long totalInputBytes = 0L;
-    Double maxPeakExecutorJVMUsed = null;
-    Double maxPeakExecutorUnifiedMemory = null;
-    Double executorFractionWithSpills = null;
-    Double maxExecutorMemorySpilled = null;
-    Double sparkExecutorMemory = null;
-    Double sparkYarnExecutorMemoryOverhead = null;
-    Double sparkMemoryFraction = null;
-    Double sparkMemoryStorageFraction = null;
-    Double stagesWithOOMErrors = null;
-    Double stagesWithOverheadMemoryErrors = null;
-
-    Map<String, Double> counterMap = new HashMap<String, Double>();
     if (appResult.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
-        if (appHeuristicResult.heuristicName.equals(CommonConstantsHeuristic.MAPPER_SPEED)
-            || appHeuristicResult.heuristicName.equals(CommonConstantsSparkHeuristic.EXECUTOR_SPILL)) {
+        if (appHeuristicResult.heuristicName.equals(CommonConstantsHeuristic.MAPPER_SPEED)) {
           if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
             for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
               if (appHeuristicResultDetails.name.equals(CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB)) {
                 totalInputBytes += Math.round(Double.parseDouble(appHeuristicResultDetails.value) * FileUtils.ONE_MB);
-              }
-
-              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.MAX_SPILLED_MEMORY)) {
-                maxExecutorMemorySpilled =
-                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)) / FileUtils.ONE_MB;
-              }
-
-              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.EXECUTOR_SPILL_FRACTION)) {
-                executorFractionWithSpills = Double.parseDouble(appHeuristicResultDetails.value);
-              }
-            }
-          }
-        } else if (appHeuristicResult.heuristicName.equals(CommonConstantsSparkHeuristic.EXECUTOR_JVM_USED_MEMORY)) {
-          if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
-            for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
-              if (appHeuristicResultDetails.name.equals(
-                  CommonConstantsSparkHeuristic.MAX_EXECUTOR_PEAK_JVM_USED_MEMORY)) {
-                maxPeakExecutorJVMUsed =
-                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)) / FileUtils.ONE_MB;
-              }
-            }
-          }
-        } else if (appHeuristicResult.heuristicName.equals(
-            CommonConstantsSparkHeuristic.EXECUTOR_PEAK_UNIFIED_MEMORY)) {
-          if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
-            for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
-              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.MAX_PEAK_UNIFIED_MEMORY)) {
-                maxPeakExecutorUnifiedMemory =
-                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value) / FileUtils.ONE_MB);
-              } else if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.SPARK_EXECUTOR_MEMORY)) {
-                sparkExecutorMemory =
-                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value) / FileUtils.ONE_MB);
-              } else if (appHeuristicResultDetails.name.equals(
-                  CommonConstantsSparkHeuristic.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD)) {
-                sparkYarnExecutorMemoryOverhead =
-                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value) / FileUtils.ONE_MB);
-              } else if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.SPARK_MEMORY_FRACTION)) {
-                sparkMemoryFraction = Double.parseDouble(appHeuristicResultDetails.value);
-              } else if (appHeuristicResultDetails.name.equals(
-                  CommonConstantsSparkHeuristic.SPARK_MEMORY_STORAGE_FRACTION)) {
-                sparkMemoryStorageFraction = Double.parseDouble(appHeuristicResultDetails.value);
-              }
-            }
-          }
-        } else if (appHeuristicResult.heuristicName.equals(CommonConstantsSparkHeuristic.STAGES_WITH_FAILED_TASKS)) {
-          if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
-            for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
-              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.STAGES_WITH_OOM_ERRORS)) {
-                stagesWithOOMErrors = Double.parseDouble(appHeuristicResultDetails.value);
-              } else if (appHeuristicResultDetails.name.equals(
-                  CommonConstantsSparkHeuristic.STAGES_WITH_OVERHEAD_MEMORY_ERRORS)) {
-                stagesWithOverheadMemoryErrors = Double.parseDouble(appHeuristicResultDetails.value);
               }
             }
           }
         }
       }
     }
-
-    if (totalInputBytes != null) {
-      counterMap.put(TOTAL_INPUT_BYTES_KEY, totalInputBytes.doubleValue());
-    }
-    if (maxPeakExecutorJVMUsed != null) {
-      counterMap.put(MAX_PEAK_EXECUTOR_JVM_USED_KEY, maxPeakExecutorJVMUsed);
-    }
-    if (maxPeakExecutorUnifiedMemory != null) {
-      counterMap.put(MAX_PEAK_EXECUTOR_UNIFIED_MEMORY_KEY, maxPeakExecutorUnifiedMemory);
-    }
-    if (executorFractionWithSpills != null) {
-      counterMap.put(EXECUTOR_FRACTION_WITH_SPILLS_KEY, executorFractionWithSpills);
-    }
-    if (maxExecutorMemorySpilled != null) {
-      counterMap.put(MAX_EXECUTOR_MEMORY_SPILLED_KEY, maxExecutorMemorySpilled);
-    }
-    if (sparkExecutorMemory != null) {
-      counterMap.put(SPARK_EXECUTOR_MEMORY_KEY, sparkExecutorMemory);
-    }
-    if (sparkMemoryFraction != null) {
-      counterMap.put(SPARK_MEMORY_FRACTION_KEY, sparkMemoryFraction);
-    }
-    if (sparkMemoryStorageFraction != null) {
-      counterMap.put(SPARK_MEMORY_STORAGE_FRACTION_KEY, sparkMemoryStorageFraction);
-    }
-    if (stagesWithOOMErrors != null) {
-      counterMap.put(STAGES_WITH_OOM_ERRORS_KEY, stagesWithOOMErrors);
-    }
-    if (stagesWithOverheadMemoryErrors != null) {
-      counterMap.put(STAGES_WITH_OVERHEAD_MEMORY_ERRORS_KEY, stagesWithOverheadMemoryErrors);
-    }
-    if (sparkYarnExecutorMemoryOverhead != null) {
-      counterMap.put(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD_KEY, sparkYarnExecutorMemoryOverhead);
-    }
-
-    return counterMap;
+    return totalInputBytes;
   }
 }
