@@ -37,6 +37,8 @@ import play.libs.Json;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.Math.*;
+
 
 /**
  * This is an abstract class for generating parameter suggestions for jobs
@@ -88,7 +90,6 @@ public abstract class ParamGenerator {
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
 
     List<TuningJobExecution> pendingParamExecutionList = new ArrayList<TuningJobExecution>();
-    //Todo: Check if the find works correctly?
     try {
       pendingParamExecutionList = TuningJobExecution.find.select("*")
           .fetch(TuningJobExecution.TABLE.jobExecution, "*")
@@ -207,6 +208,33 @@ public abstract class ParamGenerator {
       } catch (NullPointerException e) {
         logger.error("Error extracting default value of params for job " + tuningJobDefinition.job.jobDefId, e);
       }
+
+      // updating boundary constraints for the job
+      List<TuningParameterConstraint> tuningParameterConstraintList = new ArrayList<TuningParameterConstraint>();
+      try {
+        tuningParameterConstraintList = TuningParameterConstraint.find.where()
+            .eq("job_definition_id", job.id)
+            .eq(TuningParameterConstraint.TABLE.constraintType, TuningParameterConstraint.ConstraintType.BOUNDARY)
+            .findList();
+      } catch (NullPointerException e) {
+        logger.info("No boundary constraints found for job: " + job.jobName);
+      }
+
+      Map<Integer, Integer> paramConstrainIndexMap = new HashMap<Integer, Integer>();
+      int i = 0;
+      for (TuningParameterConstraint tuningParameterConstraint : tuningParameterConstraintList) {
+        paramConstrainIndexMap.put(tuningParameterConstraint.tuningParameter.id, i);
+        i += 1;
+      }
+
+      for (TuningParameter tuningParameter : tuningParameterList) {
+        if (paramConstrainIndexMap.containsKey(tuningParameter.id)) {
+          int index = paramConstrainIndexMap.get(tuningParameter.id);
+          tuningParameter.minValue = tuningParameterConstraintList.get(index).lowerBound;
+          tuningParameter.maxValue = tuningParameterConstraintList.get(index).upperBound;
+        }
+      }
+
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
       jobTuningInfo.setJobType(tuningJobDefinition.tuningAlgorithm.jobType);
@@ -311,7 +339,6 @@ public abstract class ParamGenerator {
    * @param jobTuningInfoList JobTuningInfo List
    */
   private void updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
-
     logger.info("Updating new parameter suggestion in database");
     if (jobTuningInfoList == null) {
       logger.info("No new parameter suggestion to update");
@@ -339,11 +366,18 @@ public abstract class ParamGenerator {
           .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
           .findUnique();
 
-      List<TuningParameter> derivedParameterList = TuningParameter.find.where()
-          .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
-              tuningJobDefinition.tuningAlgorithm.id)
-          .eq(TuningParameter.TABLE.isDerived, 1)
-          .findList();
+      List<TuningParameter> derivedParameterList = new ArrayList<TuningParameter>();
+      try {
+        derivedParameterList = TuningParameter.find.where()
+            .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
+                tuningJobDefinition.tuningAlgorithm.id)
+            .eq(TuningParameter.TABLE.isDerived, 1)
+            .findList();
+      } catch (NullPointerException e) {
+        logger.info("No derived parameters for job: " + job.jobName);
+      }
+      logger.info("No. of derived tuning params for job " + tuningJobDefinition.job.jobName + ": "
+          + derivedParameterList.size());
 
       JsonNode jsonTunerState = Json.parse(stringTunerState);
       JsonNode jsonSuggestedPopulation = jsonTunerState.get(JSON_CURRENT_POPULATION_KEY);
@@ -400,11 +434,15 @@ public abstract class ParamGenerator {
         tuningJobExecution.jobExecution = jobExecution;
         tuningJobExecution.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         tuningJobExecution.isDefaultExecution = false;
-        if (isParamConstraintViolated(jobSuggestedParamValueList, tuningJobExecution.tuningAlgorithm.jobType)) {
+        if (isParamConstraintViolated(jobSuggestedParamValueList, tuningJobExecution.tuningAlgorithm.jobType, job.id)) {
           logger.info("Parameter constraint violated. Applying penalty.");
+          Integer penaltyConstant = 3;
+          Double averageResourceUsagePerGBInput =
+                  tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+          Double maxDesiredResourceUsagePerGBInput =
+                  averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+          tuningJobExecution.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
           tuningJobExecution.paramSetState = TuningJobExecution.ParamSetStatus.FITNESS_COMPUTED;
-          tuningJobExecution.fitness =
-              3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
         } else {
           tuningJobExecution.paramSetState = TuningJobExecution.ParamSetStatus.CREATED;
         }
@@ -436,11 +474,13 @@ public abstract class ParamGenerator {
    * @param jobSuggestedParamValueList
    * @return true if the constraint is violated, false otherwise
    */
-  private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList, TuningAlgorithm.JobType jobType) {
+  private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList,
+      TuningAlgorithm.JobType jobType, Integer jobDefinitionId) {
+
     logger.info("Checking whether parameter values are within constraints");
     Integer violations = 0;
 
-    if(jobType.equals(TuningAlgorithm.JobType.PIG)){
+    if (jobType.equals(TuningAlgorithm.JobType.PIG)) {
       Double mrSortMemory = null;
       Double mrMapMemory = null;
       Double pigMaxCombinedSplitSize = null;
@@ -471,7 +511,6 @@ public abstract class ParamGenerator {
         violations++;
       }
     }
-
     if (violations == 0) {
       return false;
     } else {

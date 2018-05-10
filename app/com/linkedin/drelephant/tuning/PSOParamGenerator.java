@@ -75,6 +75,7 @@ public class PSOParamGenerator extends ParamGenerator {
     JobTuningInfo newJobTuningInfo = new JobTuningInfo();
     newJobTuningInfo.setTuningJob(jobTuningInfo.getTuningJob());
     newJobTuningInfo.setParametersToTune(jobTuningInfo.getParametersToTune());
+    newJobTuningInfo.setJobType(jobTuningInfo.getJobType());
 
     JsonNode jsonJobTuningInfo = Json.toJson(jobTuningInfo);
     logger.info("Job Tuning Info for " + jobTuningInfo.getTuningJob().jobName + ": " + jsonJobTuningInfo);

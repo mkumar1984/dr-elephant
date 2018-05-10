@@ -16,21 +16,32 @@
 
 package com.linkedin.drelephant.tuning;
 
+import com.avaje.ebean.Expr;
 import com.linkedin.drelephant.AutoTuner;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
+import com.linkedin.drelephant.spark.heuristics.CommonConstantsSparkHeuristic;
+import com.linkedin.drelephant.util.MemoryFormatUtils;
 import com.linkedin.drelephant.util.Utils;
 import controllers.AutoTuningMetricsController;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
 import models.JobDefinition;
 import models.JobExecution;
+import models.JobSuggestedParamValue;
+import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningJobExecution;
 import models.TuningJobExecution.ParamSetStatus;
+import models.TuningParameter;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -44,8 +55,21 @@ import org.apache.log4j.Logger;
  * adding a penalty.
  */
 public class FitnessComputeUtil {
+  public static final String SPARK_EXECUTOR_MEMORY_KEY = "spark.executor.memory";
   private static final Logger logger = Logger.getLogger(FitnessComputeUtil.class);
-  public static final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
+  private static final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
+  private static final String TOTAL_INPUT_BYTES_KEY = "totalInputBytes";
+  private static final String MAX_PEAK_EXECUTOR_JVM_USED_KEY = "maxPeakExecutorJVMUsed";
+  private static final String MAX_PEAK_EXECUTOR_UNIFIED_MEMORY_KEY = "maxPeakExecutorUnifiedMemory";
+  private static final String EXECUTOR_FRACTION_WITH_SPILLS_KEY = "executorFractionWithSpills";
+  private static final String MAX_EXECUTOR_MEMORY_SPILLED_KEY = "maxExecutorMemorySpilled";
+  private static final String SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD_KEY = "spark.yarn.executor.memoryOverhead";
+  private static final String SPARK_MEMORY_FRACTION_KEY = "spark.memory.fraction";
+  private static final String SPARK_MEMORY_STORAGE_FRACTION_KEY = "spark.memory.storageFraction";
+  private static final String STAGES_WITH_OOM_ERRORS_KEY = "stagesWithOOMErrors";
+  private static final String STAGES_WITH_OVERHEAD_MEMORY_ERRORS_KEY = "stagesWithOverheadMemoryErrors";
+  private static final int MAX_TUNING_EXECUTIONS = 39;
+  private static final int MIN_TUNING_EXECUTIONS = 18;
   private Long waitInterval;
 
   public FitnessComputeUtil() {
@@ -56,24 +80,183 @@ public class FitnessComputeUtil {
   /**
    * Updates the metrics (execution time, resource usage, cost function) of the completed executions whose metrics are
    * not computed.
-   * @return List of job execution
    */
-  public List<TuningJobExecution> updateFitness() {
+  public void updateFitness() {
     logger.info("Computing and updating fitness for completed executions");
     List<TuningJobExecution> completedExecutions = getCompletedExecutions();
     updateExecutionMetrics(completedExecutions);
     updateMetrics(completedExecutions);
-    return completedExecutions;
+
+    Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
+    for (TuningJobExecution tuningJobExecution : completedExecutions) {
+      jobDefinitionSet.add(tuningJobExecution.jobExecution.job);
+    }
+    checkToDisableTuning(jobDefinitionSet);
+  }
+
+  /**
+   * Checks if the tuning parameters converge
+   * @param jobExecutions List of previous executions on which parameter convergence is to be checked
+   * @return true if the parameters converge, else false
+   */
+  private boolean doesParameterSetConverge(List<JobExecution> jobExecutions) {
+    boolean result = false;
+    int num_param_set_for_convergence = 3;
+
+    TuningJobExecution tuningJobExecution = TuningJobExecution.find.where()
+        .eq(TuningJobExecution.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecutions.get(0).id)
+        .findUnique();
+    TuningAlgorithm.JobType jobType = tuningJobExecution.tuningAlgorithm.jobType;
+
+    if (jobType == TuningAlgorithm.JobType.PIG) {
+      Map<Integer, Set<Double>> paramValueSet = new HashMap<Integer, Set<Double>>();
+      for (JobExecution jobExecution : jobExecutions) {
+        List<JobSuggestedParamValue> jobSuggestedParamValueList = new ArrayList<JobSuggestedParamValue>();
+        try {
+          jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
+              .eq(JobSuggestedParamValue.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecution.id)
+              .or(Expr.eq(JobSuggestedParamValue.TABLE.tuningParameter + '.' + TuningParameter.TABLE.id, 2),
+                  Expr.eq(JobSuggestedParamValue.TABLE.tuningParameter + '.' + TuningParameter.TABLE.id, 5))
+              .findList();
+        } catch (NullPointerException e) {
+          logger.info("Checking param convergence: Map memory and reduce memory parameter not found");
+        }
+        if (jobSuggestedParamValueList.size() > 0) {
+          num_param_set_for_convergence -= 1;
+          for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
+            Set tmp;
+            if (paramValueSet.containsKey(jobSuggestedParamValue.id)) {
+              tmp = paramValueSet.get(jobSuggestedParamValue.id);
+            } else {
+              tmp = new HashSet();
+            }
+            tmp.add(jobSuggestedParamValue.paramValue);
+            paramValueSet.put(jobSuggestedParamValue.id, tmp);
+          }
+        }
+
+        if (num_param_set_for_convergence == 0) {
+          break;
+        }
+      }
+
+      result = true;
+      for (Integer paramId : paramValueSet.keySet()) {
+        if (paramValueSet.get(paramId).size() > 1) {
+          result = false;
+        }
+      }
+    }
+
+    if (result) {
+      logger.info(
+          "Switching off tuning for job: " + jobExecutions.get(0).job.jobName + " Reason: parameter set converged");
+    }
+    return result;
+  }
+
+  /**
+   * Checks if the median gain from tuning on last n executions is negative
+   * @param jobExecutions List of previous executions
+   * @return true if the median gain is negative, else false
+   */
+  private boolean isMedianGainNegative(List<JobExecution> jobExecutions) {
+    int num_fitness_for_median = 6;
+    Double[] fitnessArray = new Double[num_fitness_for_median];
+    int entries = 0;
+    for (JobExecution jobExecution : jobExecutions) {
+      TuningJobExecution tuningJobExecution = TuningJobExecution.find.where()
+          .eq(TuningJobExecution.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecution.id)
+          .findUnique();
+      if (jobExecution.executionState == JobExecution.ExecutionState.SUCCEEDED
+          && tuningJobExecution.paramSetState == ParamSetStatus.FITNESS_COMPUTED) {
+        fitnessArray[entries] = tuningJobExecution.fitness;
+        entries += 1;
+        if (entries == num_fitness_for_median) {
+          break;
+        }
+      }
+    }
+    Arrays.sort(fitnessArray);
+    double medianFitness;
+    if (fitnessArray.length % 2 == 0) {
+      medianFitness = (fitnessArray[fitnessArray.length / 2] + fitnessArray[fitnessArray.length / 2 - 1]) / 2;
+    } else {
+      medianFitness = fitnessArray[fitnessArray.length / 2];
+    }
+
+    JobDefinition jobDefinition = jobExecutions.get(0).job;
+    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where().
+        eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id).findUnique();
+    double baselineFitness =
+        tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+
+    if (medianFitness > baselineFitness) {
+      logger.info(
+          "Switching off tuning for job: " + jobExecutions.get(0).job.jobName + " Reason: unable to tune enough");
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Switches off tuning for the given job
+   * @param jobDefinition Job for which tuning is to be switched off
+   */
+  private void disableTuning(JobDefinition jobDefinition, String reason) {
+    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
+        .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
+        .findUnique();
+    if (tuningJobDefinition.tuningEnabled == 1) {
+      tuningJobDefinition.tuningEnabled = 0;
+      tuningJobDefinition.tuningDisabledReason = reason;
+      tuningJobDefinition.save();
+    }
+  }
+
+  /**
+   * Checks and disables tuning for the given job definitions.
+   * Tuning can be disabled if:
+   *  - Number of tuning executions >=  MAX_TUNING_EXECUTIONS
+   *  - or number of tuning executions >= MIN_TUNING_EXECUTIONS and parameters converge
+   *  - or number of tuning executions >= MIN_TUNING_EXECUTIONS and median gain (in cost function) in last 6 executions is negative
+   * @param jobDefinitionSet Set of jobs to check if tuning can be switched off for them
+   */
+  private void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
+    for (JobDefinition jobDefinition : jobDefinitionSet) {
+      try {
+        List<JobExecution> jobExecutions = JobExecution.find.where()
+            .eq(JobExecution.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
+            .isNotNull(JobExecution.TABLE.jobExecId)
+            .orderBy("id desc")
+            .findList();
+        if (jobExecutions.size() >= MIN_TUNING_EXECUTIONS) {
+          if (doesParameterSetConverge(jobExecutions)) {
+            logger.info("Parameters converged. Disabling tuning for job: " + jobDefinition.jobName);
+            disableTuning(jobDefinition, "Parameters converged");
+          } else if (isMedianGainNegative(jobExecutions)) {
+            logger.info("Unable to get gain while tuning. Disabling tuning for job: " + jobDefinition.jobName);
+            disableTuning(jobDefinition, "Unable to get gain");
+          } else if (jobExecutions.size() >= MAX_TUNING_EXECUTIONS) {
+            logger.info("Maximum tuning executions limit reached. Disabling tuning for job: " + jobDefinition.jobName);
+            disableTuning(jobDefinition, "Maximum executions reached");
+          }
+        }
+      } catch (NullPointerException e) {
+        logger.info("No execution found for job: " + jobDefinition.jobName);
+      }
+    }
   }
 
   /**
    * This method update metrics for auto tuning monitoring for fitness compute daemon
-   * @param completedExecutions
+   * @param completedExecutions List of completed tuning job executions
    */
   private void updateMetrics(List<TuningJobExecution> completedExecutions) {
     int fitnessNotUpdated = 0;
     for (TuningJobExecution tuningJobExecution : completedExecutions) {
-      if (tuningJobExecution.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED) == false) {
+      if (!tuningJobExecution.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED)) {
         fitnessNotUpdated++;
       } else {
         AutoTuningMetricsController.markFitnessComputedJobs();
@@ -120,11 +303,11 @@ public class FitnessComputeUtil {
    * Updates the execution metrics
    * @param completedExecutions List of completed executions
    */
-  protected void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
+  private void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
+    Integer penaltyConstant = 3;
+
     for (TuningJobExecution tuningJobExecution : completedExecutions) {
-
       logger.info("Updating execution metrics and fitness for execution: " + tuningJobExecution.jobExecution.jobExecId);
-
       try {
         JobExecution jobExecution = tuningJobExecution.jobExecution;
         JobDefinition job = jobExecution.job;
@@ -151,9 +334,13 @@ public class FitnessComputeUtil {
           Double totalResourceUsed = 0D;
           Double totalInputBytesInBytes = 0D;
 
+          Map<String, Double> counterValuesMap = new HashMap<String, Double>();
+
           for (AppResult appResult : results) {
             totalResourceUsed += appResult.resourceUsed;
-            totalInputBytesInBytes += getTotalInputBytes(appResult);
+            counterValuesMap = getCounterValues(appResult);
+            double tmp = counterValuesMap.get(TOTAL_INPUT_BYTES_KEY);
+            totalInputBytesInBytes += (long) tmp;
           }
 
           Long totalRunTime = Utils.getTotalRuntime(results);
@@ -178,40 +365,45 @@ public class FitnessComputeUtil {
           }
 
           //Compute fitness
-          if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)
-              || jobExecution.executionState.equals(JobExecution.ExecutionState.CANCELLED)) {
-            logger.info("Execution " + jobExecution.jobExecId + " failed/cancelled. Applying penalty");
-            // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
-            tuningJobExecution.fitness =
-                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
-                    * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
-          } else if (jobExecution.resourceUsage > (
-              // Todo: Check execution time constraint as well
-              tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0)) {
-            logger.info("Execution " + jobExecution.jobExecId + " violates constraint on resource usage");
-            tuningJobExecution.fitness =
-                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
-                    * FileUtils.ONE_GB / (100.0 * totalInputBytesInBytes);
+          Double averageResourceUsagePerGBInput =
+              tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+          Double maxDesiredResourceUsagePerGBInput =
+              averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+          Double averageExecutionTimePerGBInput =
+              tuningJobDefinition.averageExecutionTime * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+          Double maxDesiredExecutionTimePerGBInput =
+              averageExecutionTimePerGBInput * tuningJobDefinition.allowedMaxExecutionTimePercent / 100.0;
+          Double resourceUsagePerGBInput =
+              jobExecution.resourceUsage * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
+          Double executionTimePerGBInput =
+              jobExecution.executionTime * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
+
+          if (resourceUsagePerGBInput > maxDesiredResourceUsagePerGBInput
+              || executionTimePerGBInput > maxDesiredExecutionTimePerGBInput) {
+            logger.info("Execution " + jobExecution.jobExecId + " violates constraint on resource usage per GB input");
+            tuningJobExecution.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
           } else {
-            tuningJobExecution.fitness = jobExecution.resourceUsage * FileUtils.ONE_GB / totalInputBytesInBytes;
+            tuningJobExecution.fitness = resourceUsagePerGBInput;
           }
           tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
           jobExecution.update();
           tuningJobExecution.update();
-        } else {
-          if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)
-              || jobExecution.executionState.equals(JobExecution.ExecutionState.CANCELLED)) {
-            // Todo: Check if the reason of failure is auto tuning and  handle cancelled cases
-            tuningJobExecution.fitness =
-                3 * tuningJobDefinition.averageResourceUsage * tuningJobDefinition.allowedMaxResourceUsagePercent
-                    * FileUtils.ONE_GB / (100.0 * tuningJobDefinition.averageInputSizeInBytes);
-            jobExecution.executionTime = 0D;
-            jobExecution.resourceUsage = 0D;
-            jobExecution.inputSizeInBytes = 0D;
-            tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
-            jobExecution.update();
-            tuningJobExecution.update();
+        }
+
+        TuningJobExecution currentBestTuningJobExecution;
+        try {
+          currentBestTuningJobExecution =
+              TuningJobExecution.find.where().eq("jobExecution.job.id", tuningJobExecution.jobExecution.job.id).
+                  eq(TuningJobExecution.TABLE.isParamSetBest, 1).findUnique();
+          if (currentBestTuningJobExecution.fitness > tuningJobExecution.fitness) {
+            currentBestTuningJobExecution.isParamSetBest = false;
+            tuningJobExecution.isParamSetBest = true;
+            currentBestTuningJobExecution.save();
+            tuningJobExecution.save();
           }
+        } catch (NullPointerException e) {
+          tuningJobExecution.isParamSetBest = true;
+          tuningJobExecution.save();
         }
       } catch (Exception e) {
         logger.error("Error updating fitness of execution: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ",
@@ -226,21 +418,121 @@ public class FitnessComputeUtil {
    * @param appResult appResult
    * @return total input size
    */
-  private Long getTotalInputBytes(AppResult appResult) {
+  private Map<String, Double> getCounterValues(AppResult appResult) {
     Long totalInputBytes = 0L;
+    Double maxPeakExecutorJVMUsed = null;
+    Double maxPeakExecutorUnifiedMemory = null;
+    Double executorFractionWithSpills = null;
+    Double maxExecutorMemorySpilled = null;
+    Double sparkExecutorMemory = null;
+    Double sparkYarnExecutorMemoryOverhead = null;
+    Double sparkMemoryFraction = null;
+    Double sparkMemoryStorageFraction = null;
+    Double stagesWithOOMErrors = null;
+    Double stagesWithOverheadMemoryErrors = null;
+
+    Map<String, Double> counterMap = new HashMap<String, Double>();
     if (appResult.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
-        if (appHeuristicResult.heuristicName.equals(CommonConstantsHeuristic.MAPPER_SPEED)) {
+        if (appHeuristicResult.heuristicName.equals(CommonConstantsHeuristic.MAPPER_SPEED)
+            || appHeuristicResult.heuristicName.equals(CommonConstantsSparkHeuristic.EXECUTOR_SPILL)) {
           if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
             for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
               if (appHeuristicResultDetails.name.equals(CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB)) {
                 totalInputBytes += Math.round(Double.parseDouble(appHeuristicResultDetails.value) * FileUtils.ONE_MB);
+              }
+
+              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.MAX_SPILLED_MEMORY)) {
+                maxExecutorMemorySpilled =
+                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)) / FileUtils.ONE_MB;
+              }
+
+              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.EXECUTOR_SPILL_FRACTION)) {
+                executorFractionWithSpills = Double.parseDouble(appHeuristicResultDetails.value);
+              }
+            }
+          }
+        } else if (appHeuristicResult.heuristicName.equals(CommonConstantsSparkHeuristic.EXECUTOR_JVM_USED_MEMORY)) {
+          if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
+            for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
+              if (appHeuristicResultDetails.name.equals(
+                  CommonConstantsSparkHeuristic.MAX_EXECUTOR_PEAK_JVM_USED_MEMORY)) {
+                maxPeakExecutorJVMUsed =
+                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)) / FileUtils.ONE_MB;
+              }
+            }
+          }
+        } else if (appHeuristicResult.heuristicName.equals(
+            CommonConstantsSparkHeuristic.EXECUTOR_PEAK_UNIFIED_MEMORY)) {
+          if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
+            for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
+              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.MAX_PEAK_UNIFIED_MEMORY)) {
+                maxPeakExecutorUnifiedMemory =
+                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value) / FileUtils.ONE_MB);
+              } else if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.SPARK_EXECUTOR_MEMORY)) {
+                sparkExecutorMemory =
+                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value) / FileUtils.ONE_MB);
+              } else if (appHeuristicResultDetails.name.equals(
+                  CommonConstantsSparkHeuristic.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD)) {
+                sparkYarnExecutorMemoryOverhead =
+                    ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value) / FileUtils.ONE_MB);
+              } else if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.SPARK_MEMORY_FRACTION)) {
+                sparkMemoryFraction = Double.parseDouble(appHeuristicResultDetails.value);
+              } else if (appHeuristicResultDetails.name.equals(
+                  CommonConstantsSparkHeuristic.SPARK_MEMORY_STORAGE_FRACTION)) {
+                sparkMemoryStorageFraction = Double.parseDouble(appHeuristicResultDetails.value);
+              }
+            }
+          }
+        } else if (appHeuristicResult.heuristicName.equals(CommonConstantsSparkHeuristic.STAGES_WITH_FAILED_TASKS)) {
+          if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
+            for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
+              if (appHeuristicResultDetails.name.equals(CommonConstantsSparkHeuristic.STAGES_WITH_OOM_ERRORS)) {
+                stagesWithOOMErrors = Double.parseDouble(appHeuristicResultDetails.value);
+              } else if (appHeuristicResultDetails.name.equals(
+                  CommonConstantsSparkHeuristic.STAGES_WITH_OVERHEAD_MEMORY_ERRORS)) {
+                stagesWithOverheadMemoryErrors = Double.parseDouble(appHeuristicResultDetails.value);
               }
             }
           }
         }
       }
     }
-    return totalInputBytes;
+
+    if (totalInputBytes != null) {
+      counterMap.put(TOTAL_INPUT_BYTES_KEY, totalInputBytes.doubleValue());
+    }
+    if (maxPeakExecutorJVMUsed != null) {
+      counterMap.put(MAX_PEAK_EXECUTOR_JVM_USED_KEY, maxPeakExecutorJVMUsed);
+    }
+    if (maxPeakExecutorUnifiedMemory != null) {
+      counterMap.put(MAX_PEAK_EXECUTOR_UNIFIED_MEMORY_KEY, maxPeakExecutorUnifiedMemory);
+    }
+    if (executorFractionWithSpills != null) {
+      counterMap.put(EXECUTOR_FRACTION_WITH_SPILLS_KEY, executorFractionWithSpills);
+    }
+    if (maxExecutorMemorySpilled != null) {
+      counterMap.put(MAX_EXECUTOR_MEMORY_SPILLED_KEY, maxExecutorMemorySpilled);
+    }
+    if (sparkExecutorMemory != null) {
+      counterMap.put(SPARK_EXECUTOR_MEMORY_KEY, sparkExecutorMemory);
+    }
+    if (sparkMemoryFraction != null) {
+      counterMap.put(SPARK_MEMORY_FRACTION_KEY, sparkMemoryFraction);
+    }
+    if (sparkMemoryStorageFraction != null) {
+      counterMap.put(SPARK_MEMORY_STORAGE_FRACTION_KEY, sparkMemoryStorageFraction);
+    }
+    if (stagesWithOOMErrors != null) {
+      counterMap.put(STAGES_WITH_OOM_ERRORS_KEY, stagesWithOOMErrors);
+    }
+    if (stagesWithOverheadMemoryErrors != null) {
+      counterMap.put(STAGES_WITH_OVERHEAD_MEMORY_ERRORS_KEY, stagesWithOverheadMemoryErrors);
+    }
+    if (sparkYarnExecutorMemoryOverhead != null) {
+      counterMap.put(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD_KEY, sparkYarnExecutorMemoryOverhead);
+    }
+
+    return counterMap;
   }
 }
