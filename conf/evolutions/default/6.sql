@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS tuning_job_execution_param_set (
   job_suggested_param_set_id int(10) unsigned NOT NULL COMMENT 'foreign key from job_suggested_param_set table',
   job_execution_id int(10) unsigned NOT NULL COMMENT 'foreign key from job_execution table',
   tuning_enabled tinyint(4) NOT NULL COMMENT 'Is tuning enabled for the execution',
+  created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY tuning_job_execution_param_set_uk_1 (job_suggested_param_set_id, job_execution_id),
   CONSTRAINT tuning_job_execution_param_set_ibfk_1 FOREIGN KEY (job_suggested_param_set_id) REFERENCES job_suggested_param_set (id),
   CONSTRAINT tuning_job_execution_param_set_ibfk_2 FOREIGN KEY (job_execution_id) REFERENCES job_execution (id)
@@ -60,5 +62,5 @@ ALTER TABLE job_suggested_param_value ADD UNIQUE KEY job_suggested_param_value_u
 
 # --- !Downs
 drop table tuning_parameter_constraint;
-drop table tuning_job_execution_param_set
+drop table tuning_job_execution_param_set;
 drop table job_suggested_param_set;

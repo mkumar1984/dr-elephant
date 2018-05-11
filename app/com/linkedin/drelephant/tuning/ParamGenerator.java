@@ -37,8 +37,6 @@ import play.libs.Json;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.lang.Math.*;
-
 
 /**
  * This is an abstract class for generating parameter suggestions for jobs
@@ -89,22 +87,22 @@ public abstract class ParamGenerator {
     logger.info("Checking which jobs need new parameter suggestion");
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
 
-    List<TuningJobExecution> pendingParamExecutionList = new ArrayList<TuningJobExecution>();
+    List<JobSuggestedParamSet> pendingParamExecutionList = new ArrayList<JobSuggestedParamSet>();
     try {
-      pendingParamExecutionList = TuningJobExecution.find.select("*")
-          .fetch(TuningJobExecution.TABLE.jobExecution, "*")
+      pendingParamExecutionList = JobSuggestedParamSet.find.select("*")
+          .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
           .where()
-          .or(Expr.or(Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.CREATED),
-              Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.SENT)),
-              Expr.eq(TuningJobExecution.TABLE.paramSetState, TuningJobExecution.ParamSetStatus.EXECUTED))
-          .eq(TuningJobExecution.TABLE.isDefaultExecution, 0)
+          .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
+              Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
+              Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
+          .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
           .findList();
     } catch (NullPointerException e) {
       logger.info("None of the non-default executions are in CREATED, SENT OR EXECUTED state");
     }
 
     List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
-    for (TuningJobExecution pendingParamExecution : pendingParamExecutionList) {
+    for (JobSuggestedParamSet pendingParamExecution : pendingParamExecutionList) {
       if (!pendingParamJobList.contains(pendingParamExecution.jobExecution.job)) {
         pendingParamJobList.add(pendingParamExecution.jobExecution.job);
       }
@@ -173,16 +171,16 @@ public abstract class ParamGenerator {
 
       try {
         logger.info("Fetching default parameter values for job " + tuningJobDefinition.job.jobDefId);
-        TuningJobExecution defaultJobExecution = TuningJobExecution.find.where()
-            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
+        JobSuggestedParamSet defaultJobExecution = JobSuggestedParamSet.find.where()
+            .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
                 tuningJobDefinition.job.id)
-            .eq(TuningJobExecution.TABLE.isDefaultExecution, 1)
-            .orderBy(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc")
+            .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 1)
+            .orderBy(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc")
             .setMaxRows(1)
             .findUnique();
         if (defaultJobExecution != null && defaultJobExecution.jobExecution != null) {
           List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
-              .eq(JobSuggestedParamValue.TABLE.jobExecution + "." + JobExecution.TABLE.id,
+              .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobExecution.TABLE.id,
                   defaultJobExecution.jobExecution.id)
               .findList();
 
@@ -251,16 +249,16 @@ public abstract class ParamGenerator {
           Long paramSetId = particle.getParamSetId();
 
           logger.info("Param set id: " + paramSetId.toString());
-          TuningJobExecution tuningJobExecution = TuningJobExecution.find.select("*")
-              .fetch(TuningJobExecution.TABLE.jobExecution, "*")
+          JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
+              .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
               .where()
-              .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.id, paramSetId)
+              .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.id, paramSetId)
               .findUnique();
 
-          JobExecution jobExecution = tuningJobExecution.jobExecution;
+          JobExecution jobExecution = jobSuggestedParamSet.jobExecution;
 
-          if (tuningJobExecution.fitness != null) {
-            particle.setFitness(tuningJobExecution.fitness);
+          if (jobSuggestedParamSet.fitness != null) {
+            particle.setFitness(jobSuggestedParamSet.fitness);
           } else {
             validSavedState = false;
             logger.error("Invalid saved state: Fitness of previous execution not computed.");
@@ -329,8 +327,8 @@ public abstract class ParamGenerator {
    *    For every new particle:
    *        From the tuner set extract the list of suggested parameters
    *        Check penalty
-   *        Save the param in the job execution table by creating execution instance
-   *        Update the execution instance in each of the suggested params
+   *        Save the param in the job execution table by creating execution instance (Create an entry into param_set table)
+   *        Update the execution instance in each of the suggested params (Update the param_set_id in each of the prams)
    *        save th suggested parameters
    *        update the paramsetid in the particle and add particle to a particlelist
    *    Update the tunerstate from the updated particles
@@ -353,7 +351,6 @@ public abstract class ParamGenerator {
       JobDefinition job = jobTuningInfo.getTuningJob();
       List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
       String stringTunerState = jobTuningInfo.getTunerState();
-
       if (stringTunerState == null) {
         logger.error("Suggested parameter suggestion is empty for job id: " + job.jobDefId);
         continue;
@@ -428,25 +425,26 @@ public abstract class ParamGenerator {
           }
         }
 
-        TuningJobExecution tuningJobExecution = new TuningJobExecution();
+        // Todo: Change from here
+        JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
         JobExecution jobExecution = new JobExecution();
         jobExecution.job = job;
-        tuningJobExecution.jobExecution = jobExecution;
-        tuningJobExecution.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
-        tuningJobExecution.isDefaultExecution = false;
-        if (isParamConstraintViolated(jobSuggestedParamValueList, tuningJobExecution.tuningAlgorithm.jobType, job.id)) {
+        jobSuggestedParamSet.jobExecution = jobExecution;
+        jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
+        jobSuggestedParamSet.isParamSetDefault = false;
+        if (isParamConstraintViolated(jobSuggestedParamValueList, jobSuggestedParamSet.tuningAlgorithm.jobType)) {
           logger.info("Parameter constraint violated. Applying penalty.");
           Integer penaltyConstant = 3;
           Double averageResourceUsagePerGBInput =
                   tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
           Double maxDesiredResourceUsagePerGBInput =
                   averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
-          tuningJobExecution.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
-          tuningJobExecution.paramSetState = TuningJobExecution.ParamSetStatus.FITNESS_COMPUTED;
+          jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
+          jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
         } else {
-          tuningJobExecution.paramSetState = TuningJobExecution.ParamSetStatus.CREATED;
+          jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
         }
-        Long paramSetId = saveSuggestedParamMetadata(tuningJobExecution);
+        Long paramSetId = saveSuggestedParamMetadata(jobSuggestedParamSet);
 
         for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
           jobSuggestedParamValue.jobExecution = jobExecution;
@@ -471,11 +469,12 @@ public abstract class ParamGenerator {
    * Constraint 1: sort.mb > 60% of map.memory: To avoid heap memory failure
    * Constraint 2: map.memory - sort.mb < 768: To avoid heap memory failure
    * Constraint 3: pig.maxCombinedSplitSize > 1.8*mapreduce.map.memory.mb
-   * @param jobSuggestedParamValueList
+   * @param jobSuggestedParamValueList List of suggested param values
+   * @param jobType Job type
    * @return true if the constraint is violated, false otherwise
    */
   private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList,
-      TuningAlgorithm.JobType jobType, Integer jobDefinitionId) {
+      TuningAlgorithm.JobType jobType) {
 
     logger.info("Checking whether parameter values are within constraints");
     Integer violations = 0;
@@ -550,13 +549,13 @@ public abstract class ParamGenerator {
 
   /**
    * Save the job execution in the database and returns the param set id
-   * @param tuningJobExecution JobExecution
+   * @param jobSuggestedParamSet JobExecution
    * @return Param Set Id
    */
 
-  private Long saveSuggestedParamMetadata(TuningJobExecution tuningJobExecution) {
-    tuningJobExecution.save();
-    return tuningJobExecution.jobExecution.id;
+  private Long saveSuggestedParamMetadata(JobSuggestedParamSet jobSuggestedParamSet) {
+    jobSuggestedParamSet.save();
+    return jobSuggestedParamSet.jobExecution.id;
   }
 
   /**

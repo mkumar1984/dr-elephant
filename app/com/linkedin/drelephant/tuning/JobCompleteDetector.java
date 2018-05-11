@@ -23,13 +23,12 @@ import java.util.List;
 
 import models.JobExecution;
 import models.JobExecution.ExecutionState;
-import models.TuningJobExecution;
-import models.TuningJobExecution.ParamSetStatus;
+import models.JobSuggestedParamSet;
+import models.JobSuggestedParamSet.ParamSetStatus;
 
 import org.apache.log4j.Logger;
 
 import controllers.AutoTuningMetricsController;
-import play.libs.Json;
 
 
 /**
@@ -45,10 +44,10 @@ public abstract class JobCompleteDetector {
    * @throws MalformedURLException MalformedURLException
    * @throws URISyntaxException URISyntaxException
    */
-  public List<TuningJobExecution> updateCompletedExecutions() throws MalformedURLException, URISyntaxException {
+  public List<JobSuggestedParamSet> updateCompletedExecutions() throws MalformedURLException, URISyntaxException {
     logger.info("Checking execution status");
-    List<TuningJobExecution> runningExecutions = getStartedExecutions();
-    List<TuningJobExecution> completedExecutions = getCompletedExecutions(runningExecutions);
+    List<JobSuggestedParamSet> runningExecutions = getStartedExecutions();
+    List<JobSuggestedParamSet> completedExecutions = getCompletedExecutions(runningExecutions);
     updateExecutionStatus(completedExecutions);
     updateMetrics(completedExecutions);
     logger.info("Finished updating execution status");
@@ -59,12 +58,12 @@ public abstract class JobCompleteDetector {
    * This method is for updating metrics for auto tuning monitoring for job completion daemon
    * @param completedExecutions List completed job executions
    */
-  private void updateMetrics(List<TuningJobExecution> completedExecutions) {
-    for (TuningJobExecution tuningJobExecution : completedExecutions) {
-      if (tuningJobExecution.paramSetState.equals(ParamSetStatus.EXECUTED)) {
-        if (tuningJobExecution.jobExecution.executionState.equals(ExecutionState.SUCCEEDED)) {
+  private void updateMetrics(List<JobSuggestedParamSet> completedExecutions) {
+    for (JobSuggestedParamSet jobSuggestedParamSet : completedExecutions) {
+      if (jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.EXECUTED)) {
+        if (jobSuggestedParamSet.jobExecution.executionState.equals(ExecutionState.SUCCEEDED)) {
           AutoTuningMetricsController.markSuccessfulJobs();
-        } else if (tuningJobExecution.jobExecution.executionState.equals(ExecutionState.FAILED)) {
+        } else if (jobSuggestedParamSet.jobExecution.executionState.equals(ExecutionState.FAILED)) {
           AutoTuningMetricsController.markFailedJobs();
         }
       }
@@ -75,19 +74,19 @@ public abstract class JobCompleteDetector {
    * Returns the list of executions which have already received param suggestion
    * @return JobExecution list
    */
-  private List<TuningJobExecution> getStartedExecutions() {
+  private List<JobSuggestedParamSet> getStartedExecutions() {
     logger.info("Fetching the executions which were running");
-    List<TuningJobExecution> tuningJobExecutionList = new ArrayList<TuningJobExecution>();
+    List<JobSuggestedParamSet> jobSuggestedParamSetList = new ArrayList<JobSuggestedParamSet>();
     try {
-      tuningJobExecutionList = TuningJobExecution.find.select("*")
+      jobSuggestedParamSetList = JobSuggestedParamSet.find.select("*")
           .where()
-          .eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.SENT)
+          .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.SENT)
           .findList();
     } catch (NullPointerException e) {
       logger.info("None of the executions were running ", e);
     }
-    logger.info("Number of executions which were in running state: " + tuningJobExecutionList.size());
-    return tuningJobExecutionList;
+    logger.info("Number of executions which were in running state: " + jobSuggestedParamSetList.size());
+    return jobSuggestedParamSetList;
   }
 
   /**
@@ -97,7 +96,7 @@ public abstract class JobCompleteDetector {
    * @throws MalformedURLException
    * @throws URISyntaxException
    */
-  protected abstract List<TuningJobExecution> getCompletedExecutions(List<TuningJobExecution> jobExecutions)
+  protected abstract List<JobSuggestedParamSet> getCompletedExecutions(List<JobSuggestedParamSet> jobExecutions)
       throws MalformedURLException, URISyntaxException;
 
   /**
@@ -105,13 +104,13 @@ public abstract class JobCompleteDetector {
    * @param jobExecutions JobExecution list
    * @return Update status
    */
-  private void updateExecutionStatus(List<TuningJobExecution> jobExecutions) {
+  private void updateExecutionStatus(List<JobSuggestedParamSet> jobExecutions) {
     logger.info("Updating status of executions completed since last iteration");
-    for (TuningJobExecution tuningJobExecution : jobExecutions) {
-      JobExecution jobExecution = tuningJobExecution.jobExecution;
+    for (JobSuggestedParamSet jobSuggestedParamSet : jobExecutions) {
+      JobExecution jobExecution = jobSuggestedParamSet.jobExecution;
       logger.info("Updating execution status to EXECUTED for the execution: " + jobExecution.jobExecId);
       jobExecution.update();
-      tuningJobExecution.update();
+      jobSuggestedParamSet.update();
     }
   }
 }

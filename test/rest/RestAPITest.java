@@ -19,19 +19,12 @@ package rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.linkedin.drelephant.AutoTuner;
 import com.linkedin.drelephant.DrElephant;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.BaselineComputeUtil;
 import com.linkedin.drelephant.tuning.FitnessComputeUtil;
-import com.linkedin.drelephant.tuning.JobCompleteDetector;
 import com.linkedin.drelephant.util.Utils;
 
-import common.DBTestUtil;
-import controllers.AutoTuningMetricsController;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -42,9 +35,9 @@ import java.util.concurrent.TimeUnit;
 import models.JobDefinition;
 import models.JobExecution;
 import models.JobExecution.ExecutionState;
+import models.JobSuggestedParamSet;
 import models.TuningJobDefinition;
-import models.TuningJobExecution;
-import models.TuningJobExecution.ParamSetStatus;
+import models.JobSuggestedParamSet.ParamSetStatus;
 
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
@@ -55,7 +48,6 @@ import org.slf4j.LoggerFactory;
 
 import play.Application;
 import play.GlobalSettings;
-import play.libs.Json;
 import play.libs.WS;
 import play.test.FakeApplication;
 
@@ -154,31 +146,31 @@ public class RestAPITest {
             jsonResponse.path("mapreduce.reduce.memory.mb").asDouble() > 0);
         assertTrue("Get current run param output size did not match", jsonResponse.size() == 9);
 
-        TuningJobExecution tuningJobExecution = TuningJobExecution.find.select("*")
-            .fetch(TuningJobExecution.TABLE.jobExecution, "*")
-            .fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
+        JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
+            .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
+            .fetch(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
             .where()
-            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
+            .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
                 "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0")
             .findUnique();
 
-        tuningJobExecution.paramSetState = ParamSetStatus.EXECUTED;
-        tuningJobExecution.jobExecution.executionState = ExecutionState.SUCCEEDED;
-        tuningJobExecution.update();
+        jobSuggestedParamSet.paramSetState = ParamSetStatus.EXECUTED;
+        jobSuggestedParamSet.jobExecution.executionState = ExecutionState.SUCCEEDED;
+        jobSuggestedParamSet.update();
 
         FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
         fitnessComputeUtil.updateFitness();
 
-        tuningJobExecution = TuningJobExecution.find.select("*")
-            .fetch(TuningJobExecution.TABLE.jobExecution, "*")
-            .fetch(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
+        jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
+            .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
+            .fetch(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
             .where()
-            .eq(TuningJobExecution.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
+            .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
                 "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0")
             .findUnique();
 
-        assertTrue("Fitness not computed", tuningJobExecution.paramSetState == ParamSetStatus.FITNESS_COMPUTED);
-        assertTrue("Fitness not computed and have zero value", tuningJobExecution.fitness > 0);
+        assertTrue("Fitness not computed", jobSuggestedParamSet.paramSetState == ParamSetStatus.FITNESS_COMPUTED);
+        assertTrue("Fitness not computed and have zero value", jobSuggestedParamSet.fitness > 0);
       }
     });
   }

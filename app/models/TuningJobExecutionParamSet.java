@@ -18,53 +18,43 @@ package models;
 
 import com.avaje.ebean.annotation.UpdatedTimestamp;
 import java.sql.Timestamp;
-
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
-import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
-
 import play.db.ebean.Model;
 
-
 @Entity
-@Table(name = "job_suggested_param_value")
-public class JobSuggestedParamValue extends Model {
+@Table(name = "tuning_job_execution_param_set")
+public class TuningJobExecutionParamSet extends Model {
 
   private static final long serialVersionUID = 1L;
-
   public static class TABLE {
-    public static final String TABLE_NAME = "job_suggested_param_value";
-    public static final String id = "id";
+    public static final String TABLE_NAME = "tuning_job_execution_param_set";
     public static final String jobSuggestedParamSet = "jobSuggestedParamSet";
-    public static final String tuningParameter = "tuningParameter";
-    public static final String paramValue = "paramValue";
+    public static final String jobExecution = "jobExecution";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
   }
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  public Integer id;
-  public Double paramValue;
-  public Timestamp createdTs;
-
-  @UpdatedTimestamp
-  public Timestamp updatedTs;
-
-  @ManyToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "job_suggested_param_set", joinColumns = {@JoinColumn(name = "job_suggested_param_set_id", referencedColumnName = "id")})
   public JobSuggestedParamSet jobSuggestedParamSet;
 
-  @ManyToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "tuning_parameter", joinColumns = {@JoinColumn(name = "tuning_parameter_id", referencedColumnName = "id")})
-  public TuningParameter tuningParameter;
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "job_execution_id", referencedColumnName = "id")})
+  public JobExecution jobExecution;
 
-  public static Finder<Long, JobSuggestedParamValue> find =
-      new Finder<Long, JobSuggestedParamValue>(Long.class, JobSuggestedParamValue.class);
+  @Column(nullable = false)
+  public Timestamp createdTs;
+
+  @Column(nullable = false)
+  @UpdatedTimestamp
+  public Timestamp updatedTs;
+
+  public static Finder<Long, TuningJobExecutionParamSet> find =
+      new Finder<Long, TuningJobExecutionParamSet>(Long.class, TuningJobExecutionParamSet.class);
 }

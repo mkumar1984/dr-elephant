@@ -21,6 +21,9 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
@@ -31,8 +34,8 @@ import play.db.ebean.Model;
 
 
 @Entity
-@Table(name = "tuning_job_execution")
-public class TuningJobExecution extends Model {
+@Table(name = "job_suggested_param_set")
+public class JobSuggestedParamSet extends Model {
 
   private static final long serialVersionUID = -294471313051608818L;
 
@@ -41,14 +44,25 @@ public class TuningJobExecution extends Model {
   }
 
   public static class TABLE {
-    public static final String TABLE_NAME = "tuning_job_execution";
-    public static final String paramSetState = "paramSetState";
-    public static final String isDefaultExecution = "isDefaultExecution";
-    public static final String fitness = "fitness";
-    public static final String isParamSetBest = "isParamSetBest";
+    public static final String TABLE_NAME = "job_suggested_param_set";
+    public static final String id = "id";
+    public static final String jobDefinition = "jobDefinition";
     public static final String jobExecution = "jobExecution";
     public static final String tuningAlgorithm = "tuningAlgorithm";
+    public static final String paramSetState = "paramSetState";
+    public static final String isParamSetDefault = "isParamSetDefault";
+    public static final String fitness = "fitness";
+    public static final String isParamSetBest = "isParamSetBest";
+    public static final String areConstraintsViolated = "areConstraintsViolated";
   }
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  public Long id;
+
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinTable(name = "job_definition", joinColumns = {@JoinColumn(name = "job_definition_id", referencedColumnName = "id")})
+  public JobDefinition jobDefinition;
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "job_execution_id", referencedColumnName = "id")})
@@ -62,12 +76,14 @@ public class TuningJobExecution extends Model {
   @Column(nullable = false)
   public ParamSetStatus paramSetState;
 
-  public Boolean isDefaultExecution;
+  public Boolean isParamSetDefault;
 
   public Double fitness;
 
   public Boolean isParamSetBest;
 
-  public static Model.Finder<Long, TuningJobExecution> find =
-      new Model.Finder<Long, TuningJobExecution>(Long.class, TuningJobExecution.class);
+  public Boolean areConstraintsViolated;
+
+  public static Model.Finder<Long, JobSuggestedParamSet> find =
+      new Model.Finder<Long, JobSuggestedParamSet>(Long.class, JobSuggestedParamSet.class);
 }

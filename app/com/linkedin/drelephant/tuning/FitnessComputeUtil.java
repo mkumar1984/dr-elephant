@@ -34,11 +34,11 @@ import models.AppHeuristicResultDetails;
 import models.AppResult;
 import models.JobDefinition;
 import models.JobExecution;
+import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
-import models.TuningJobExecution;
-import models.TuningJobExecution.ParamSetStatus;
+import models.JobSuggestedParamSet.ParamSetStatus;
 import models.TuningParameter;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -70,13 +70,13 @@ public class FitnessComputeUtil {
    */
   public void updateFitness() {
     logger.info("Computing and updating fitness for completed executions");
-    List<TuningJobExecution> completedExecutions = getCompletedExecutions();
+    List<JobSuggestedParamSet> completedExecutions = getCompletedExecutions();
     updateExecutionMetrics(completedExecutions);
     updateMetrics(completedExecutions);
 
     Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
-    for (TuningJobExecution tuningJobExecution : completedExecutions) {
-      jobDefinitionSet.add(tuningJobExecution.jobExecution.job);
+    for (JobSuggestedParamSet jobSuggestedParamSet : completedExecutions) {
+      jobDefinitionSet.add(jobSuggestedParamSet.jobExecution.job);
     }
     checkToDisableTuning(jobDefinitionSet);
   }
@@ -90,10 +90,10 @@ public class FitnessComputeUtil {
     boolean result = false;
     int num_param_set_for_convergence = 3;
 
-    TuningJobExecution tuningJobExecution = TuningJobExecution.find.where()
-        .eq(TuningJobExecution.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecutions.get(0).id)
+    JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.where()
+        .eq(JobSuggestedParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecutions.get(0).id)
         .findUnique();
-    TuningAlgorithm.JobType jobType = tuningJobExecution.tuningAlgorithm.jobType;
+    TuningAlgorithm.JobType jobType = jobSuggestedParamSet.tuningAlgorithm.jobType;
 
     if (jobType == TuningAlgorithm.JobType.PIG) {
       Map<Integer, Set<Double>> paramValueSet = new HashMap<Integer, Set<Double>>();
@@ -101,7 +101,7 @@ public class FitnessComputeUtil {
         List<JobSuggestedParamValue> jobSuggestedParamValueList = new ArrayList<JobSuggestedParamValue>();
         try {
           jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
-              .eq(JobSuggestedParamValue.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecution.id)
+              .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + '.' + JobExecution.TABLE.id, jobExecution.id)
               .or(Expr.eq(JobSuggestedParamValue.TABLE.tuningParameter + '.' + TuningParameter.TABLE.id, 2),
                   Expr.eq(JobSuggestedParamValue.TABLE.tuningParameter + '.' + TuningParameter.TABLE.id, 5))
               .findList();
@@ -152,12 +152,12 @@ public class FitnessComputeUtil {
     Double[] fitnessArray = new Double[num_fitness_for_median];
     int entries = 0;
     for (JobExecution jobExecution : jobExecutions) {
-      TuningJobExecution tuningJobExecution = TuningJobExecution.find.where()
-          .eq(TuningJobExecution.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecution.id)
+      JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.where()
+          .eq(JobSuggestedParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.id, jobExecution.id)
           .findUnique();
       if (jobExecution.executionState == JobExecution.ExecutionState.SUCCEEDED
-          && tuningJobExecution.paramSetState == ParamSetStatus.FITNESS_COMPUTED) {
-        fitnessArray[entries] = tuningJobExecution.fitness;
+          && jobSuggestedParamSet.paramSetState == ParamSetStatus.FITNESS_COMPUTED) {
+        fitnessArray[entries] = jobSuggestedParamSet.fitness;
         entries += 1;
         if (entries == num_fitness_for_median) {
           break;
@@ -240,10 +240,10 @@ public class FitnessComputeUtil {
    * This method update metrics for auto tuning monitoring for fitness compute daemon
    * @param completedExecutions List of completed tuning job executions
    */
-  private void updateMetrics(List<TuningJobExecution> completedExecutions) {
+  private void updateMetrics(List<JobSuggestedParamSet> completedExecutions) {
     int fitnessNotUpdated = 0;
-    for (TuningJobExecution tuningJobExecution : completedExecutions) {
-      if (!tuningJobExecution.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED)) {
+    for (JobSuggestedParamSet jobSuggestedParamSet : completedExecutions) {
+      if (!jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED)) {
         fitnessNotUpdated++;
       } else {
         AutoTuningMetricsController.markFitnessComputedJobs();
@@ -256,26 +256,26 @@ public class FitnessComputeUtil {
    * Returns the list of completed executions whose metrics are not computed
    * @return List of job execution
    */
-  private List<TuningJobExecution> getCompletedExecutions() {
+  private List<JobSuggestedParamSet> getCompletedExecutions() {
     logger.info("Fetching completed executions whose fitness are yet to be computed");
-    List<TuningJobExecution> jobExecutions = new ArrayList<TuningJobExecution>();
-    List<TuningJobExecution> outputJobExecutions = new ArrayList<TuningJobExecution>();
+    List<JobSuggestedParamSet> jobExecutions = new ArrayList<JobSuggestedParamSet>();
+    List<JobSuggestedParamSet> outputJobExecutions = new ArrayList<JobSuggestedParamSet>();
 
     try {
-      jobExecutions = TuningJobExecution.find.select("*")
+      jobExecutions = JobSuggestedParamSet.find.select("*")
           .where()
-          .eq(TuningJobExecution.TABLE.paramSetState, ParamSetStatus.EXECUTED)
+          .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.EXECUTED)
           .findList();
 
-      for (TuningJobExecution tuningJobExecution : jobExecutions) {
-        long diff = System.currentTimeMillis() - tuningJobExecution.jobExecution.updatedTs.getTime();
+      for (JobSuggestedParamSet jobSuggestedParamSet : jobExecutions) {
+        long diff = System.currentTimeMillis() - jobSuggestedParamSet.jobExecution.updatedTs.getTime();
         logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
-            + tuningJobExecution.jobExecution.updatedTs.getTime());
+            + jobSuggestedParamSet.jobExecution.updatedTs.getTime());
         if (diff < waitInterval) {
-          logger.debug("Delaying fitness compute for execution: " + tuningJobExecution.jobExecution.jobExecId);
+          logger.debug("Delaying fitness compute for execution: " + jobSuggestedParamSet.jobExecution.jobExecId);
         } else {
-          logger.debug("Adding execution " + tuningJobExecution.jobExecution.jobExecId + " for fitness computation");
-          outputJobExecutions.add(tuningJobExecution);
+          logger.debug("Adding execution " + jobSuggestedParamSet.jobExecution.jobExecId + " for fitness computation");
+          outputJobExecutions.add(jobSuggestedParamSet);
         }
       }
     } catch (NullPointerException e) {
@@ -290,13 +290,13 @@ public class FitnessComputeUtil {
    * Updates the execution metrics
    * @param completedExecutions List of completed executions
    */
-  private void updateExecutionMetrics(List<TuningJobExecution> completedExecutions) {
+  private void updateExecutionMetrics(List<JobSuggestedParamSet> completedExecutions) {
     Integer penaltyConstant = 3;
 
-    for (TuningJobExecution tuningJobExecution : completedExecutions) {
-      logger.info("Updating execution metrics and fitness for execution: " + tuningJobExecution.jobExecution.jobExecId);
+    for (JobSuggestedParamSet jobSuggestedParamSet : completedExecutions) {
+      logger.info("Updating execution metrics and fitness for execution: " + jobSuggestedParamSet.jobExecution.jobExecId);
       try {
-        JobExecution jobExecution = tuningJobExecution.jobExecution;
+        JobExecution jobExecution = jobSuggestedParamSet.jobExecution;
         JobDefinition job = jobExecution.job;
 
         // job id match and tuning enabled
@@ -366,32 +366,32 @@ public class FitnessComputeUtil {
           if (resourceUsagePerGBInput > maxDesiredResourceUsagePerGBInput
               || executionTimePerGBInput > maxDesiredExecutionTimePerGBInput) {
             logger.info("Execution " + jobExecution.jobExecId + " violates constraint on resource usage per GB input");
-            tuningJobExecution.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
+            jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
           } else {
-            tuningJobExecution.fitness = resourceUsagePerGBInput;
+            jobSuggestedParamSet.fitness = resourceUsagePerGBInput;
           }
-          tuningJobExecution.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
+          jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
           jobExecution.update();
-          tuningJobExecution.update();
+          jobSuggestedParamSet.update();
         }
 
-        TuningJobExecution currentBestTuningJobExecution;
+        JobSuggestedParamSet currentBestJobSuggestedParamSet;
         try {
-          currentBestTuningJobExecution =
-              TuningJobExecution.find.where().eq("jobExecution.job.id", tuningJobExecution.jobExecution.job.id).
-                  eq(TuningJobExecution.TABLE.isParamSetBest, 1).findUnique();
-          if (currentBestTuningJobExecution.fitness > tuningJobExecution.fitness) {
-            currentBestTuningJobExecution.isParamSetBest = false;
-            tuningJobExecution.isParamSetBest = true;
-            currentBestTuningJobExecution.save();
-            tuningJobExecution.save();
+          currentBestJobSuggestedParamSet =
+              JobSuggestedParamSet.find.where().eq("jobExecution.job.id", jobSuggestedParamSet.jobExecution.job.id).
+                  eq(JobSuggestedParamSet.TABLE.isParamSetBest, 1).findUnique();
+          if (currentBestJobSuggestedParamSet.fitness > jobSuggestedParamSet.fitness) {
+            currentBestJobSuggestedParamSet.isParamSetBest = false;
+            jobSuggestedParamSet.isParamSetBest = true;
+            currentBestJobSuggestedParamSet.save();
+            jobSuggestedParamSet.save();
           }
         } catch (NullPointerException e) {
-          tuningJobExecution.isParamSetBest = true;
-          tuningJobExecution.save();
+          jobSuggestedParamSet.isParamSetBest = true;
+          jobSuggestedParamSet.save();
         }
       } catch (Exception e) {
-        logger.error("Error updating fitness of execution: " + tuningJobExecution.jobExecution.id + "\n Stacktrace: ",
+        logger.error("Error updating fitness of execution: " + jobSuggestedParamSet.jobExecution.id + "\n Stacktrace: ",
             e);
       }
     }
