@@ -95,10 +95,10 @@ public class JobExecution extends Model {
   @JoinTable(name = "job_definition", joinColumns = {@JoinColumn(name = "job_definition_id", referencedColumnName = "id")})
   public JobDefinition job;
 
-  @Column(nullable = true)
+  @Column(nullable = false)
   public Timestamp createdTs;
 
-  @Column(nullable = true)
+  @Column(nullable = false)
   @UpdatedTimestamp
   public Timestamp updatedTs;
 

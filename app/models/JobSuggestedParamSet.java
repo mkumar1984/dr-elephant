@@ -16,6 +16,8 @@
 
 package models;
 
+import com.avaje.ebean.annotation.UpdatedTimestamp;
+import java.sql.Timestamp;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -47,13 +49,16 @@ public class JobSuggestedParamSet extends Model {
     public static final String TABLE_NAME = "job_suggested_param_set";
     public static final String id = "id";
     public static final String jobDefinition = "jobDefinition";
-    public static final String jobExecution = "jobExecution";
     public static final String tuningAlgorithm = "tuningAlgorithm";
     public static final String paramSetState = "paramSetState";
     public static final String isParamSetDefault = "isParamSetDefault";
     public static final String fitness = "fitness";
+    public static final String fitnessJobExecution = "fitnessJobExecution";
     public static final String isParamSetBest = "isParamSetBest";
     public static final String areConstraintsViolated = "areConstraintsViolated";
+    public static final String createdTs = "createdTs";
+    public static final String updatedTs = "updatedTs";
+
   }
 
   @Id
@@ -65,8 +70,8 @@ public class JobSuggestedParamSet extends Model {
   public JobDefinition jobDefinition;
 
   @OneToOne(cascade = CascadeType.ALL)
-  @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "job_execution_id", referencedColumnName = "id")})
-  public JobExecution jobExecution;
+  @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "fitness_job_execution_id", referencedColumnName = "id")})
+  public JobExecution fitnessJobExecution;
 
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "tuning_algorithm", joinColumns = {@JoinColumn(name = "tuning_algorithm_id", referencedColumnName = "id")})
@@ -83,6 +88,13 @@ public class JobSuggestedParamSet extends Model {
   public Boolean isParamSetBest;
 
   public Boolean areConstraintsViolated;
+
+  @Column(nullable = false)
+  public Timestamp createdTs;
+
+  @Column(nullable = false)
+  @UpdatedTimestamp
+  public Timestamp updatedTs;
 
   public static Model.Finder<Long, JobSuggestedParamSet> find =
       new Model.Finder<Long, JobSuggestedParamSet>(Long.class, JobSuggestedParamSet.class);

@@ -49,8 +49,10 @@ public class JobSavedState extends Model {
   @Column(nullable = false)
   public byte[] savedState;
 
+  @Column(nullable = false)
   public Timestamp createdTs;
 
+  @Column(nullable = false)
   @UpdatedTimestamp
   public Timestamp updatedTs;
 

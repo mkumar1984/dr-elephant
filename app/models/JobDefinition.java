@@ -78,10 +78,10 @@ public class JobDefinition extends Model {
   @JoinTable(name = "flow_definition", joinColumns = {@JoinColumn(name = "flow_definition_id", referencedColumnName = "id")})
   public FlowDefinition flowDefinition;
 
-  @Column(nullable = true)
+  @Column(nullable = false)
   public Timestamp createdTs;
 
-  @Column(nullable = true)
+  @Column(nullable = false)
   @UpdatedTimestamp
   public Timestamp updatedTs;
 

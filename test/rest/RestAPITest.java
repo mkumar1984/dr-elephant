@@ -39,6 +39,7 @@ import models.JobSuggestedParamSet;
 import models.TuningJobDefinition;
 import models.JobSuggestedParamSet.ParamSetStatus;
 
+import models.TuningJobExecutionParamSet;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Before;
@@ -146,28 +147,26 @@ public class RestAPITest {
             jsonResponse.path("mapreduce.reduce.memory.mb").asDouble() > 0);
         assertTrue("Get current run param output size did not match", jsonResponse.size() == 9);
 
-        JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
-            .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
-            .fetch(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
+        TuningJobExecutionParamSet tuningJobExecutionParamSet = TuningJobExecutionParamSet.find.select("*")
+            .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
+            .fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
             .where()
-            .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
+            .eq(TuningJobExecutionParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
                 "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0")
             .findUnique();
 
+        JobSuggestedParamSet jobSuggestedParamSet = tuningJobExecutionParamSet.jobSuggestedParamSet;
+        JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
+
+        jobExecution.executionState = ExecutionState.SUCCEEDED;
+        jobExecution.update();
         jobSuggestedParamSet.paramSetState = ParamSetStatus.EXECUTED;
-        jobSuggestedParamSet.jobExecution.executionState = ExecutionState.SUCCEEDED;
         jobSuggestedParamSet.update();
 
         FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
         fitnessComputeUtil.updateFitness();
 
-        jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
-            .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
-            .fetch(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.job, "*")
-            .where()
-            .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.jobExecId,
-                "https://elephant.linkedin.com:8443/executor?execid=5221700&job=countByCountryFlowSmall_countByCountry&attempt=0")
-            .findUnique();
+        jobSuggestedParamSet = tuningJobExecutionParamSet.jobSuggestedParamSet;
 
         assertTrue("Fitness not computed", jobSuggestedParamSet.paramSetState == ParamSetStatus.FITNESS_COMPUTED);
         assertTrue("Fitness not computed and have zero value", jobSuggestedParamSet.fitness > 0);

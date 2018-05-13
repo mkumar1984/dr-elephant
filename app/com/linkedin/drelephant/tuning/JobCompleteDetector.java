@@ -40,42 +40,37 @@ public abstract class JobCompleteDetector {
 
   /**
    * Updates the status of completed executions
-   * @return List of completed executions
    * @throws MalformedURLException MalformedURLException
    * @throws URISyntaxException URISyntaxException
    */
-  public List<JobSuggestedParamSet> updateCompletedExecutions() throws MalformedURLException, URISyntaxException {
-    logger.info("Checking execution status");
-    List<JobSuggestedParamSet> runningExecutions = getStartedExecutions();
-    List<JobSuggestedParamSet> completedExecutions = getCompletedExecutions(runningExecutions);
-    updateExecutionStatus(completedExecutions);
+  public void updateCompletedExecutions() throws MalformedURLException, URISyntaxException {
+    logger.info("Updating execution status");
+    List<JobSuggestedParamSet> sentParaSetList = getSentParaSetList();
+    List<JobExecution> completedExecutions = getCompletedExecutions(sentParaSetList);
     updateMetrics(completedExecutions);
     logger.info("Finished updating execution status");
-    return completedExecutions;
   }
 
   /**
-   * This method is for updating metrics for auto tuning monitoring for job completion daemon
+   * Updates metrics for auto tuning monitoring for job completion daemon
    * @param completedExecutions List completed job executions
    */
-  private void updateMetrics(List<JobSuggestedParamSet> completedExecutions) {
-    for (JobSuggestedParamSet jobSuggestedParamSet : completedExecutions) {
-      if (jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.EXECUTED)) {
-        if (jobSuggestedParamSet.jobExecution.executionState.equals(ExecutionState.SUCCEEDED)) {
-          AutoTuningMetricsController.markSuccessfulJobs();
-        } else if (jobSuggestedParamSet.jobExecution.executionState.equals(ExecutionState.FAILED)) {
-          AutoTuningMetricsController.markFailedJobs();
-        }
+  private void updateMetrics(List<JobExecution> completedExecutions) {
+    for (JobExecution jobExecution : completedExecutions) {
+      if (jobExecution.executionState.equals(ExecutionState.SUCCEEDED)) {
+        AutoTuningMetricsController.markSuccessfulJobs();
+      } else if (jobExecution.executionState.equals(ExecutionState.FAILED)) {
+        AutoTuningMetricsController.markFailedJobs();
       }
     }
   }
 
   /**
-   * Returns the list of executions which have already received param suggestion
+   * Returns the list of parameter set which are in SENT state
    * @return JobExecution list
    */
-  private List<JobSuggestedParamSet> getStartedExecutions() {
-    logger.info("Fetching the executions which were running");
+  private List<JobSuggestedParamSet> getSentParaSetList() {
+    logger.info("Fetching the executions which are in running state");
     List<JobSuggestedParamSet> jobSuggestedParamSetList = new ArrayList<JobSuggestedParamSet>();
     try {
       jobSuggestedParamSetList = JobSuggestedParamSet.find.select("*")
@@ -85,32 +80,18 @@ public abstract class JobCompleteDetector {
     } catch (NullPointerException e) {
       logger.info("None of the executions were running ", e);
     }
-    logger.info("Number of executions which were in running state: " + jobSuggestedParamSetList.size());
+    logger.info("Number of executions which are in running state: " + jobSuggestedParamSetList.size());
     return jobSuggestedParamSetList;
   }
 
   /**
    * Returns the list of completed executions.
-   * @param jobExecutions Started Execution list
+   * @param sentParamSetList List of sent parameter sets
    * @return List of completed executions
-   * @throws MalformedURLException
-   * @throws URISyntaxException
+   * @throws MalformedURLException MalformedURLException
+   * @throws URISyntaxException URISyntaxException
    */
-  protected abstract List<JobSuggestedParamSet> getCompletedExecutions(List<JobSuggestedParamSet> jobExecutions)
+  protected abstract List<JobExecution> getCompletedExecutions(List<JobSuggestedParamSet> sentParamSetList)
       throws MalformedURLException, URISyntaxException;
 
-  /**
-   * Updates the job execution status
-   * @param jobExecutions JobExecution list
-   * @return Update status
-   */
-  private void updateExecutionStatus(List<JobSuggestedParamSet> jobExecutions) {
-    logger.info("Updating status of executions completed since last iteration");
-    for (JobSuggestedParamSet jobSuggestedParamSet : jobExecutions) {
-      JobExecution jobExecution = jobSuggestedParamSet.jobExecution;
-      logger.info("Updating execution status to EXECUTED for the execution: " + jobExecution.jobExecId);
-      jobExecution.update();
-      jobSuggestedParamSet.update();
-    }
-  }
 }

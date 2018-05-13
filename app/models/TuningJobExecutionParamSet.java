@@ -36,6 +36,7 @@ public class TuningJobExecutionParamSet extends Model {
     public static final String TABLE_NAME = "tuning_job_execution_param_set";
     public static final String jobSuggestedParamSet = "jobSuggestedParamSet";
     public static final String jobExecution = "jobExecution";
+    public static final String tuningEnabled = "tuningEnabled";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
   }
@@ -47,6 +48,8 @@ public class TuningJobExecutionParamSet extends Model {
   @OneToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "job_execution_id", referencedColumnName = "id")})
   public JobExecution jobExecution;
+
+  public Boolean tuningEnabled;
 
   @Column(nullable = false)
   public Timestamp createdTs;

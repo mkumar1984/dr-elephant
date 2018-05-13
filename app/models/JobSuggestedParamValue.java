@@ -20,6 +20,7 @@ import com.avaje.ebean.annotation.UpdatedTimestamp;
 import java.sql.Timestamp;
 
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -52,10 +53,6 @@ public class JobSuggestedParamValue extends Model {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   public Integer id;
   public Double paramValue;
-  public Timestamp createdTs;
-
-  @UpdatedTimestamp
-  public Timestamp updatedTs;
 
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "job_suggested_param_set", joinColumns = {@JoinColumn(name = "job_suggested_param_set_id", referencedColumnName = "id")})
@@ -64,6 +61,13 @@ public class JobSuggestedParamValue extends Model {
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "tuning_parameter", joinColumns = {@JoinColumn(name = "tuning_parameter_id", referencedColumnName = "id")})
   public TuningParameter tuningParameter;
+
+  @Column(nullable = false)
+  public Timestamp createdTs;
+
+  @Column(nullable = false)
+  @UpdatedTimestamp
+  public Timestamp updatedTs;
 
   public static Finder<Long, JobSuggestedParamValue> find =
       new Finder<Long, JobSuggestedParamValue>(Long.class, JobSuggestedParamValue.class);

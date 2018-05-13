@@ -211,8 +211,8 @@ public class PSOParamGeneratorTest {
         JobSuggestedParamSet jobSuggestedParamSet = jobSuggestedParamSetList.get(0);
 
         List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
-            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + '.' + JobExecution.TABLE.id,
-                jobSuggestedParamSet.jobExecution.id)
+            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.id,
+                jobSuggestedParamSet.id)
             .findList();
 
         TuningAlgorithm tuningAlgorithm = jobSuggestedParamSet.tuningAlgorithm;

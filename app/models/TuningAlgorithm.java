@@ -18,6 +18,7 @@ package models;
 
 import java.sql.Timestamp;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -75,8 +76,10 @@ public class TuningAlgorithm extends Model {
   @Enumerated(EnumType.STRING)
   public OptimizationMetric optimizationMetric;
 
+  @Column(nullable = false)
   public Timestamp createdTs;
 
+  @Column(nullable = false)
   @UpdatedTimestamp
   public Timestamp updatedTs;
 

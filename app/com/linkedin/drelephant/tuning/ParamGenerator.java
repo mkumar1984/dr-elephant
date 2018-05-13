@@ -87,10 +87,10 @@ public abstract class ParamGenerator {
     logger.info("Checking which jobs need new parameter suggestion");
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
 
-    List<JobSuggestedParamSet> pendingParamExecutionList = new ArrayList<JobSuggestedParamSet>();
+    List<JobSuggestedParamSet> pendingParamSetList = new ArrayList<JobSuggestedParamSet>();
     try {
-      pendingParamExecutionList = JobSuggestedParamSet.find.select("*")
-          .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
+      pendingParamSetList = JobSuggestedParamSet.find.select("*")
+          .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
           .where()
           .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
               Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
@@ -102,9 +102,9 @@ public abstract class ParamGenerator {
     }
 
     List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
-    for (JobSuggestedParamSet pendingParamExecution : pendingParamExecutionList) {
-      if (!pendingParamJobList.contains(pendingParamExecution.jobExecution.job)) {
-        pendingParamJobList.add(pendingParamExecution.jobExecution.job);
+    for (JobSuggestedParamSet pendingParamSet : pendingParamSetList) {
+      if (!pendingParamJobList.contains(pendingParamSet.jobDefinition)) {
+        pendingParamJobList.add(pendingParamSet.jobDefinition);
       }
     }
 
@@ -171,17 +171,18 @@ public abstract class ParamGenerator {
 
       try {
         logger.info("Fetching default parameter values for job " + tuningJobDefinition.job.jobDefId);
-        JobSuggestedParamSet defaultJobExecution = JobSuggestedParamSet.find.where()
-            .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.job + "." + JobDefinition.TABLE.id,
+        JobSuggestedParamSet defaultJobParamSet = JobSuggestedParamSet.find.where()
+            .eq(JobSuggestedParamSet.TABLE.jobDefinition+ "." + JobDefinition.TABLE.id,
                 tuningJobDefinition.job.id)
             .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 1)
-            .orderBy(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.id + " desc")
+            //todo: Test the line below
+            .orderBy(JobSuggestedParamSet.TABLE.createdTs + " desc")
             .setMaxRows(1)
             .findUnique();
-        if (defaultJobExecution != null && defaultJobExecution.jobExecution != null) {
+        if (defaultJobParamSet != null) {
           List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
               .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobExecution.TABLE.id,
-                  defaultJobExecution.jobExecution.id)
+                  defaultJobParamSet.id)
               .findList();
 
           if (jobSuggestedParamValueList.size() > 0) {
@@ -250,12 +251,9 @@ public abstract class ParamGenerator {
 
           logger.info("Param set id: " + paramSetId.toString());
           JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
-              .fetch(JobSuggestedParamSet.TABLE.jobExecution, "*")
               .where()
-              .eq(JobSuggestedParamSet.TABLE.jobExecution + "." + JobExecution.TABLE.id, paramSetId)
+              .eq(JobSuggestedParamSet.TABLE.id, paramSetId)
               .findUnique();
-
-          JobExecution jobExecution = jobSuggestedParamSet.jobExecution;
 
           if (jobSuggestedParamSet.fitness != null) {
             particle.setFitness(jobSuggestedParamSet.fitness);
@@ -427,9 +425,7 @@ public abstract class ParamGenerator {
 
         // Todo: Change from here
         JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
-        JobExecution jobExecution = new JobExecution();
-        jobExecution.job = job;
-        jobSuggestedParamSet.jobExecution = jobExecution;
+        jobSuggestedParamSet.jobDefinition = job;
         jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         jobSuggestedParamSet.isParamSetDefault = false;
         if (isParamConstraintViolated(jobSuggestedParamValueList, jobSuggestedParamSet.tuningAlgorithm.jobType)) {
@@ -439,15 +435,18 @@ public abstract class ParamGenerator {
                   tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
           Double maxDesiredResourceUsagePerGBInput =
                   averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+
+          jobSuggestedParamSet.areConstraintsViolated = true;
           jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
           jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
         } else {
+          jobSuggestedParamSet.areConstraintsViolated = false;
           jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
         }
-        Long paramSetId = saveSuggestedParamMetadata(jobSuggestedParamSet);
+        Long paramSetId = saveSuggestedParamSet(jobSuggestedParamSet);
 
         for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-          jobSuggestedParamValue.jobExecution = jobExecution;
+          jobSuggestedParamValue.jobSuggestedParamSet = jobSuggestedParamSet;
         }
         suggestedParticle.setPramSetId(paramSetId);
         saveSuggestedParams(jobSuggestedParamValueList);
@@ -538,7 +537,7 @@ public abstract class ParamGenerator {
   }
 
   /**
-   * Saved the list of suggested parameter values to database
+   * Saves the list of suggested parameter values to database
    * @param jobSuggestedParamValueList Suggested Parameter Values List
    */
   private void saveSuggestedParams(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
@@ -548,14 +547,13 @@ public abstract class ParamGenerator {
   }
 
   /**
-   * Save the job execution in the database and returns the param set id
+   * Saves the suggested param set in the database and returns the param set id
    * @param jobSuggestedParamSet JobExecution
    * @return Param Set Id
    */
-
-  private Long saveSuggestedParamMetadata(JobSuggestedParamSet jobSuggestedParamSet) {
+  private Long saveSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet) {
     jobSuggestedParamSet.save();
-    return jobSuggestedParamSet.jobExecution.id;
+    return jobSuggestedParamSet.id;
   }
 
   /**
