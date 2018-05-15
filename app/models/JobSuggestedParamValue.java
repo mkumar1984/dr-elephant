@@ -71,4 +71,16 @@ public class JobSuggestedParamValue extends Model {
 
   public static Finder<Long, JobSuggestedParamValue> find =
       new Finder<Long, JobSuggestedParamValue>(Long.class, JobSuggestedParamValue.class);
+
+  @Override
+  public void save() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.save();
+  }
+
+  @Override
+  public void update() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.update();
+  }
 }

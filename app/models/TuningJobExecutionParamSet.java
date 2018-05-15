@@ -60,4 +60,16 @@ public class TuningJobExecutionParamSet extends Model {
 
   public static Finder<Long, TuningJobExecutionParamSet> find =
       new Finder<Long, TuningJobExecutionParamSet>(Long.class, TuningJobExecutionParamSet.class);
+
+  @Override
+  public void save() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.save();
+  }
+
+  @Override
+  public void update() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.update();
+  }
 }

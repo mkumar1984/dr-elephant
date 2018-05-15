@@ -50,11 +50,10 @@ public class AzkabanJobCompleteDetector extends JobCompleteDetector {
         .where()
         .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.id, sentParamSetId)
         .order()
-        .desc(JobSuggestedParamSet.TABLE.createdTs)
+        .desc(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.id)
         .setMaxRows(1)
         .findUnique();
     return tuningJobExecutionParamSet.jobExecution;
-
   }
 
   /**

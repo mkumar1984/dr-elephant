@@ -176,7 +176,8 @@ public abstract class ParamGenerator {
                 tuningJobDefinition.job.id)
             .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 1)
             //todo: Test the line below
-            .orderBy(JobSuggestedParamSet.TABLE.createdTs + " desc")
+            .order()
+            .desc(JobSuggestedParamSet.TABLE.id)
             .setMaxRows(1)
             .findUnique();
         if (defaultJobParamSet != null) {

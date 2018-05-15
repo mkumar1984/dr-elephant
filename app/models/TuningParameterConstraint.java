@@ -93,4 +93,16 @@ public class TuningParameterConstraint extends Model {
 
     public static Finder<Integer, TuningParameterConstraint> find =
             new Finder<Integer, TuningParameterConstraint>(Integer.class, TuningParameterConstraint.class);
+
+    @Override
+    public void save() {
+        this.updatedTs = new Timestamp(System.currentTimeMillis());
+        super.save();
+    }
+
+    @Override
+    public void update() {
+        this.updatedTs = new Timestamp(System.currentTimeMillis());
+        super.update();
+    }
 }

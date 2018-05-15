@@ -62,4 +62,16 @@ public class JobSavedState extends Model {
 
   public static Finder<Integer, JobSavedState> find =
       new Finder<Integer, JobSavedState>(Integer.class, JobSavedState.class);
+
+  @Override
+  public void save() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.save();
+  }
+
+  @Override
+  public void update() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.update();
+  }
 }

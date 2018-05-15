@@ -358,7 +358,7 @@ public class AutoTuningAPIHelper {
             jobDefinition.id)
         .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.CREATED)
         .order()
-        .asc(JobSuggestedParamSet.TABLE.createdTs)
+        .asc(JobSuggestedParamSet.TABLE.id)
         .setMaxRows(1)
         .findUnique();
 

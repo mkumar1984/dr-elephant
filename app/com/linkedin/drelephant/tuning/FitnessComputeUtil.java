@@ -342,7 +342,7 @@ public class FitnessComputeUtil {
             .where()
             .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
             .order()
-            .desc(JobSuggestedParamSet.TABLE.createdTs)
+            .desc(TuningJobDefinition.TABLE.createdTs)
             .findUnique();
 
         List<AppResult> results = AppResult.find.select("*")

@@ -62,6 +62,19 @@ public class FlowDefinition extends Model {
 
   public static Model.Finder<Integer, FlowDefinition> find =
       new Model.Finder<Integer, FlowDefinition>(Integer.class, FlowDefinition.class);
+
+  @Override
+  public void save() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.save();
+  }
+
+  @Override
+  public void update() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.update();
+  }
+
 }
 
 

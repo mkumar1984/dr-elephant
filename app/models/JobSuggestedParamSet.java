@@ -98,4 +98,16 @@ public class JobSuggestedParamSet extends Model {
 
   public static Model.Finder<Long, JobSuggestedParamSet> find =
       new Model.Finder<Long, JobSuggestedParamSet>(Long.class, JobSuggestedParamSet.class);
+
+  @Override
+  public void save() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.save();
+  }
+
+  @Override
+  public void update() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.update();
+  }
 }

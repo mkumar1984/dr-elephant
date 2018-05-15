@@ -50,9 +50,9 @@ public class TuningJobDefinition extends Model {
     public static final String allowedMaxResourceUsagePercent = "allowedMaxResourceUsagePercent";
     public static final String allowedMaxExecutionTimePercent = "allowedMaxExecutionTimePercent";
     public static final String job = "job";
+    public static final String tuningDisabledReason = "tuningDisabledReason";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
-    public static final String tuningDisabledReason = "tuningDisabledReason";
   }
 
   @ManyToOne(cascade = CascadeType.ALL)
@@ -105,4 +105,16 @@ public class TuningJobDefinition extends Model {
 
   @Column(nullable = true)
   public String tuningDisabledReason;
+
+  @Override
+  public void save() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.save();
+  }
+
+  @Override
+  public void update() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.update();
+  }
 }
