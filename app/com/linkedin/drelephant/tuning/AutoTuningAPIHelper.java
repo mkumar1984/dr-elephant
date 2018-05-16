@@ -158,9 +158,10 @@ public class AutoTuningAPIHelper {
   }
 
   /**
-   *
-   * @param tuningInput
-   * @return
+   * Returns flow definition corresponding to the given tuning input if it exists, else creates one and returns it
+   * @param tuningInput TuningInput containing the flow definition id corresponding to which flow definition
+   *                    is to be returned
+   * @return FlowDefinition flow definition
    */
   private FlowDefinition getFlowDefinition(TuningInput tuningInput) {
     FlowDefinition flowDefinition =
@@ -175,9 +176,10 @@ public class AutoTuningAPIHelper {
   }
 
   /**
-   *
-   * @param tuningInput
-   * @return
+   * Returns flow execution corresponding to the given tuning input if it exists, else creates one and returns it
+   * @param tuningInput TuningInput containing the flow execution id corresponding to which flow execution
+   *                    is to be returned
+   * @return FlowExecution flow execution
    */
   private FlowExecution getFlowExecution(TuningInput tuningInput) {
     FlowExecution flowExecution =
@@ -238,9 +240,9 @@ public class AutoTuningAPIHelper {
 
 
   /**
-   * Returns the job definition if it exists, else creates one and returns it
-   * @param tuningInput Tuning Input
-   * @return JobDefinition
+   * Returns the job definition corresponding to the given tuning input if it exists, else creates one and returns it
+   * @param tuningInput Tuning Input corresponding to which job definition is to be returned
+   * @return JobDefinition corresponding to the given tuning input
    */
   private JobDefinition getJobDefinition(TuningInput tuningInput) {
 
@@ -264,9 +266,9 @@ public class AutoTuningAPIHelper {
   }
 
   /**
-   *
-   * @param tuningInput
-   * @return
+   * Creates a new job execution entry corresponding to the given tuning input
+   * @param tuningInput Input corresponding to which job execution is to be created
+   * @return JobExecution: the newly created job execution
    */
   private JobExecution addNewExecution(TuningInput tuningInput) {
     JobDefinition jobDefinition = getJobDefinition(tuningInput);
@@ -283,9 +285,9 @@ public class AutoTuningAPIHelper {
   }
 
   /**
-   *
-   * @param tuningInput
-   * @return
+   * Returns the job execution corresponding to the given tuning input if it exists, else creates one and returns it
+   * @param tuningInput Tuning Input corresponding to which job execution is to be returned
+   * @return JobExecution corresponding to the given tuning input
    */
   private JobExecution getJobExecution(TuningInput tuningInput) {
 

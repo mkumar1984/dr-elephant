@@ -56,13 +56,16 @@ import org.apache.log4j.Logger;
 public class FitnessComputeUtil {
   private static final Logger logger = Logger.getLogger(FitnessComputeUtil.class);
   private static final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
+  private static final String IGNORE_EXECUTION_WAIT_INTERVAL = "ignore.execution.wait.interval.ms";
   private static final int MAX_TUNING_EXECUTIONS = 39;
   private static final int MIN_TUNING_EXECUTIONS = 18;
   private Long waitInterval;
+  private Long ignoreExecutionWaitInterval;
 
   public FitnessComputeUtil() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     waitInterval = Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * AutoTuner.ONE_MIN);
+    ignoreExecutionWaitInterval = Utils.getNonNegativeLong(configuration, IGNORE_EXECUTION_WAIT_INTERVAL, 2 * 60 * AutoTuner.ONE_MIN);
   }
 
   private boolean isTuningEnabled(Integer jobDefinitionId) {
@@ -326,8 +329,6 @@ public class FitnessComputeUtil {
    * @param completedJobExecutionParamSets List of completed executions
    */
   private void updateExecutionMetrics(List<TuningJobExecutionParamSet> completedJobExecutionParamSets) {
-    Integer penaltyConstant = 3;
-
     for (TuningJobExecutionParamSet completedJobExecutionParamSet : completedJobExecutionParamSets) {
 
       JobExecution jobExecution = completedJobExecutionParamSet.jobExecution;
@@ -336,7 +337,6 @@ public class FitnessComputeUtil {
 
       logger.info("Updating execution metrics and fitness for execution: " + jobExecution.jobExecId);
       try {
-
         TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
             .fetch(TuningJobDefinition.TABLE.job, "*")
             .where()
@@ -385,48 +385,23 @@ public class FitnessComputeUtil {
           }
 
           //Compute fitness
-          Double averageResourceUsagePerGBInput =
-              tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
-          Double maxDesiredResourceUsagePerGBInput =
-              averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
-          Double averageExecutionTimePerGBInput =
-              tuningJobDefinition.averageExecutionTime * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
-          Double maxDesiredExecutionTimePerGBInput =
-              averageExecutionTimePerGBInput * tuningJobDefinition.allowedMaxExecutionTimePercent / 100.0;
-          Double resourceUsagePerGBInput =
-              jobExecution.resourceUsage * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
-          Double executionTimePerGBInput =
-              jobExecution.executionTime * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
-
-          if (resourceUsagePerGBInput > maxDesiredResourceUsagePerGBInput
-              || executionTimePerGBInput > maxDesiredExecutionTimePerGBInput) {
-            logger.info("Execution " + jobExecution.jobExecId + " violates constraint on resource usage per GB input");
-            jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
+          if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
+            updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
           } else {
-            jobSuggestedParamSet.fitness = resourceUsagePerGBInput;
+            // Resetting param set to created state because in case captures the scenarios when
+            // either the job failed for reasons other than auto tuning or was killed/cancelled/skipped etc.
+            // In all the above scenarios, fitness cannot be computed for the param set correctly.
+            // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
+            // after failure.
+            resetParamSetToCreated(jobSuggestedParamSet);
           }
-          jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
-          jobSuggestedParamSet.fitnessJobExecution = jobExecution;
-          jobExecution.update();
-          jobSuggestedParamSet.update();
-        }
-
-        JobSuggestedParamSet currentBestJobSuggestedParamSet;
-        try {
-          currentBestJobSuggestedParamSet = JobSuggestedParamSet.find.where()
-              .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id,
-                  jobSuggestedParamSet.jobDefinition.id)
-              .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 1)
-              .findUnique();
-          if (currentBestJobSuggestedParamSet.fitness > jobSuggestedParamSet.fitness) {
-            currentBestJobSuggestedParamSet.isParamSetBest = false;
-            jobSuggestedParamSet.isParamSetBest = true;
-            currentBestJobSuggestedParamSet.save();
-            jobSuggestedParamSet.save();
+        } else {
+          long diff = System.currentTimeMillis() - jobExecution.updatedTs.getTime();
+          logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
+              + jobExecution.updatedTs.getTime());
+          if (diff > ignoreExecutionWaitInterval) {
+            resetParamSetToCreated(jobSuggestedParamSet);
           }
-        } catch (NullPointerException e) {
-          jobSuggestedParamSet.isParamSetBest = true;
-          jobSuggestedParamSet.save();
         }
       } catch (Exception e) {
         logger.error("Error updating fitness of execution: " + jobExecution.id + "\n Stacktrace: ",
@@ -434,6 +409,73 @@ public class FitnessComputeUtil {
       }
     }
     logger.info("Execution metrics updated");
+  }
+
+  /**
+   * Resets the param set to CREATED state if its fitness is not already computed
+   * @param jobSuggestedParamSet Param set which is to be reset
+   */
+  private void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
+    if (jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED)) {
+      jobSuggestedParamSet.paramSetState = ParamSetStatus.CREATED;
+      jobSuggestedParamSet.save();
+    }
+  }
+
+  /**
+   * Updates the job suggested param set when the corresponding execution was succeeded
+   * @param jobExecution JobExecution: succeeded job execution corresponding to the param set which is to be updated
+   * @param jobSuggestedParamSet param set which is to be updated
+   * @param tuningJobDefinition TuningJobDefinition of the job to which param set corresponds
+   */
+  private void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution, JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
+    Integer penaltyConstant = 3;
+    Double averageResourceUsagePerGBInput = tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+    Double maxDesiredResourceUsagePerGBInput =
+        averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+    Double averageExecutionTimePerGBInput = tuningJobDefinition.averageExecutionTime * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+    Double maxDesiredExecutionTimePerGBInput =
+        averageExecutionTimePerGBInput * tuningJobDefinition.allowedMaxExecutionTimePercent / 100.0;
+    Double resourceUsagePerGBInput = jobExecution.resourceUsage * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
+    Double executionTimePerGBInput = jobExecution.executionTime * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
+
+    if (resourceUsagePerGBInput > maxDesiredResourceUsagePerGBInput || executionTimePerGBInput > maxDesiredExecutionTimePerGBInput) {
+      logger.info("Execution " + jobExecution.jobExecId + " violates constraint on resource usage per GB input");
+      jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
+    } else {
+      jobSuggestedParamSet.fitness = resourceUsagePerGBInput;
+    }
+    jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
+    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
+    jobExecution.update();
+    jobSuggestedParamSet.update();
+    updateBestJobSuggestedParamSet(jobSuggestedParamSet);
+  }
+
+
+
+  /**
+   * Updates the given job suggested param set to be the best param set if its fitness is less than the current best param set
+   * (since the objective is to minimize the fitness, the param set with the lowest fitness is the best)
+   * @param jobSuggestedParamSet JobSuggestedParamSet
+   */
+  private void updateBestJobSuggestedParamSet (JobSuggestedParamSet jobSuggestedParamSet) {
+    JobSuggestedParamSet currentBestJobSuggestedParamSet;
+    try {
+      currentBestJobSuggestedParamSet = JobSuggestedParamSet.find.where()
+          .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, jobSuggestedParamSet.jobDefinition.id)
+          .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 1)
+          .findUnique();
+      if (currentBestJobSuggestedParamSet.fitness > jobSuggestedParamSet.fitness) {
+        currentBestJobSuggestedParamSet.isParamSetBest = false;
+        jobSuggestedParamSet.isParamSetBest = true;
+        currentBestJobSuggestedParamSet.save();
+        jobSuggestedParamSet.save();
+      }
+    } catch (NullPointerException e) {
+      jobSuggestedParamSet.isParamSetBest = true;
+      jobSuggestedParamSet.save();
+    }
   }
 
   /**

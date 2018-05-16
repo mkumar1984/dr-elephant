@@ -17,25 +17,26 @@
 package com.linkedin.drelephant.tuning;
 
 import com.avaje.ebean.Expr;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import models.*;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
 import controllers.AutoTuningMetricsController;
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import models.JobDefinition;
+import models.JobExecution;
+import models.JobSavedState;
+import models.JobSuggestedParamSet;
+import models.JobSuggestedParamValue;
+import models.TuningAlgorithm;
+import models.TuningJobDefinition;
+import models.TuningParameter;
+import models.TuningParameterConstraint;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-
 import play.libs.Json;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -80,7 +81,7 @@ public abstract class ParamGenerator {
    * Fetches the list to job which need new parameter suggestion
    * @return Job list
    */
-  private List<TuningJobDefinition> fetchJobsForParamSuggestion() {
+  private List<TuningJobDefinition> getJobsForParamSuggestion() {
 
     // Todo: [Important] Change the logic. This is very rigid. Ideally you should look at the param set ids in the saved state,
     // todo: [continuation] if their fitness is computed, pso can generate new params for the job
@@ -122,16 +123,11 @@ public abstract class ParamGenerator {
 
     for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitionList) {
       if (!pendingParamJobList.contains(tuningJobDefinition.job)) {
+        logger.info("New parameter suggestion needed for job: " + tuningJobDefinition.job.jobName);
         jobsForParamSuggestion.add(tuningJobDefinition);
       }
     }
-    if (jobsForParamSuggestion.size() > 0) {
-      for (TuningJobDefinition tuningJobDefinition : jobsForParamSuggestion) {
-        logger.info("New parameter suggestion needed for job: " + tuningJobDefinition.job.jobName);
-      }
-    } else {
-      logger.info("None of the jobs need new parameter suggestion");
-    }
+    logger.info("Number of job(s) which need new parameter suggestion: " + jobsForParamSuggestion.size());
     return jobsForParamSuggestion;
   }
 
@@ -256,7 +252,8 @@ public abstract class ParamGenerator {
               .eq(JobSuggestedParamSet.TABLE.id, paramSetId)
               .findUnique();
 
-          if (jobSuggestedParamSet.fitness != null) {
+          if (jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
+              && jobSuggestedParamSet.fitness != null) {
             particle.setFitness(jobSuggestedParamSet.fitness);
           } else {
             validSavedState = false;
@@ -306,10 +303,8 @@ public abstract class ParamGenerator {
 
           JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
           int paramId = paramList.get(i).id;
-          TuningParameter tuningParameter = TuningParameter.find.byId(paramId);
-          jobSuggestedParamValue.tuningParameter = tuningParameter;
-          double tmpParamValue = candidate.get(i);
-          jobSuggestedParamValue.paramValue = tmpParamValue;
+          jobSuggestedParamValue.tuningParameter = TuningParameter.find.byId(paramId);
+          jobSuggestedParamValue.paramValue = candidate.get(i);
           jobSuggestedParamValueList.add(jobSuggestedParamValue);
         }
       } else {
@@ -424,7 +419,6 @@ public abstract class ParamGenerator {
           }
         }
 
-        // Todo: Change from here
         JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
         jobSuggestedParamSet.jobDefinition = job;
         jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
@@ -561,7 +555,7 @@ public abstract class ParamGenerator {
    * Fetches job which need parameters, generates parameters and stores it in the database
    */
   public void getParams() {
-    List<TuningJobDefinition> jobsForSwarmSuggestion = fetchJobsForParamSuggestion();
+    List<TuningJobDefinition> jobsForSwarmSuggestion = getJobsForParamSuggestion();
     List<JobTuningInfo> jobTuningInfoList = getJobsTuningInfo(jobsForSwarmSuggestion);
     List<JobTuningInfo> updatedJobTuningInfoList = new ArrayList<JobTuningInfo>();
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
