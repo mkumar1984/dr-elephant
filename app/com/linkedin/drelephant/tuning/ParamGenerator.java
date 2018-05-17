@@ -82,7 +82,6 @@ public abstract class ParamGenerator {
    * @return Job list
    */
   private List<TuningJobDefinition> getJobsForParamSuggestion() {
-
     // Todo: [Important] Change the logic. This is very rigid. Ideally you should look at the param set ids in the saved state,
     // todo: [continuation] if their fitness is computed, pso can generate new params for the job
     logger.info("Checking which jobs need new parameter suggestion");
@@ -425,6 +424,7 @@ public abstract class ParamGenerator {
         jobSuggestedParamSet.jobDefinition = job;
         jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         jobSuggestedParamSet.isParamSetDefault = false;
+        jobSuggestedParamSet.isParamSetBest = false;
         if (isParamConstraintViolated(jobSuggestedParamValueList, jobSuggestedParamSet.tuningAlgorithm.jobType)) {
           logger.info("Parameter constraint violated. Applying penalty.");
           Integer penaltyConstant = 3;

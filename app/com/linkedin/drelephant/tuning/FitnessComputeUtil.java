@@ -416,7 +416,8 @@ public class FitnessComputeUtil {
    * @param jobSuggestedParamSet Param set which is to be reset
    */
   private void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
-    if (jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED)) {
+    if (jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.EXECUTED)) {
+      logger.info("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
     }

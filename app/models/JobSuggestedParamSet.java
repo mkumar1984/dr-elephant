@@ -65,28 +65,34 @@ public class JobSuggestedParamSet extends Model {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   public Long id;
 
+  @Column(nullable = false)
   @OneToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "job_definition", joinColumns = {@JoinColumn(name = "job_definition_id", referencedColumnName = "id")})
   public JobDefinition jobDefinition;
+
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "job_execution", joinColumns = {@JoinColumn(name = "fitness_job_execution_id", referencedColumnName = "id")})
   public JobExecution fitnessJobExecution;
 
+  @Column(nullable = false)
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "tuning_algorithm", joinColumns = {@JoinColumn(name = "tuning_algorithm_id", referencedColumnName = "id")})
   public TuningAlgorithm tuningAlgorithm;
 
+
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
   public ParamSetStatus paramSetState;
 
+  @Column(nullable = false)
   public Boolean isParamSetDefault;
 
   public Double fitness;
 
+  @Column(nullable = false)
   public Boolean isParamSetBest;
 
+  @Column(nullable = false)
   public Boolean areConstraintsViolated;
 
   @Column(nullable = false)

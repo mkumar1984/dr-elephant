@@ -426,6 +426,7 @@ public class AutoTuningAPIHelper {
     jobSuggestedParamSet.paramSetState = ParamSetStatus.CREATED;
     jobSuggestedParamSet.isParamSetDefault = true;
     jobSuggestedParamSet.areConstraintsViolated = false;
+    jobSuggestedParamSet.isParamSetBest = false;
     jobSuggestedParamSet.save();
     insertParameterValues(jobSuggestedParamSet, paramValues);
     logger.debug("Default parameter set inserted for job: " +job.jobName);
