@@ -338,11 +338,23 @@ public class AutoTuningAPIHelper {
     return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
   }
 
+  /**
+   * Adds a new entry to the "tuning_job_execution_param_set"  for the given param set and job execution
+   * @param jobSuggestedParamSet JobSuggestedParamSet: param set
+   * @param jobExecution JobExecution
+   */
   private void addNewTuningJobExecutionParamSet(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     TuningJobExecutionParamSet tuningJobExecutionParamSet = new TuningJobExecutionParamSet();
     tuningJobExecutionParamSet.jobSuggestedParamSet = jobSuggestedParamSet;
     tuningJobExecutionParamSet.jobExecution = jobExecution;
-    //Todo: set is tuning enabled or disabled in TuningJobExecution
+
+    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
+        .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobExecution.job.id)
+        .order()
+        .desc(TuningJobDefinition.TABLE.createdTs)
+        .setMaxRows(1)
+        .findUnique();
+    tuningJobExecutionParamSet.tuningEnabled = tuningJobDefinition.tuningEnabled;
     tuningJobExecutionParamSet.save();
   }
 
@@ -413,6 +425,7 @@ public class AutoTuningAPIHelper {
     jobSuggestedParamSet.tuningAlgorithm = tuningAlgorithm;
     jobSuggestedParamSet.paramSetState = ParamSetStatus.CREATED;
     jobSuggestedParamSet.isParamSetDefault = true;
+    jobSuggestedParamSet.areConstraintsViolated = false;
     jobSuggestedParamSet.save();
     insertParameterValues(jobSuggestedParamSet, paramValues);
     logger.debug("Default parameter set inserted for job: " +job.jobName);

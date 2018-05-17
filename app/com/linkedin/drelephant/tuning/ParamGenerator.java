@@ -89,6 +89,7 @@ public abstract class ParamGenerator {
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
 
     List<JobSuggestedParamSet> pendingParamSetList = new ArrayList<JobSuggestedParamSet>();
+
     try {
       pendingParamSetList = JobSuggestedParamSet.find.select("*")
           .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
@@ -97,6 +98,7 @@ public abstract class ParamGenerator {
               Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
               Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
           .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
+          .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0)
           .findList();
     } catch (NullPointerException e) {
       logger.info("None of the non-default executions are in CREATED, SENT OR EXECUTED state");

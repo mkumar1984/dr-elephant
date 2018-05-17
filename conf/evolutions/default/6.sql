@@ -17,7 +17,7 @@
 # --- !Ups
 
 ALTER TABLE tuning_algorithm ADD UNIQUE KEY (optimization_algo, optimization_algo_version);
-ALTER TABLE tuning_job_execution ADD COLUMN is_param_set_best tinyint(4) default 0;
+ALTER TABLE tuning_job_execution ADD COLUMN is_param_set_best tinyint(4) default 0 NOT NULL;
 ALTER TABLE tuning_job_definition ADD COLUMN tuning_disabled_reason text;
 
 INSERT INTO tuning_algorithm VALUES (2, 'SPARK', 'PSO', '2', 'RESOURCE', current_timestamp(0), current_timestamp(0));
@@ -43,23 +43,6 @@ CREATE TABLE IF NOT EXISTS tuning_parameter_constraint (
   CONSTRAINT param_constraints_f2 FOREIGN KEY (tuning_parameter_id) REFERENCES tuning_parameter (id)
 ) ENGINE=InnoDB;
 
--- ALTER TABLE job_definition CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE job_execution CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE job_saved_state CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE job_suggested_param_value CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_algorithm CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_job_definition CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_parameter CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_parameter_constraint CHANGE updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-
--- ALTER TABLE job_definition DROP updated_ts;
--- ALTER TABLE job_execution DROP updated_ts;
--- ALTER TABLE job_saved_state DROP updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE job_suggested_param_value DROP updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_algorithm CHANGE DROP updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_job_definition DROP updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_parameter DROP updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
--- ALTER TABLE tuning_parameter_constraint DROP updated_ts updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 ALTER TABLE flow_definition ADD COLUMN created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE flow_definition ADD COLUMN updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP;
