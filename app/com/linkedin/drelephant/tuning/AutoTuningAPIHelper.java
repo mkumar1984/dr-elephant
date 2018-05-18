@@ -110,13 +110,18 @@ public class AutoTuningAPIHelper {
    * Sets the tuning algorithm based on the job type and optimization metric
    * @param tuningInput TuningInput for which tuning algorithm is to be set
    */
-  private void setTuningAlgorithm(TuningInput tuningInput) {
+  private void setTuningAlgorithm(TuningInput tuningInput) throws Exception{
     //Todo: Handle algorithm version later
     TuningAlgorithm tuningAlgorithm = TuningAlgorithm.find.select("*")
         .where()
         .eq(TuningAlgorithm.TABLE.jobType, tuningInput.getJobType())
         .eq(TuningAlgorithm.TABLE.optimizationMetric, tuningInput.getOptimizationMetric())
         .findUnique();
+    if(tuningAlgorithm==null)
+    {
+      throw new Exception("Wrong job type or optimization metric. Job Type " + tuningInput.getJobType()
+          + ". Optimization Metrics: " + tuningInput.getOptimizationMetric());
+    }
     tuningInput.setTuningAlgorithm(tuningAlgorithm);
   }
 
@@ -221,8 +226,12 @@ public class AutoTuningAPIHelper {
     }
 
     String client = tuningInput.getClient();
-    String defaultParams = tuningInput.getDefaultParams();
-
+    Map<String, Double> defaultParams = null;
+    try {
+      defaultParams = tuningInput.getDefaultParams();
+    } catch (Exception e) {
+      logger.error("Error in getting default parameters from request. ", e);
+    }
     TuningJobDefinition tuningJobDefinition = new TuningJobDefinition();
     tuningJobDefinition.job = job;
     tuningJobDefinition.client = client;
@@ -309,7 +318,7 @@ public class AutoTuningAPIHelper {
    * @param tuningInput Rest api parameters
    * @return Parameter Suggestion
    */
-  public Map<String, Double> getCurrentRunParameters(TuningInput tuningInput) {
+  public Map<String, Double> getCurrentRunParameters(TuningInput tuningInput) throws Exception{
     logger.info("Parameter set request received from execution: " + tuningInput.getJobExecId());
 
     if (tuningInput.getAllowedMaxExecutionTimePercent() == null
@@ -418,7 +427,7 @@ public class AutoTuningAPIHelper {
    * Inserts a parameter set in database
    * @param job Job
    */
-  private void insertParamSet(JobDefinition job, TuningAlgorithm tuningAlgorithm, String paramValues) {
+  private void insertParamSet(JobDefinition job, TuningAlgorithm tuningAlgorithm, Map<String, Double> paramValueMap) {
     logger.debug("Inserting default parameter set for job: " + job.jobName);
     JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
     jobSuggestedParamSet.jobDefinition = job;
@@ -428,7 +437,7 @@ public class AutoTuningAPIHelper {
     jobSuggestedParamSet.areConstraintsViolated = false;
     jobSuggestedParamSet.isParamSetBest = false;
     jobSuggestedParamSet.save();
-    insertParameterValues(jobSuggestedParamSet, paramValues);
+    insertParameterValues(jobSuggestedParamSet, paramValueMap);
     logger.debug("Default parameter set inserted for job: " +job.jobName);
   }
 
@@ -438,14 +447,8 @@ public class AutoTuningAPIHelper {
    * @param paramValues Map of parameter values as string
    */
   @SuppressWarnings("unchecked")
-  private void insertParameterValues(JobSuggestedParamSet jobSuggestedParamSet, String paramValues) {
+  private void insertParameterValues(JobSuggestedParamSet jobSuggestedParamSet, Map<String, Double> paramValueMap) {
     ObjectMapper mapper = new ObjectMapper();
-    Map<String, Double> paramValueMap = null;
-    try {
-      paramValueMap = (Map<String, Double>) mapper.readValue(paramValues, Map.class);
-    } catch (Exception e) {
-      logger.error(e);
-    }
     if (paramValueMap != null) {
       for (Map.Entry<String, Double> paramValue : paramValueMap.entrySet()) {
         insertParameterValue(jobSuggestedParamSet, paramValue.getKey(), paramValue.getValue());
