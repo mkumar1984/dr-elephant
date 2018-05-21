@@ -59,12 +59,12 @@ public class FitnessComputeUtil {
   private static final String IGNORE_EXECUTION_WAIT_INTERVAL = "ignore.execution.wait.interval.ms";
   private static final int MAX_TUNING_EXECUTIONS = 39;
   private static final int MIN_TUNING_EXECUTIONS = 18;
-  private Long waitInterval;
+  private Long fitnessComputeWaitInterval;
   private Long ignoreExecutionWaitInterval;
 
   public FitnessComputeUtil() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-    waitInterval = Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * AutoTuner.ONE_MIN);
+    fitnessComputeWaitInterval = Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * AutoTuner.ONE_MIN);
     ignoreExecutionWaitInterval = Utils.getNonNegativeLong(configuration, IGNORE_EXECUTION_WAIT_INTERVAL, 2 * 60 * AutoTuner.ONE_MIN);
   }
 
@@ -300,20 +300,22 @@ public class FitnessComputeUtil {
           .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
           .fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
           .where()
-          .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.paramSetState,
-              ParamSetStatus.EXECUTED)
+          .or(Expr.or(Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState, JobExecution.ExecutionState.SUCCEEDED),
+              Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState, JobExecution.ExecutionState.FAILED)),
+              Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState, JobExecution.ExecutionState.CANCELLED))
           .findList();
 
+      logger.info("#Executions in EXECUTED state: " +  tuningJobExecutionParamSets.size());
 
       for (TuningJobExecutionParamSet tuningJobExecutionParamSet : tuningJobExecutionParamSets) {
         JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
         long diff = System.currentTimeMillis() - jobExecution.updatedTs.getTime();
-        logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
+        logger.info("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
             + jobExecution.updatedTs.getTime());
-        if (diff < waitInterval) {
-          logger.debug("Delaying fitness compute for execution: " + jobExecution.jobExecId);
+        if (diff < fitnessComputeWaitInterval) {
+          logger.info("Delaying fitness compute for execution: " + jobExecution.jobExecId);
         } else {
-          logger.debug("Adding execution " + jobExecution.jobExecId + " for fitness computation");
+          logger.info("Adding execution " + jobExecution.jobExecId + " for fitness computation");
           completedJobExecutionParamSet.add(tuningJobExecutionParamSet);
         }
       }
@@ -385,21 +387,28 @@ public class FitnessComputeUtil {
           }
 
           //Compute fitness
-          if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
-            updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
-          } else {
-            // Resetting param set to created state because in case captures the scenarios when
-            // either the job failed for reasons other than auto tuning or was killed/cancelled/skipped etc.
-            // In all the above scenarios, fitness cannot be computed for the param set correctly.
-            // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
-            // after failure.
-            resetParamSetToCreated(jobSuggestedParamSet);
+
+          if (!jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED)) {
+            if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
+              logger.info("Execution id: " + jobExecution.id + " succeeded");
+                updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
+            } else {
+              // Resetting param set to created state because in case captures the scenarios when
+              // either the job failed for reasons other than auto tuning or was killed/cancelled/skipped etc.
+              // In all the above scenarios, fitness cannot be computed for the param set correctly.
+              // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
+              // after failure.
+              logger.info("Execution id: " + jobExecution.id + " failed for reason other than tuning." + "Resetting param set to created");
+              resetParamSetToCreated(jobSuggestedParamSet);
+            }
           }
         } else {
           long diff = System.currentTimeMillis() - jobExecution.updatedTs.getTime();
-          logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
+          logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", job execution last updated time "
               + jobExecution.updatedTs.getTime());
           if (diff > ignoreExecutionWaitInterval) {
+            logger.info("Execution id: " + jobExecution.id + " not updated since two hours. "
+                + "Resetting param set to created");
             resetParamSetToCreated(jobSuggestedParamSet);
           }
         }
@@ -416,7 +425,7 @@ public class FitnessComputeUtil {
    * @param jobSuggestedParamSet Param set which is to be reset
    */
   private void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
-    if (jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.EXECUTED)) {
+    if (!jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.FITNESS_COMPUTED)) {
       logger.info("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
@@ -449,8 +458,8 @@ public class FitnessComputeUtil {
     jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
     jobSuggestedParamSet.fitnessJobExecution = jobExecution;
     jobExecution.update();
+    jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
     jobSuggestedParamSet.update();
-    updateBestJobSuggestedParamSet(jobSuggestedParamSet);
   }
 
 
@@ -460,7 +469,8 @@ public class FitnessComputeUtil {
    * (since the objective is to minimize the fitness, the param set with the lowest fitness is the best)
    * @param jobSuggestedParamSet JobSuggestedParamSet
    */
-  private void updateBestJobSuggestedParamSet (JobSuggestedParamSet jobSuggestedParamSet) {
+  private JobSuggestedParamSet updateBestJobSuggestedParamSet (JobSuggestedParamSet jobSuggestedParamSet) {
+    logger.info("Checking if a new best param set is found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId);
     JobSuggestedParamSet currentBestJobSuggestedParamSet;
     try {
       currentBestJobSuggestedParamSet = JobSuggestedParamSet.find.where()
@@ -468,15 +478,16 @@ public class FitnessComputeUtil {
           .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 1)
           .findUnique();
       if (currentBestJobSuggestedParamSet.fitness > jobSuggestedParamSet.fitness) {
+        logger.info("Param set: " + jobSuggestedParamSet.id + " is the new best param set for job: " + jobSuggestedParamSet.jobDefinition.jobDefId);
         currentBestJobSuggestedParamSet.isParamSetBest = false;
         jobSuggestedParamSet.isParamSetBest = true;
         currentBestJobSuggestedParamSet.save();
-        jobSuggestedParamSet.save();
       }
     } catch (NullPointerException e) {
+      logger.info("No best param set found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId + ". Marking current param set " + jobSuggestedParamSet.id + " as best");
       jobSuggestedParamSet.isParamSetBest = true;
-      jobSuggestedParamSet.save();
     }
+    return jobSuggestedParamSet;
   }
 
   /**

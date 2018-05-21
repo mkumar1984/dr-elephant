@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.util.Utils;
 import controllers.AutoTuningMetricsController;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,9 +84,15 @@ public class AutoTuningAPIHelper {
    * @return List<JobSuggestedParamValue> list of parameters
    */
   private List<JobSuggestedParamValue> getParamSetValues(Long paramSetId) {
-    return JobSuggestedParamValue.find.where()
-        .eq(JobSuggestedParamValue.TABLE.id, paramSetId)
-        .findList();
+    List<JobSuggestedParamValue> jobSuggestedParamValues = new ArrayList<JobSuggestedParamValue>();
+    try {
+      jobSuggestedParamValues = JobSuggestedParamValue.find.where()
+          .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.id, paramSetId)
+          .findList();
+    } catch (NullPointerException e) {
+      logger.info("No param values found corresponding to param set id: " + paramSetId);
+    }
+    return jobSuggestedParamValues;
   }
 
   /**
@@ -342,7 +349,7 @@ public class AutoTuningAPIHelper {
     addNewTuningJobExecutionParamSet(jobSuggestedParamSet, jobExecution);
 
     List<JobSuggestedParamValue> jobSuggestedParamValues = getParamSetValues(jobSuggestedParamSet.id);
-    logger.debug("Number of output parameters : " + jobSuggestedParamValues.size());
+    logger.debug("Number of output parameters for execution " + tuningInput.getJobExecId() + " = " + jobSuggestedParamValues.size());
     logger.info("Finishing getCurrentRunParameters");
     return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
   }
@@ -414,12 +421,15 @@ public class AutoTuningAPIHelper {
 
 
   /**
-   *Updates parameter set state tp SENT.
+   *Updates parameter set state to SENT if it is in CREATED state
    * @param jobSuggestedParamSet JobSuggestedParamSet which is to be updated
    */
   private void markParameterSetSent(JobSuggestedParamSet jobSuggestedParamSet) {
-    jobSuggestedParamSet.paramSetState = ParamSetStatus.SENT;
-    jobSuggestedParamSet.save();
+    if (jobSuggestedParamSet.paramSetState.equals(ParamSetStatus.CREATED)) {
+      logger.info("Marking paramSetID: " + jobSuggestedParamSet.id + " SENT");
+      jobSuggestedParamSet.paramSetState = ParamSetStatus.SENT;
+      jobSuggestedParamSet.save();
+    }
   }
 
 

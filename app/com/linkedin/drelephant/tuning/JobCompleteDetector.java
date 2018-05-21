@@ -20,14 +20,10 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-
 import models.JobExecution;
 import models.JobExecution.ExecutionState;
-import models.JobSuggestedParamSet;
-import models.JobSuggestedParamSet.ParamSetStatus;
-
+import models.TuningJobExecutionParamSet;
 import org.apache.log4j.Logger;
-
 import controllers.AutoTuningMetricsController;
 
 
@@ -45,8 +41,8 @@ public abstract class JobCompleteDetector {
    */
   public void updateCompletedExecutions() throws MalformedURLException, URISyntaxException {
     logger.info("Updating execution status");
-    List<JobSuggestedParamSet> sentParaSetList = getSentParaSetList();
-    List<JobExecution> completedExecutions = getCompletedExecutions(sentParaSetList);
+    List<TuningJobExecutionParamSet> inProgressExecutionParamSet = getExecutionsInProgress();
+    List<JobExecution> completedExecutions = getCompletedExecutions(inProgressExecutionParamSet);
     updateMetrics(completedExecutions);
     logger.info("Finished updating execution status");
   }
@@ -66,32 +62,36 @@ public abstract class JobCompleteDetector {
   }
 
   /**
-   * Returns the list of parameter set which are in SENT state
+   * Returns the executions in progress
    * @return JobExecution list
    */
-  private List<JobSuggestedParamSet> getSentParaSetList() {
-    logger.info("Fetching the executions which are in running state");
-    List<JobSuggestedParamSet> jobSuggestedParamSetList = new ArrayList<JobSuggestedParamSet>();
+  private List<TuningJobExecutionParamSet> getExecutionsInProgress() {
+    logger.info("Fetching the executions which are in progress");
+
+    List<TuningJobExecutionParamSet> tuningJobExecutionParamSets = new ArrayList<TuningJobExecutionParamSet>();
     try {
-      jobSuggestedParamSetList = JobSuggestedParamSet.find.select("*")
+      tuningJobExecutionParamSets = TuningJobExecutionParamSet.find
+          .fetch(TuningJobExecutionParamSet.TABLE.jobExecution)
+          .fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet)
           .where()
-          .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.SENT)
+          .eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState, ExecutionState.IN_PROGRESS)
           .findList();
     } catch (NullPointerException e) {
-      logger.info("None of the executions were running ", e);
+      logger.info("None of the executions are in progress ", e);
     }
-    logger.info("Number of executions which are in running state: " + jobSuggestedParamSetList.size());
-    return jobSuggestedParamSetList;
+    logger.info("Number of executions which are in progress: " + tuningJobExecutionParamSets.size());
+    return tuningJobExecutionParamSets;
   }
+
 
   /**
    * Returns the list of completed executions.
-   * @param sentParamSetList List of sent parameter sets
+   * @param inProgressExecutionParamSet List of executions (with corresponding param set) in progress
    * @return List of completed executions
    * @throws MalformedURLException MalformedURLException
    * @throws URISyntaxException URISyntaxException
    */
-  protected abstract List<JobExecution> getCompletedExecutions(List<JobSuggestedParamSet> sentParamSetList)
+  protected abstract List<JobExecution> getCompletedExecutions(List<TuningJobExecutionParamSet> inProgressExecutionParamSet)
       throws MalformedURLException, URISyntaxException;
 
 }
