@@ -373,7 +373,7 @@ public class FitnessComputeUtil {
             jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
             jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
             jobExecution.inputSizeInBytes = totalInputBytesInBytes;
-
+            jobExecution.update();
             logger.info(
                 "Metric Values for execution " + jobExecution.jobExecId + ": Execution time = " + totalExecutionTime
                     + ", Resource usage = " + totalResourceUsed + " and total input size = " + totalInputBytesInBytes);
@@ -398,7 +398,7 @@ public class FitnessComputeUtil {
               // In all the above scenarios, fitness cannot be computed for the param set correctly.
               // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
               // after failure.
-              logger.info("Execution id: " + jobExecution.id + " failed for reason other than tuning." + "Resetting param set to created");
+              logger.info("Execution id: " + jobExecution.id + " was not successful for reason other than tuning." + "Resetting param set to created");
               resetParamSetToCreated(jobSuggestedParamSet);
             }
           }
@@ -457,7 +457,6 @@ public class FitnessComputeUtil {
     }
     jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
     jobSuggestedParamSet.fitnessJobExecution = jobExecution;
-    jobExecution.update();
     jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
     jobSuggestedParamSet.update();
   }
