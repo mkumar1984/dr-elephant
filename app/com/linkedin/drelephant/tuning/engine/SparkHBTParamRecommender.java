@@ -34,8 +34,8 @@ public class SparkHBTParamRecommender {
   public static final long RESERVED_MEMORY = 300 * FileUtils.ONE_MB;
 
   private static final long EXECUTOR_MEMORY_BUFFER_PER_CORE = 0;
-  private static final long EXECUTOR_MEMORY_BUFFER_OVERALL = 0;
-  private static final long DRIVER_MEMORY_BUFFER = 0;
+  private static final long EXECUTOR_MEMORY_BUFFER_OVERALL = 10;
+  private static final long DRIVER_MEMORY_BUFFER = 25;
 
   private static final int GC_MEMORY_INCREASE = 5;
   private static final int GC_MEMORY_DECREASE = 0;

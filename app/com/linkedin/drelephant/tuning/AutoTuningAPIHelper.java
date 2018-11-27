@@ -149,6 +149,7 @@ public class AutoTuningAPIHelper {
     JobSuggestedParamSet jobSuggestedParamSet = tuningJobExecutionParamSet.jobSuggestedParamSet;
     JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
     JobDefinition jobDefinition = jobExecution.job;
+    Boolean isBestParamSet=jobSuggestedParamSet.isParamSetBest;
 
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
         .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
@@ -157,6 +158,7 @@ public class AutoTuningAPIHelper {
     if (tuningJobDefinition.tuningAlgorithm.optimizationAlgo == OptimizationAlgo.HBT) {
       //For HBT we are using score as fitness. setting it to high value
       jobSuggestedParamSet.fitness = 10000D;
+      jobSuggestedParamSet.isParamSetBest = false;
     } else {
       Double averageResourceUsagePerGBInput =
           tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
@@ -172,8 +174,39 @@ public class AutoTuningAPIHelper {
     jobExecution.executionTime = 0D;
     jobExecution.inputSizeInBytes = 1D;
     jobExecution.save();
+
+    //In case this is best param set, we need to find a new best parameter in case of HBT
+    if (isBestParamSet && tuningJobDefinition.tuningAlgorithm.optimizationAlgo == OptimizationAlgo.HBT) {
+      findNewBestParam(tuningJobDefinition);
+    }
   }
 
+  /**
+   * This method find new best parameter in case current best resulted in failure
+   * @param tuningJobDefinition
+   */
+  private void findNewBestParam(TuningJobDefinition tuningJobDefinition) {
+    List<JobSuggestedParamSet> jobSuggestedParamSetList =
+        JobSuggestedParamSet.find.where()
+            .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, tuningJobDefinition.job.id)
+            .orderBy(JobSuggestedParamSet.TABLE.id + " desc").findList();
+    if (jobSuggestedParamSetList != null && jobSuggestedParamSetList.size() > 0) {
+      JobSuggestedParamSet bestParamSet = jobSuggestedParamSetList.get(0);
+      for (JobSuggestedParamSet currentJobSuggestedParamSet : jobSuggestedParamSetList) {
+        if (bestParamSet.fitness > currentJobSuggestedParamSet.fitness) {
+          bestParamSet = currentJobSuggestedParamSet;
+        }
+        logger.debug("Current job set : " + currentJobSuggestedParamSet.id);
+        logger.debug("Current job set fitness : " + currentJobSuggestedParamSet.fitness);
+        logger.debug("Best job set : " + bestParamSet.id);
+        logger.debug("Best job set fitness : " + bestParamSet.fitness);
+      }
+      if (!bestParamSet.isParamSetBest) {
+        bestParamSet.isParamSetBest = true;
+        bestParamSet.update();
+      }
+    }
+  }
   /**
    * Returns flow definition corresponding to the given tuning input if it exists, else creates one and returns it
    * @param tuningInput TuningInput containing the flow definition id corresponding to which flow definition
