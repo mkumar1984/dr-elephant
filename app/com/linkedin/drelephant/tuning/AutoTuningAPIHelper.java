@@ -189,24 +189,28 @@ public class AutoTuningAPIHelper {
     List<JobSuggestedParamSet> jobSuggestedParamSetList =
         JobSuggestedParamSet.find.where()
             .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, tuningJobDefinition.job.id)
+            .eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
             .orderBy(JobSuggestedParamSet.TABLE.id + " desc").findList();
     if (jobSuggestedParamSetList != null && jobSuggestedParamSetList.size() > 0) {
       JobSuggestedParamSet bestParamSet = jobSuggestedParamSetList.get(0);
       for (JobSuggestedParamSet currentJobSuggestedParamSet : jobSuggestedParamSetList) {
-        if (bestParamSet.fitness > currentJobSuggestedParamSet.fitness) {
+        if (bestParamSet.fitness.longValue() == currentJobSuggestedParamSet.fitness.longValue()) {
+          if (bestParamSet.fitnessJobExecution.resourceUsage > currentJobSuggestedParamSet.fitnessJobExecution.resourceUsage) {
+            bestParamSet = currentJobSuggestedParamSet;
+          }
+        } else if (bestParamSet.fitness > currentJobSuggestedParamSet.fitness) {
           bestParamSet = currentJobSuggestedParamSet;
         }
-        logger.debug("Current job set : " + currentJobSuggestedParamSet.id);
-        logger.debug("Current job set fitness : " + currentJobSuggestedParamSet.fitness);
-        logger.debug("Best job set : " + bestParamSet.id);
-        logger.debug("Best job set fitness : " + bestParamSet.fitness);
       }
       if (!bestParamSet.isParamSetBest) {
         bestParamSet.isParamSetBest = true;
         bestParamSet.update();
       }
+      logger.info("New best parameter selected for Job Definition ID : " + tuningJobDefinition.job.id);
+      logger.info("Param Set ID is " + bestParamSet.id);
     }
   }
+
   /**
    * Returns flow definition corresponding to the given tuning input if it exists, else creates one and returns it
    * @param tuningInput TuningInput containing the flow definition id corresponding to which flow definition
