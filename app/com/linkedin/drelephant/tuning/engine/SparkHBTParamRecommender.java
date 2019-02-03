@@ -361,15 +361,9 @@ public class SparkHBTParamRecommender {
   }
 
   private void suggestExecutorInstancesBasedOnCore() {
-    Integer lastRunActualExecutorInstances = lastRunExecutorInstances;
-    if (lastRunDynamicAllocationEnabled && lastRunDynamicAllocationMaxExecutors != null) {
-      if (lastRunActualExecutorInstances == null) {
-        lastRunActualExecutorInstances = lastRunDynamicAllocationMaxExecutors;
-      }
-    }
-    if (lastRunActualExecutorInstances != null) {
+    if (lastRunExecutorInstances != null) {
       suggestedExecutorInstances =
-          (int) Math.ceil(lastRunActualExecutorInstances.doubleValue() * lastRunExecutorCore / suggestedCore);
+          (int) Math.ceil(lastRunExecutorInstances.doubleValue() * lastRunExecutorCore / suggestedCore);
     }
   }
 }
