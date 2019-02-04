@@ -350,13 +350,15 @@ public class SparkHBTParamRecommender {
     } else {
       suggestedExecutorInstances = lastRunExecutorInstances;
     }
-    if (suggestedExecutorInstances > CLUSTER_DEFAULT_DYNAMIC_ALLOCATION_MAX_EXECUTOR) {
-      suggestedExecutorInstances = CLUSTER_DEFAULT_DYNAMIC_ALLOCATION_MAX_EXECUTOR;
-    }
-    //job fails if max executors is less than executor instances
-    if (lastRunDynamicAllocationMaxExecutors != null
-        && suggestedExecutorInstances > lastRunDynamicAllocationMaxExecutors) {
-      suggestedExecutorInstances = lastRunDynamicAllocationMaxExecutors;
+    if (suggestedExecutorInstances != null) {
+      if (suggestedExecutorInstances > CLUSTER_DEFAULT_DYNAMIC_ALLOCATION_MAX_EXECUTOR) {
+        suggestedExecutorInstances = CLUSTER_DEFAULT_DYNAMIC_ALLOCATION_MAX_EXECUTOR;
+      }
+      //job fails if max executors is less than executor instances
+      if (lastRunDynamicAllocationMaxExecutors != null
+          && suggestedExecutorInstances > lastRunDynamicAllocationMaxExecutors) {
+        suggestedExecutorInstances = lastRunDynamicAllocationMaxExecutors;
+      }
     }
   }
 

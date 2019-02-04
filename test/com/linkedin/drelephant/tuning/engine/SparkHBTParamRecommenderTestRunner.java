@@ -74,8 +74,8 @@ public class SparkHBTParamRecommenderTestRunner implements Runnable {
             && suggestedParameters.get(SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY) < 1);
     assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, 1857L, suggestedParameters
         .get(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY).longValue());
-    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY, 10L,
-        suggestedParameters.get(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY).longValue());
+    assertTrue("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY,
+        suggestedParameters.containsKey(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY) == false);
   }
 
 }
