@@ -158,7 +158,9 @@ public class SparkHBTParamRecommender {
       try {
         parameterValue = Long.parseLong(appHeuristicsResultDetailsMap.get(key));
       } catch (NumberFormatException e) {
-        //Do Nothing
+        if (logger.isDebugEnabled()) {
+          logger.debug("Number format exception for value " + appHeuristicsResultDetailsMap.get(key), e);
+        }
       }
     }
     return parameterValue;
@@ -171,7 +173,9 @@ public class SparkHBTParamRecommender {
       try {
         parameterValue = Integer.parseInt(appHeuristicsResultDetailsMap.get(key));
       } catch (NumberFormatException e) {
-        //Do Nothing
+        if (logger.isDebugEnabled()) {
+          logger.debug("Number format exception for value " + appHeuristicsResultDetailsMap.get(key), e);
+        }
       }
     }
     return parameterValue;
