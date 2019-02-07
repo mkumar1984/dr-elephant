@@ -955,7 +955,7 @@ public class Application extends Controller {
        This logic is for backward compatailbity. Ideally we should remove this logic in next release
        because HBT should be the default optimization algorithm for all the jobs.
        */
-      optimizationAlgo = getAlgoBasedOnVersion(version);
+      optimizationAlgo = getAlgoBasedOnVersion(jobType);
       tuningInput.setFlowDefId(flowDefId);
       tuningInput.setJobDefId(jobDefId);
       tuningInput.setFlowDefUrl(flowDefUrl);
@@ -990,11 +990,12 @@ public class Application extends Controller {
     }
   }
 
-  public static String getAlgoBasedOnVersion(int version){
-    if(version == 1){
+  public static String getAlgoBasedOnVersion(String jobType) {
+    if (jobType.equals(JobType.PIG.name())) {
       return TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name();
-    }
-    else{
+    } else if (jobType.equals(JobType.SPARK.name())) {
+      return TuningAlgorithm.OptimizationAlgo.HBT.name();
+    } else {
       return TuningAlgorithm.OptimizationAlgo.HBT.name();
     }
   }

@@ -53,6 +53,7 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
     return _executionEngine.getTuningJobDefinitionsForParameterSuggestion()
         .eq(TuningJobDefinition.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
             TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
+        .eq(TuningJobDefinition.TABLE.autoApply, 1)
         .findList();
   }
 
