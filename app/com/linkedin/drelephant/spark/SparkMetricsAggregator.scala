@@ -16,17 +16,20 @@
 
 package com.linkedin.drelephant.spark
 
-import com.linkedin.drelephant.analysis.{HadoopAggregatedData, HadoopApplicationData, HadoopMetricsAggregator}
+import com.linkedin.drelephant.analysis.{ HadoopAggregatedData, HadoopApplicationData, HadoopMetricsAggregator }
 import com.linkedin.drelephant.configurations.aggregator.AggregatorConfigurationData
 import com.linkedin.drelephant.math.Statistics
-import com.linkedin.drelephant.spark.data.{SparkApplicationData}
+import com.linkedin.drelephant.spark.data.{ SparkApplicationData }
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.ExecutorSummary
 import com.linkedin.drelephant.util.MemoryFormatUtils
 import org.apache.commons.io.FileUtils
 import org.apache.log4j.Logger
 
 import scala.util.Try
-
+import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageData
+import java.util.Date
+import com.linkedin.drelephant.AutoTuner
+import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageStatus
 
 class SparkMetricsAggregator(private val aggregatorConfigurationData: AggregatorConfigurationData)
     extends HadoopMetricsAggregator {
@@ -52,7 +55,7 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
     executorMemoryBytes <- executorMemoryBytesOf(data)
   } {
     val applicationDurationMillis = applicationDurationMillisOf(data)
-    if( applicationDurationMillis < 0) {
+    if (applicationDurationMillis < 0) {
       logger.warn(s"applicationDurationMillis is negative. Skipping Metrics Aggregation:${applicationDurationMillis}")
     } else {
       var (resourcesActuallyUsed, resourcesAllocatedForUse) = calculateResourceUsage(data.executorSummaries, executorMemoryBytes)
@@ -74,31 +77,34 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
         logger.warn(s"allocatedMemoryWasteBufferPercentage:${allocatedMemoryWasteBufferPercentage}")
       }
       hadoopAggregatedData.setResourceWasted(resourcesWastedMBSeconds.toLong)
+      hadoopAggregatedData.setTotalDelay(computeTotalWaitingTime(data.stageDatas))
     }
   }
 
   //calculates the resource usage by summing up the resources used per executor
   private def calculateResourceUsage(executorSummaries: Seq[ExecutorSummary], executorMemoryBytes: Long): (BigInt, BigInt) = {
     var sumResourceUsage: BigInt = 0
-    var sumResourcesAllocatedForUse : BigInt = 0
+    var sumResourcesAllocatedForUse: BigInt = 0
     executorSummaries.foreach(
       executorSummary => {
         var memUsedBytes: Long = executorSummary.peakJvmUsedMemory.getOrElse(JVM_USED_MEMORY, 0).asInstanceOf[Number].longValue + MemoryFormatUtils.stringToBytes(SPARK_RESERVED_MEMORY)
         var timeSpent: Long = executorSummary.totalDuration
-        val bytesMillisUsed = BigInt(memUsedBytes) * timeSpent
-        val bytesMillisAllocated = BigInt(executorMemoryBytes) * timeSpent
+        var totalCores: Int = executorSummary.totalCores
+        if(totalCores==0){
+          totalCores=1;
+        }
+        val bytesMillisUsed = BigInt(memUsedBytes) * timeSpent/totalCores
+        val bytesMillisAllocated = BigInt(executorMemoryBytes) * timeSpent/totalCores
         sumResourcesAllocatedForUse += (bytesMillisAllocated / (BigInt(FileUtils.ONE_MB) * BigInt(Statistics.SECOND_IN_MS)))
         sumResourceUsage += (bytesMillisUsed / (BigInt(FileUtils.ONE_MB) * BigInt(Statistics.SECOND_IN_MS)))
-      }
-    )
+      })
     (sumResourceUsage, sumResourcesAllocatedForUse)
   }
 
   private def aggregateresourcesAllocatedForUse(
     executorInstances: Int,
     executorMemoryBytes: Long,
-    applicationDurationMillis: Long
-   ): BigInt = {
+    applicationDurationMillis: Long): BigInt = {
     val bytesMillis = BigInt(executorInstances) * BigInt(executorMemoryBytes) * BigInt(applicationDurationMillis)
     (bytesMillis / (BigInt(FileUtils.ONE_MB) * BigInt(Statistics.SECOND_IN_MS)))
   }
@@ -121,6 +127,111 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
 
   private def totalExecutorTaskTimeMillisOf(data: SparkApplicationData): BigInt = {
     data.executorSummaries.map { executorSummary => BigInt(executorSummary.totalDuration) }.sum
+  }
+
+  /**
+   * This method computes total waiting time by looking at each stage's waiting time and using dependencies between
+   * each stage. Total waiting time is the difference between actual duration of the job and duration of the job
+   * if there was no scheduler delay.
+   */
+  def computeTotalWaitingTime(stageDatas: Seq[StageData]) = {
+    val notSkippedStages = for (stage <- stageDatas if !stage.status.equals(StageStatus.SKIPPED)) yield stage
+    val dependencyMap = getStageDependency(notSkippedStages);
+
+    val sortedStages = notSkippedStages.sortBy { _.submissionTime }
+    var completionTimeWithoutDelayMap: scala.collection.mutable.Map[Int, Long] = scala.collection.mutable.Map[Int, Long]()
+    var completionTimeWithDelayMap: scala.collection.mutable.Map[Int, Long] = scala.collection.mutable.Map[Int, Long]()
+    var finalStageCompletionTimeWithoutDelay = 0L;
+    var finalStageActualCompletionTime = 0L;
+
+    for (i <- 0 until sortedStages.length) {
+      val stage = sortedStages(i)
+      val stageId = stage.stageId
+      var maxCompletionTimeWithoutDelay: Long = 0L;
+      var maxCompletionWithDelay: Long = 0L;
+
+      for (dependeeStageId <- dependencyMap.get(stageId).get) {
+        maxCompletionTimeWithoutDelay = Math.max(maxCompletionTimeWithoutDelay, completionTimeWithoutDelayMap.getOrElse(dependeeStageId, 0L));
+        maxCompletionWithDelay = Math.max(maxCompletionWithDelay, completionTimeWithDelayMap.getOrElse(dependeeStageId, 0L));
+      }
+      if (maxCompletionTimeWithoutDelay == 0) {
+        maxCompletionTimeWithoutDelay = stage.submissionTime.get.getTime;
+        maxCompletionWithDelay = stage.submissionTime.get.getTime
+      }
+      val currentStageDelay = getStageDelay(stage)
+      val completionTimeWithoutDelay = maxCompletionTimeWithoutDelay + (stage.completionTime.get.getTime - stage.submissionTime.get.getTime) - currentStageDelay + (stage.submissionTime.get.getTime - maxCompletionWithDelay)
+
+      logger.debug("currentStageDelay for " + stageId + ":" + currentStageDelay)
+      logger.debug("Delay till this stage " + stageId + ":" + (stage.completionTime.get.getTime - completionTimeWithoutDelay))
+
+      completionTimeWithoutDelayMap.put(stageId, completionTimeWithoutDelay)
+      completionTimeWithDelayMap.put(stageId, stage.completionTime.get.getTime)
+
+      finalStageCompletionTimeWithoutDelay = Math.max(finalStageCompletionTimeWithoutDelay, completionTimeWithoutDelay);
+      finalStageActualCompletionTime = Math.max(finalStageActualCompletionTime, stage.completionTime.get.getTime)
+    }
+
+    logger.debug("Total Delay:" + (finalStageActualCompletionTime - finalStageCompletionTimeWithoutDelay))
+    finalStageActualCompletionTime - finalStageCompletionTimeWithoutDelay
+  }
+
+  /**
+   * Returns scheduler delay for the job, which is max of scheduler delay distribution
+   */
+  def getStageDelay(stage: StageData): Long = {
+    val maxSchedulerDelayIndex = 4
+    var schedulerDelay = 0D
+    val taskSummary = stage.taskSummary.getOrElse(null)
+    if (taskSummary != null) {
+      val schedulerDelays = taskSummary.schedulerDelay
+      if (schedulerDelays != null)
+        schedulerDelay = schedulerDelays(maxSchedulerDelayIndex)
+    }
+    schedulerDelay.longValue()
+  }
+
+  /**
+   * Get approximate dependency between each stages, using submission time and completion time
+   * A stage is dependent on other stage if it is started within 1 second of any stage's completion.
+   */
+  def getStageDependency(stageDatas: Seq[StageData]): scala.collection.mutable.Map[Int, scala.collection.mutable.Set[Int]] = {
+    var dependencyMap: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[Int]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[Int]]();
+    for (i <- 0 until stageDatas.length) {
+      var dependentStages = findDependeeStages(i, stageDatas);
+      dependencyMap.put(stageDatas(i).stageId, dependentStages)
+    }
+    logger.debug("Depdendency Map " + dependencyMap)
+    dependencyMap
+  }
+
+  /**
+   * Find dependee stages for the givem stage
+   */
+  def findDependeeStages(dependeeStageIndex: Int, stages: Seq[StageData]): scala.collection.mutable.Set[Int] = {
+    val dependentStage = stages(dependeeStageIndex)
+    val dependentStageStartTime: Date = dependentStage.submissionTime.getOrElse(null)
+    var dependeeStages: scala.collection.mutable.Set[Int] = scala.collection.mutable.Set[Int]()
+    var timeBasedDependentStage = -1
+    var timeBasedDependetStageCompletionTime = new Date(0);
+
+    for (j <- 0 until stages.length if dependeeStageIndex != j) {
+      val possibleDependeeStage = stages(j)
+      val possiblDependeeStageCompletionTime: Date = possibleDependeeStage.completionTime.getOrElse(null)
+      logger.debug("Current dependent Stage " + j + " date " + possiblDependeeStageCompletionTime);
+      if (dependentStageStartTime.before(possiblDependeeStageCompletionTime) == false) {
+        if (possiblDependeeStageCompletionTime.after(timeBasedDependetStageCompletionTime)) {
+          timeBasedDependentStage = j;
+          timeBasedDependetStageCompletionTime = possiblDependeeStageCompletionTime;
+        }
+        if (dependentStageStartTime.getTime <= possiblDependeeStageCompletionTime.getTime + AutoTuner.ONE_SEC) {
+          dependeeStages.add(possibleDependeeStage.stageId)
+        }
+      }
+    }
+    if (dependeeStages.size == 0 && timeBasedDependentStage != -1) {
+      dependeeStages.add(timeBasedDependentStage)
+    }
+    dependeeStages
   }
 }
 
