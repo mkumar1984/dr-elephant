@@ -352,7 +352,7 @@
   <heuristic>
     <applicationtype>spark</applicationtype>
     <heuristicname>Spark Application Metrics</heuristicname>
-    <classname>com.linkedin.drelephant.spark.heuristics.SparkApplicationMetricsHeuristics</classname>
+    <classname>com.linkedin.drelephant.spark.heuristics.SparkApplicationMetricsHeuristic</classname>
     <viewname>views.html.help.spark.helpApplicationMetricsHeuristic</viewname>
   </heuristic>
   <heuristic>
