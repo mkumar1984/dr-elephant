@@ -16,14 +16,11 @@
 
 package com.linkedin.drelephant.spark.heuristics
 
-import java.util.Date
-
 import scala.Long
 import scala.collection.JavaConverters
 
 import org.apache.commons.io.FileUtils
 
-import com.linkedin.drelephant.AutoTuner
 import com.linkedin.drelephant.analysis.Heuristic
 import com.linkedin.drelephant.analysis.HeuristicResult
 import com.linkedin.drelephant.analysis.HeuristicResultDetails
@@ -31,15 +28,14 @@ import com.linkedin.drelephant.analysis.Severity
 import com.linkedin.drelephant.configurations.heuristic.HeuristicConfigurationData
 import com.linkedin.drelephant.spark.data.SparkApplicationData
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageData
-import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageStatus
 
 /**
  * A heuristic based on metrics for a Spark app's stages.
  * This heuristic reports metrics at application level like total input data size, total input records etc.
  */
-class SparkApplicationMetricsHeuristics(private val heuristicConfigurationData: HeuristicConfigurationData)
+class SparkApplicationMetricsHeuristic(private val heuristicConfigurationData: HeuristicConfigurationData)
     extends Heuristic[SparkApplicationData] {
-  import SparkApplicationMetricsHeuristics._
+  import SparkApplicationMetricsHeuristic._
   import JavaConverters._
 
   override def getHeuristicConfData(): HeuristicConfigurationData = heuristicConfigurationData
@@ -48,13 +44,13 @@ class SparkApplicationMetricsHeuristics(private val heuristicConfigurationData: 
     val evaluator = new Evaluator(this, data)
 
     val resultDetails = Seq(
-      new HeuristicResultDetails(TOTAL_INPUT_SIZE_IN_MB, "%.4f".format(evaluator.totalInputBytes * 1.0 / (FileUtils.ONE_MB))),
-      new HeuristicResultDetails(TOTAL_INPUT_RECORDS, evaluator.totalInputRecords.toString()),
+      new HeuristicResultDetails(TOTAL_INPUT_SIZE_IN_MB, "%.4f".format(evaluator.totalInputBytes * 1.0 / FileUtils.ONE_MB)),
+      new HeuristicResultDetails(TOTAL_INPUT_RECORDS, evaluator.totalInputRecords.toString),
       new HeuristicResultDetails(TOTAL_OUTPUT_SIZE, FileUtils.byteCountToDisplaySize(evaluator.totalOutputBytes)),
       new HeuristicResultDetails(TOTAL_SHUFFLE_READ_SIZE, FileUtils.byteCountToDisplaySize(evaluator.totalShuffleReadBytes)),
-      new HeuristicResultDetails(TOTAL_SHUFFLE_READ_RECORDS, evaluator.totalShuffleReadRecords.toString()),
+      new HeuristicResultDetails(TOTAL_SHUFFLE_READ_RECORDS, evaluator.totalShuffleReadRecords.toString),
       new HeuristicResultDetails(TOTAL_SHUFFLE_WRITE_SIZE, FileUtils.byteCountToDisplaySize(evaluator.totalShuffleWriteBytes)),
-      new HeuristicResultDetails(TOTAL_SHUFFLE_WRITE_RECORDS, evaluator.totalShuffleWriteRecords.toString()),
+      new HeuristicResultDetails(TOTAL_SHUFFLE_WRITE_RECORDS, evaluator.totalShuffleWriteRecords.toString),
       new HeuristicResultDetails(TOTAL_MEMORY_SPILL_SIZE, FileUtils.byteCountToDisplaySize(evaluator.totalMemoryBytesSpilled)),
       new HeuristicResultDetails(TOTAL_DISK_SPILL_SIZE, FileUtils.byteCountToDisplaySize(evaluator.totalDiskBytesSpilled)))
 
@@ -69,19 +65,19 @@ class SparkApplicationMetricsHeuristics(private val heuristicConfigurationData: 
   }
 }
 
-object SparkApplicationMetricsHeuristics {
+object SparkApplicationMetricsHeuristic {
   private val maxSchedulerDelayIndex = 4
-  val TOTAL_INPUT_SIZE_IN_MB = "Total Input Size in MB";
-  val TOTAL_INPUT_RECORDS = "Total Input Records";
+  val TOTAL_INPUT_SIZE_IN_MB = "Total Input Size in MB"
+  val TOTAL_INPUT_RECORDS = "Total Input Records"
   val TOTAL_OUTPUT_SIZE = "Total Output Size"
-  val TOTAL_SHUFFLE_READ_SIZE = "Total Shuffle Read Size";
-  val TOTAL_SHUFFLE_READ_RECORDS = "Total Shuffle Read Records";
-  val TOTAL_SHUFFLE_WRITE_SIZE = "Total Shuffle Write Size";
-  val TOTAL_SHUFFLE_WRITE_RECORDS = "Total Shuffle Write Records";
-  val TOTAL_MEMORY_SPILL_SIZE = "Total Memory Spill Size";
-  val TOTAL_DISK_SPILL_SIZE = "Total Disk Spill Size";
+  val TOTAL_SHUFFLE_READ_SIZE = "Total Shuffle Read Size"
+  val TOTAL_SHUFFLE_READ_RECORDS = "Total Shuffle Read Records"
+  val TOTAL_SHUFFLE_WRITE_SIZE = "Total Shuffle Write Size"
+  val TOTAL_SHUFFLE_WRITE_RECORDS = "Total Shuffle Write Records"
+  val TOTAL_MEMORY_SPILL_SIZE = "Total Memory Spill Size"
+  val TOTAL_DISK_SPILL_SIZE = "Total Disk Spill Size"
 
-  class Evaluator(sparkApplicationMetricsHeuristics: SparkApplicationMetricsHeuristics, data: SparkApplicationData) {
+  class Evaluator(sparkApplicationMetricsHeuristic: SparkApplicationMetricsHeuristic, data: SparkApplicationData) {
     lazy val stageDatas: Seq[StageData] = data.stageDatas
     lazy val totalInputBytes: Long = stageDatas.map(_.inputBytes).sum
     lazy val totalInputRecords: Long = stageDatas.map(_.inputRecords).sum

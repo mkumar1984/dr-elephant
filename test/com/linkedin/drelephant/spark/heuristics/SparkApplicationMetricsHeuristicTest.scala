@@ -38,13 +38,13 @@ import com.linkedin.drelephant.AutoTuner
 /**
  * Test class for Stages Heuristic. It checks whether all the values used in the heuristic are calculated correctly.
  */
-class SparkApplicationMetricsHeuristicsTest extends FunSpec with Matchers {
-  import SparkApplicationMetricsHeuristicsTest._
+class SparkApplicationMetricsHeuristicTest extends FunSpec with Matchers {
+  import SparkApplicationMetricsHeuristicTest._
 
   describe("SparkApplicationMetricsHeuristics") {
     val heuristicConfigurationData = newFakeHeuristicConfigurationData(
       Map())
-    val sparkApplicationMetricsHeuristics = new SparkApplicationMetricsHeuristics(heuristicConfigurationData)
+    val sparkApplicationMetricsHeuristics = new SparkApplicationMetricsHeuristic(heuristicConfigurationData)
 
     val stageDatas = Seq(
       newFakeStageData(StageStatus.COMPLETE, 0, 10, "stage1", 1000990929L, 100000L, 2000990929L,
@@ -102,7 +102,7 @@ class SparkApplicationMetricsHeuristicsTest extends FunSpec with Matchers {
   }
 }
 
-object SparkApplicationMetricsHeuristicsTest {
+object SparkApplicationMetricsHeuristicTest {
   import JavaConverters._
 
   def newFakeHeuristicConfigurationData(params: Map[String, String] = Map.empty): HeuristicConfigurationData =

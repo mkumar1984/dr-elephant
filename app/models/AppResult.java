@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.linkedin.drelephant.analysis.Severity;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.mapreduce.heuristics.MapperSpeedHeuristic;
-import com.linkedin.drelephant.spark.heuristics.SparkApplicationMetricsHeuristics;
+import com.linkedin.drelephant.spark.heuristics.SparkApplicationMetricsHeuristic;
 import com.linkedin.drelephant.util.Utils;
 import org.apache.log4j.Logger;
 
@@ -211,8 +211,8 @@ public class AppResult extends Model {
               CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB);
     } else if (jobType.toLowerCase().equals(JobType.SPARK.name().toLowerCase())) {
       heursiticValue =
-          getHeuristicValue(SparkApplicationMetricsHeuristics.class.getCanonicalName(),
-              SparkApplicationMetricsHeuristics.TOTAL_INPUT_SIZE_IN_MB());
+          getHeuristicValue(SparkApplicationMetricsHeuristic.class.getCanonicalName(),
+              SparkApplicationMetricsHeuristic.TOTAL_INPUT_SIZE_IN_MB());
     }
     Long totalInputBytes = 0L;
     if (heursiticValue != null) {

@@ -26,7 +26,6 @@ import org.apache.commons.io.FileUtils
 import org.apache.log4j.Logger
 
 import scala.util.Try
-import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageData
 import java.util.Date
 import com.linkedin.drelephant.AutoTuner
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageStatus
@@ -92,11 +91,11 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
       executorSummary => {
         val memoryOverhead = overheadMemoryBytesOf(data).get
         val roundedContainerBytes = getRoundedContainerBytes(data).get
-        var memUsedBytes: Long = executorSummary.peakJvmUsedMemory.getOrElse(JVM_USED_MEMORY, 0).asInstanceOf[Number].longValue + MemoryFormatUtils.stringToBytes(SPARK_RESERVED_MEMORY) + memoryOverhead
-        var timeSpent: Long = executorSummary.totalDuration
+        val memUsedBytes: Long = executorSummary.peakJvmUsedMemory.getOrElse(JVM_USED_MEMORY, 0).asInstanceOf[Number].longValue + MemoryFormatUtils.stringToBytes(SPARK_RESERVED_MEMORY) + memoryOverhead
+        val timeSpent: Long = executorSummary.totalDuration
         var totalCores: Int = executorSummary.totalCores
         if (totalCores == 0) {
-          totalCores = 1;
+          totalCores = 1
         }
         val bytesMillisUsed = BigInt(memUsedBytes) * timeSpent / totalCores
         val bytesMillisAllocated = BigInt(roundedContainerBytes) * timeSpent / totalCores
@@ -136,7 +135,6 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
   private def overheadMemoryBytesOf(data: SparkApplicationData): Option[Long] = {
     val executorMemory = executorMemoryBytesOf(data)
     val appConfigurationProperties = data.appConfigurationProperties
-    var memoryOverhead = None: Option[Long]
     if (appConfigurationProperties.get(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).isEmpty) {
       val overheadMemory = executorMemory.get * (appConfigurationProperties.get(SPARK_MEMORY_OVERHEAD_MULTIPLIER_PERCENT).getOrElse(DEFAULT_SPARK_MEMORY_OVERHEAD_MULTIPLIER_PERCENT)).toInt / 100
       Option(overheadMemory)
@@ -157,7 +155,7 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
   private def getIncrementBytes(): Option[Long] = {
     val config = new Configuration
     val incrementMB = config.getInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB,
-      YarnConfiguration.DEFAULT_RM_SCHEDULER_MINIMUM_ALLOCATION_MB);
+      YarnConfiguration.DEFAULT_RM_SCHEDULER_MINIMUM_ALLOCATION_MB)
     Option(incrementMB * 1024 * 1024)
   }
 }
