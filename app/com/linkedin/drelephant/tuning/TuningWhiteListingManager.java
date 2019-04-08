@@ -23,8 +23,8 @@ public class TuningWhiteListingManager implements Runnable {
   private static final String DEFAULT_PYTHON_PATH = "python";
   private static final String DEFAULT_WHITELISTING_SCRIPT_PATH = "./scripts/azkaban_job_whitelisting_blacklisting.py";
   private static final String WHITELISTING_SCRIPT_PATH = "tuning.whitelisting.script";
-  public static final String WHITELISTING_DAEMON_WAIT_INTERVAL = "whitelisting.daemon.wait.interval.ms";
-  public static final long DEFAULT_WHITELISTING_DAEMON_WAIT_INTERVAL = AutoTuner.ONE_DAY;
+  private static final String WHITELISTING_DAEMON_WAIT_INTERVAL = "whitelisting.daemon.wait.interval.ms";
+  private static final long DEFAULT_WHITELISTING_DAEMON_WAIT_INTERVAL = AutoTuner.ONE_DAY;
 
   private String pythonPath = null;
   private String whitelistingScriptPath = null;

@@ -23,8 +23,8 @@ public class TuningPerformanceReportManager implements Runnable {
   private static final String DEFAULT_PYTHON27_PATH = "python2.7";
   private static final String DEFAULT_PERFORMANCE_REPORT_SCRIPT_PATH = "./scripts/tuning_performance_reports.py";
   private static final String PERFORMANCE_REPORT_SCRIPT_PATH = "performance.report.script";
-  public static final String PERFORMANCE_REPORT_DAEMON_WAIT_INTERVAL = "performance.report.daemon.wait.interval.ms";
-  public static final long DEFAULT_PERFORMANCE_REPORT_DAEMON_WAIT_INTERVAL = AutoTuner.ONE_DAY;
+  private static final String PERFORMANCE_REPORT_DAEMON_WAIT_INTERVAL = "performance.report.daemon.wait.interval.ms";
+  private static final long DEFAULT_PERFORMANCE_REPORT_DAEMON_WAIT_INTERVAL = AutoTuner.ONE_DAY;
 
   private String pythonPath = null;
   private String tuningPerformanceReportScriptPath = null;
