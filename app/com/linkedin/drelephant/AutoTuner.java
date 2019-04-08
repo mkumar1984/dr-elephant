@@ -35,6 +35,7 @@ import controllers.AutoTuningMetricsController;
  */
 public class AutoTuner implements Runnable {
 
+  public static final long ONE_DAY = 24 * 60 * 60 * 1000;
   public static final long ONE_MIN = 60 * 1000;
   public static final long ONE_SEC = 1000L;
 

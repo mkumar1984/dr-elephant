@@ -23,6 +23,36 @@
     <description>Enable or disable auto tuning</description>
   </property>
   <property>
+    <name>tuning.whitelisting.enabled</name>
+    <value>true</value>
+    <description>Whether to enable whitelisting/blacklisting for Azkaban daemon</description>
+  </property>
+  <property>
+     <name>tuning.performance.report.enabled</name>
+     <value>true</value>
+     <description>Tuning performance report daemon enabled or not </description>
+  </property>
+  <property>
+    <name>tuning.whitelisting.script</name>
+    <value>path/to/whitelisting/script/azkaban_job_whitelisting_blacklisting.py</value>
+    <description>path for whitelisting script</description>
+  </property>
+  <property>
+    <name>whitelisting.daemon.wait.interval.ms</name>
+    <value>86400000</value>
+    <description>Whitelisting interval daemon wait interval</description>
+  </property>
+  <property>
+    <name>performance.report.script</name>
+    <value>path/to/performancereport/script/tuning_performance_reports.py</value>
+    <description>path for whitelisting script</description>
+  </property>
+  <property>
+    <name>performance.report.daemon.wait.interval.ms</name>
+    <value>86400000</value>
+    <description>Tuning Performance report daemon wait interval</description>
+  </property>
+  <property>
     <name>autotuning.default.allowed_max_resource_usage_percent</name>
     <value>150</value>
     <description>Default value for maximum allowed overheard in resource usage (in percent) as compared to the average

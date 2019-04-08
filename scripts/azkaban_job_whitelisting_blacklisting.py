@@ -5,12 +5,12 @@ import smtplib
 import logging
 import logging.handlers as handlers
 import sys
+import os
 
-
-if len (sys.argv) != 2 :
-    print "Usage: python azkaban_job_whitelisting_blacklisting.py config_file_name "
-    sys.exit (1)
-config_file_name = sys.argv[1]
+db_url=os.environ['db_url']
+db_name=os.environ['db_name']
+db_user=os.environ['db_user']
+db_password=os.environ['db_password']
 
 get_all_tuning_auto_apply_azkaban_rules_query="select rule_type, project_name, flow_name_expr, job_name_expr, job_type from tuning_auto_apply_azkaban_rules"
 get_all_jobs_for_a_project_query = "select jd.id, job_def_id, tjd.auto_apply, ta.job_type from job_definition jd inner join tuning_job_definition tjd on jd.id=tjd.job_definition_id inner join tuning_algorithm ta on tjd.tuning_algorithm_id=ta.id where job_def_id rlike %s"
@@ -32,13 +32,13 @@ logger.addHandler(logHandler)
 logger.info("========================================================================")
 
 def get_mysql_connection():
-	db_config = json.load(open(config_file_name))
-	logger.info(db_config)
-	return mysql.connector.connect(**db_config)
+        return mysql.connector.connect(user=db_user, password=db_password, host=db_url, database=db_name)
 
+#Returns expression for project name in the Azkaban URL 
 def get_project_name_expr(project_name):
 	return "project=" + project_name + "&"
 
+#Get all jobs for given proj
 def get_all_jobs_for_a_project(project_name):
 	jobList = []
 	cursor=conn.cursor(dictionary=True)
@@ -55,6 +55,7 @@ def get_all_jobs_for_a_project(project_name):
 		row = cursor.fetchone()
 	return jobList
 
+#Get all azkaban whitelisting and blacklisting rules 
 def get_all_tuning_auto_apply_azkaban_rules():
 	ruleList = {}
 	projectRuleList = None
@@ -77,6 +78,7 @@ def get_all_tuning_auto_apply_azkaban_rules():
 		row = cursor.fetchone()
 	return ruleList
 
+#Update auto apply flag for given records with batch update
 def update_auto_apply_flag(records_to_update): 
     try:
     	conn.autocommit = True 
@@ -90,6 +92,7 @@ def update_auto_apply_flag(records_to_update):
     finally:
     	cursor.close()
 
+#update auto apply flag for given jobs
 def update_auto_apply_flag_for_jobs(jobs):
 	records_to_update = []
 	for job in jobs : 

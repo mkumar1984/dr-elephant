@@ -79,7 +79,9 @@ else
   exit 1
 fi
 
+set -a
 source $CONFIG_FILE
+set +a
 
 # db_url, db_name ad db_user must be present in the config file
 check=1
