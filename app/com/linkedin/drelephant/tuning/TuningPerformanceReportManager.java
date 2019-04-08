@@ -1,17 +1,11 @@
 package com.linkedin.drelephant.tuning;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.linkedin.drelephant.AutoTuner;
-import com.linkedin.drelephant.ElephantContext;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
+import com.linkedin.drelephant.AutoTuner;
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.util.ProcessUtil;
 import com.linkedin.drelephant.util.Utils;
 
 
@@ -46,7 +40,7 @@ public class TuningPerformanceReportManager implements Runnable {
       while (!Thread.currentThread().isInterrupted()) {
         try {
           logger.info("Start: Executing TuningPerformanceReportManager ");
-          executeScript();
+          ProcessUtil.executeScript(pythonPath + " " + tuningPerformanceReportScriptPath);
           logger.info("End: Executing TuningPerformanceReportManager ");
         } catch (Exception e) {
           logger.error("Error in TuningPerformanceReportManager thread ", e);
@@ -56,27 +50,5 @@ public class TuningPerformanceReportManager implements Runnable {
     } catch (Exception e) {
       logger.error("Error in TuningPerformanceReportManager thread ", e);
     }
-  }
-
-  public boolean executeScript() {
-    List<String> error = new ArrayList<String>();
-    try {
-      Process p = Runtime.getRuntime().exec(pythonPath + " " + tuningPerformanceReportScriptPath);
-      logger.info(pythonPath + " " + tuningPerformanceReportScriptPath);
-
-      BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-      String errorLine;
-      while ((errorLine = errorStream.readLine()) != null) {
-        error.add(errorLine);
-      }
-      if (error.size() != 0) {
-        logger.error("Error in python script running TuningPerformanceReportManager: " + error.toString());
-      } else {
-        return true;
-      }
-    } catch (IOException e) {
-      logger.error("Error in executeScript()", e);
-    }
-    return false;
   }
 }

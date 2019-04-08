@@ -1,17 +1,11 @@
 package com.linkedin.drelephant.tuning;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.linkedin.drelephant.AutoTuner;
-import com.linkedin.drelephant.ElephantContext;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
+import com.linkedin.drelephant.AutoTuner;
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.util.ProcessUtil;
 import com.linkedin.drelephant.util.Utils;
 
 
@@ -45,7 +39,7 @@ public class TuningWhiteListingManager implements Runnable {
       while (!Thread.currentThread().isInterrupted()) {
         try {
           logger.info("Start: Executing TuningWhitelistingManager ");
-          executeScript();
+          ProcessUtil.executeScript(pythonPath + " " + whitelistingScriptPath);
           logger.info("End: Executing TuningWhitelistingManager ");
         } catch (Exception e) {
           logger.error("Error in TuningWhiteListingManager thread ", e);
@@ -57,25 +51,4 @@ public class TuningWhiteListingManager implements Runnable {
     }
   }
 
-  public boolean executeScript() {
-    List<String> error = new ArrayList<String>();
-    try {
-      Process p = Runtime.getRuntime().exec(pythonPath + " " + whitelistingScriptPath);
-      logger.info(pythonPath + " " + whitelistingScriptPath);
-
-      BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-      String errorLine;
-      while ((errorLine = errorStream.readLine()) != null) {
-        error.add(errorLine);
-      }
-      if (error.size() != 0) {
-        logger.error("Error in python script running whitelist manager: " + error.toString());
-      } else {
-        return true;
-      }
-    } catch (IOException e) {
-      logger.error("Error in executeScript()", e);
-    }
-    return false;
-  }
 }
