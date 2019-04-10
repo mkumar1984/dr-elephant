@@ -13,8 +13,8 @@ public class TuningPerformanceReportManager implements Runnable {
 
   private final Logger logger = Logger.getLogger(getClass());
 
-  private static final String PYTHON27_PATH_CONF = "python27.path";
-  private static final String DEFAULT_PYTHON27_PATH = "python2.7";
+  private static final String PYTHON27_PATH_CONF = "python.path";
+  private static final String DEFAULT_PYTHON27_PATH = "python";
   private static final String DEFAULT_PERFORMANCE_REPORT_SCRIPT_PATH = "./scripts/tuning_performance_reports.py";
   private static final String PERFORMANCE_REPORT_SCRIPT_PATH = "performance.report.script";
   private static final String PERFORMANCE_REPORT_DAEMON_WAIT_INTERVAL = "performance.report.daemon.wait.interval.ms";

@@ -184,12 +184,12 @@ def get_mysql_connection():
 
 #Get max execution ID of already processed execution 
 def get_max_execution_id():
-	cursor=conn.cursor(dictionary=True)
+	cursor=conn.cursor()
 	cursor.execute(get_max_execution_id_query)
 	row=cursor.fetchone()
 	max_job_execution_id=0
 	if row is not None: 
-		max_job_execution_id = row["max_job_execution_id"]
+		max_job_execution_id = row[0]
 	return max_job_execution_id
 
 # job execution performance records 
@@ -212,25 +212,25 @@ def update_job_execution_performance(max_job_execution_id):
 # get job execution performance data
 def get_job_execution_performance(query):
 	jobExecutionMap = {}
-	cursor=conn.cursor(dictionary=True)
+	cursor=conn.cursor()
 	cursor.execute(query)
 	row=cursor.fetchone()
 	while row is not None: 
-		job_definition_id = row["job_definition_id"]
-		job_suggested_param_set_id = row["job_suggested_param_set_id"]
-		tuning_algorithm_id = row["tuning_algorithm_id"]
-		tuning_enabled = row["tuning_enabled"]
-		is_param_set_default = row["is_param_set_default"]
-		is_param_set_best = row["is_param_set_best"]
-		is_param_set_suggested = row["is_param_set_suggested"]
-		is_manually_overriden_parameter = row["is_manually_overriden_parameter"]
-		job_execution_id = row["job_execution_id"]
-		execution_state = row["execution_state"]
-		fitness = row["fitness"]
-		fitness_type = row["fitness_type"]
-		resource_usage = row["resource_usage"]
-		execution_time = row["execution_time"]
-		input_size_in_bytes = row["input_size_in_bytes"]
+		job_definition_id = row[0]
+		job_suggested_param_set_id = row[1]
+		tuning_algorithm_id = row[2]
+		tuning_enabled = row[3]
+		is_param_set_default = row[4]
+		is_param_set_best = row[5]
+		is_param_set_suggested = row[6]
+		is_manually_overriden_parameter = row[7]
+		job_execution_id = row[8]
+		execution_state = row[9]
+		fitness = row[10]
+		fitness_type = row[11]
+		resource_usage = row[12]
+		execution_time = row[13]
+		input_size_in_bytes = row[14]
 		job_execution_performance = JobExecutionPerformance(job_definition_id, job_suggested_param_set_id, tuning_algorithm_id, tuning_enabled, 
 is_param_set_default, is_param_set_best, is_param_set_suggested, is_manually_overriden_parameter, job_execution_id, execution_state, fitness, fitness_type, resource_usage,execution_time, input_size_in_bytes)
 		jobExecutionMap[job_definition_id] = job_execution_performance

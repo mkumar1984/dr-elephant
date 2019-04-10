@@ -41,15 +41,15 @@ def get_project_name_expr(project_name):
 #Get all jobs for given proj
 def get_all_jobs_for_a_project(project_name):
 	jobList = []
-	cursor=conn.cursor(dictionary=True)
+	cursor=conn.cursor()
 	args = (get_project_name_expr(project_name), )
 	cursor.execute(get_all_jobs_for_a_project_query, args)
 	row=cursor.fetchone()
 	while row is not None: 
-		job_definition_id = row["id"]
-		job_def_id = row["job_def_id"]
-		auto_apply = row["auto_apply"]
-		job_type = row["job_type"]
+		job_definition_id = row[0]
+		job_def_id = row[1]
+		auto_apply = row[2]
+		job_type = row[3]
 		job = Job(job_definition_id, job_def_id, auto_apply, job_type)
 		jobList.append(job)
 		row = cursor.fetchone()
@@ -59,15 +59,15 @@ def get_all_jobs_for_a_project(project_name):
 def get_all_tuning_auto_apply_azkaban_rules():
 	ruleList = {}
 	projectRuleList = None
-	cursor=conn.cursor(dictionary=True)
+	cursor=conn.cursor()
 	cursor.execute(get_all_tuning_auto_apply_azkaban_rules_query)
 	row=cursor.fetchone()
 	while row is not None: 
-		rule_type = row["rule_type"]
-		project_name = row["project_name"]
-		flow_name_expr = row["flow_name_expr"]
-		job_name_expr = row["job_name_expr"]
-		job_type = row["job_type"]
+		rule_type = row[0]
+		project_name = row[1]
+		flow_name_expr = row[2]
+		job_name_expr = row[3]
+		job_type = row[4]
 		rule=Rule(rule_type, project_name, flow_name_expr, job_name_expr, job_type)
 		if(ruleList.has_key(project_name)):
 			projectRuleList=ruleList[project_name]
