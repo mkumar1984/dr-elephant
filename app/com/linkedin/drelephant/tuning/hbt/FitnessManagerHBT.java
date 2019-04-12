@@ -173,7 +173,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       if (disableTuningforUserSpecifiedIterations(jobDefinition, numberOfValidSuggestedParamExecution)
           || disableTuningforHeuristicsPassed(jobDefinition, tuningJobExecutionParamSets,
           numberOfValidSuggestedParamExecution)) {
-        logger.info(" Tuning Disabled for Job " + jobDefinition.id);
+        logger.debug(" Tuning Disabled for Job " + jobDefinition.id);
       }
     }
     Long currentTimeAfter = System.currentTimeMillis();

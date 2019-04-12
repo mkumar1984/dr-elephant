@@ -40,7 +40,7 @@ public class JobStatusManagerTestRunner implements Runnable {
 
     boolean calculateCompletedJobExDone = jobStatusManager.analyzeCompletedJobsExecution(tuningJobExecutionParamSets);
 
-    assertTrue(" Analyize completed job execution ", !calculateCompletedJobExDone);
+    assertTrue(" Analyize completed job execution ", calculateCompletedJobExDone);
 
     boolean updateDatabase = jobStatusManager.updateDataBase(tuningJobExecutionParamSets);
 

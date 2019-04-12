@@ -52,12 +52,16 @@ public abstract class AbstractJobStatusManager implements Manager {
       for (TuningJobExecutionParamSet job : jobs) {
         JobSuggestedParamSet jobSuggestedParamSet = job.jobSuggestedParamSet;
         JobExecution jobExecution = job.jobExecution;
-        if (isJobCompleted(jobExecution)) {
-          jobExecution.update();
-          jobSuggestedParamSet.update();
-          logger.info("Execution " + jobExecution.jobExecId + " is completed");
-        } else {
-          logger.info("Execution " + jobExecution.jobExecId + " is still in running state");
+        try{
+          if (isJobCompleted(jobExecution)) {
+            jobExecution.update();
+            jobSuggestedParamSet.update();
+            logger.info("Execution " + jobExecution.jobExecId + " is completed");
+          } else {
+            logger.info("Execution " + jobExecution.jobExecId + " is still in running state");
+          }
+        }catch(Exception e){
+          logger.info("Exception occur while updating database " + e.getMessage());
         }
       }
     } catch (Exception e) {
