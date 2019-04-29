@@ -4,20 +4,26 @@ import com.linkedin.drelephant.tuning.AbstractParameterGenerateManager;
 import com.linkedin.drelephant.tuning.JobTuningInfo;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
 import com.linkedin.drelephant.tuning.TuningHelper;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import models.AppHeuristicResult;
 import models.AppResult;
 import models.JobDefinition;
 import models.JobExecution;
+import models.JobExecution.ExecutionState;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningParameter;
+
 import org.apache.log4j.Logger;
+
 import play.libs.Json;
+
 import org.apache.commons.io.FileUtils;
 
 import com.avaje.ebean.Expr;
@@ -75,6 +81,8 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     JobExecution jobExecution = JobExecution.find.select("*")
         .where()
         .eq(JobExecution.TABLE.job, job)
+        .ne(JobExecution.TABLE.executionState, ExecutionState.CANCELLED)
+        .ne(JobExecution.TABLE.executionState, ExecutionState.FAILED)
         .order()
         .desc(JobExecution.TABLE.updatedTs)
         .setMaxRows(1)

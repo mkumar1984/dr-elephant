@@ -46,7 +46,7 @@ public class SparkHBTParamRecommenderTestRunner implements Runnable {
     AppResult appResult = AppResult.find.where().idEq("application_1547833800460_664575").findUnique();
     SparkHBTParamRecommender sparkHBTParamRecommender = new SparkHBTParamRecommender(appResult);
     HashMap<String, Double> suggestedParameters = sparkHBTParamRecommender.getHBTSuggestion();
-    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, 929L, suggestedParameters
+    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, 1472L, suggestedParameters
         .get(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY).longValue());
     assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY, 3,
         suggestedParameters.get(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY).longValue());
@@ -54,17 +54,19 @@ public class SparkHBTParamRecommenderTestRunner implements Runnable {
         "Wrong value for " + SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY,
         suggestedParameters.get(SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY) > 0
             && suggestedParameters.get(SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY) < 1);
-    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, 1857L, suggestedParameters
+    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, 1652L, suggestedParameters
         .get(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY).longValue());
     assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY, 34L,
         suggestedParameters.get(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY).longValue());
+    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD, 576L,
+        suggestedParameters.get(SparkConfigurationConstants.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).longValue());
   }
 
   private void testGetHBTSuggestionWithoutExecutorInstancesConfig() {
     AppResult appResult = AppResult.find.where().idEq("application_1547833800460_664576").findUnique();
     SparkHBTParamRecommender sparkHBTParamRecommender = new SparkHBTParamRecommender(appResult);
     HashMap<String, Double> suggestedParameters = sparkHBTParamRecommender.getHBTSuggestion();
-    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, 1857L, suggestedParameters
+    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, 1920L, suggestedParameters
         .get(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY).longValue());
     assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY, 3,
         suggestedParameters.get(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY).longValue());
@@ -72,7 +74,7 @@ public class SparkHBTParamRecommenderTestRunner implements Runnable {
         "Wrong value for " + SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY,
         suggestedParameters.get(SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY) > 0
             && suggestedParameters.get(SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY) < 1);
-    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, 1857L, suggestedParameters
+    assertEquals("Wrong value for " + SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, 1652L, suggestedParameters
         .get(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY).longValue());
     assertTrue("Wrong value for " + SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY,
         suggestedParameters.containsKey(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY) == false);

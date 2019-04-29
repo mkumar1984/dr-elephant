@@ -24,6 +24,7 @@ import com.linkedin.drelephant.configurations.heuristic.HeuristicConfigurationDa
 import com.linkedin.drelephant.spark.data.SparkApplicationData
 import com.linkedin.drelephant.util.{MemoryFormatUtils, Utils}
 import com.linkedin.drelephant.math.Statistics
+import org.apache.commons.io.FileUtils
 
 /**
   * A heuristic based on an app's known configuration.
@@ -146,6 +147,7 @@ object ConfigurationHeuristic {
   val SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD = "spark.yarn.executor.memoryOverhead"
   val THRESHOLD_MIN_EXECUTORS: Int = 1
   val THRESHOLD_MAX_EXECUTORS: Int = 900
+  val SPARK_MEMORY_OVERHEAD_MULTIPLIER_PERCENT = "spark.memoryOverhead.multiplier.percent"
   val SPARK_OVERHEAD_MEMORY_THRESHOLD_KEY = "spark.overheadMemory.thresholds.key"
   val DEFAULT_SPARK_OVERHEAD_MEMORY_THRESHOLDS =
     SeverityThresholds(low = MemoryFormatUtils.stringToBytes("2G"), MemoryFormatUtils.stringToBytes("4G"),
@@ -184,9 +186,17 @@ object ConfigurationHeuristic {
         Severity.NONE
       }
 
-    lazy val sparkYarnExecutorMemoryOverhead: String = if (getProperty(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).getOrElse("0").matches("(.*)[0-9]"))
-      MemoryFormatUtils.bytesToString(MemoryFormatUtils.stringToBytes(getProperty(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).getOrElse("0") + "MB")) else (getProperty(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).getOrElse("0"))
+    var sparkYarnExecutorMemoryOverhead: String = null
+    lazy val sparkMemoryOverheadMultiplierPercent: Option[Float] =
+      Try(getProperty(SPARK_EXECUTOR_INSTANCES_KEY).map(_.toFloat)).getOrElse(None)
 
+    if (getProperty(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD) != null) {
+      sparkYarnExecutorMemoryOverhead = if (getProperty(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).getOrElse("0").matches("(.*)[0-9]"))
+        MemoryFormatUtils.bytesToString(MemoryFormatUtils.stringToBytes(getProperty(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).getOrElse("0") + "MB")) else (getProperty(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).getOrElse("0"))
+    } else {
+      var sparkYarnExecutorMemoryOverheadVal = Math.max(executorMemoryBytes.get * sparkMemoryOverheadMultiplierPercent.getOrElse(10.0f) / 100, 384 * FileUtils.ONE_MB)
+      sparkYarnExecutorMemoryOverhead = MemoryFormatUtils.bytesToString(sparkYarnExecutorMemoryOverheadVal.longValue())
+    }
     lazy val serializer: Option[String] = getProperty(SPARK_SERIALIZER_KEY)
 
     /**

@@ -49,12 +49,16 @@ public class SparkHBTParamRecommender {
   public static final int CLUSTER_DEFAULT_EXECUTOR_CORE = 1;
   public static final int CLUSTER_DEFAULT_DYNAMIC_ALLOCATION_MAX_EXECUTOR = 900;
   public static final long RESERVED_MEMORY = 300 * FileUtils.ONE_MB;
+  public static final long DEFAULT_MEMORY_OVERHEAD = 384 * FileUtils.ONE_MB;
 
   private static final long EXECUTOR_MEMORY_BUFFER_PER_CORE = 0;
-  private static final long EXECUTOR_MEMORY_BUFFER_OVERALL = 10;
+  private static final long EXECUTOR_MEMORY_BUFFER_OVERALL = 0;
+  private static final long FIX_MEMORY_BUFFER_OVERALL = 200 * FileUtils.ONE_MB;
+  private static final long FIX_MEMORY_BUFFER_PER_CORE = 0 * FileUtils.ONE_MB;
+
   private static final long DRIVER_MEMORY_BUFFER = 25;
 
-  private static final int GC_MEMORY_INCREASE = 5;
+  private static final int GC_MEMORY_INCREASE = 0;
   private static final int GC_MEMORY_DECREASE = 0;
 
   private long maxPeakUnifiedMemory;
@@ -75,6 +79,7 @@ public class SparkHBTParamRecommender {
   private Long suggestedExecutorMemory;
   private Integer suggestedCore;
   private Integer suggestedExecutorInstances;
+  private Long suggestedExecutorMemoryOverhead;
 
   private Double suggestedMemoryFactor;
   private Long suggestedDriverMemory;
@@ -94,6 +99,7 @@ public class SparkHBTParamRecommender {
     lastRunExecutorMemoryOverhead =
         MemoryFormatUtils.stringToBytes(appHeuristicsResultDetailsMap.get(ConfigurationHeuristic.class
             .getCanonicalName() + "_" + ConfigurationHeuristic.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD()));
+
 
     String coreConfigStr =
         appHeuristicsResultDetailsMap.get(ConfigurationHeuristic.class.getCanonicalName() + "_"
@@ -139,6 +145,10 @@ public class SparkHBTParamRecommender {
         MemoryFormatUtils.stringToBytes(appHeuristicsResultDetailsMap.get(DriverHeuristic.class.getCanonicalName()
             + "_" + DriverHeuristic.SUGGESTED_SPARK_DRIVER_MEMORY_HEURISTIC_NAME()));
 
+    if(lastRunExecutorMemoryOverhead == 0){
+      lastRunExecutorMemoryOverhead = Math.max(Math.round(lastRunExecutorMemory * 0.1), DEFAULT_MEMORY_OVERHEAD);
+    }
+
     logger.info("Following are the heuristics values for last run : ");
     logger.info("maxPeakUnifiedMemory: " + maxPeakUnifiedMemory);
     logger.info("maxPeakJVMUsedMemory: " + maxPeakJVMUsedMemory);
@@ -150,6 +160,7 @@ public class SparkHBTParamRecommender {
     logger.info("lastRunDynamicAllocationMinExecutors: " + lastRunDynamicAllocationMinExecutors);
     logger.info("lastRunExecutorInstances: " + lastRunExecutorInstances);
     logger.info("lastRunDynamicAllocationEnabled: " + lastRunDynamicAllocationEnabled);
+    logger.info("lastRunExecutorMemoryOverhead: " + lastRunExecutorMemoryOverhead);
   }
 
   private Long getStringToLongParameter(Map<String, String> appHeuristicsResultDetailsMap, String key, Long defaultValue) {
@@ -207,13 +218,17 @@ public class SparkHBTParamRecommender {
         suggestedParameters.put(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY,
             (double) suggestedExecutorInstances);
       }
-
+      if(suggestedExecutorMemoryOverhead != 0) {
+        suggestedParameters.put(SparkConfigurationConstants.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD,
+            (double) suggestedExecutorMemoryOverhead/FileUtils.ONE_MB);
+      }
       logger.info("Following are the suggestions for spark parameters for app id : " + appResult.flowExecId);
       logger.info("suggestedExecutorMemory " + suggestedExecutorMemory);
       logger.info("suggestedCore " + suggestedCore);
       logger.info("suggestedMemoryFactor " + suggestedMemoryFactor);
       logger.info("suggestedDriverMemory " + suggestedDriverMemory);
       logger.info("suggestedExecutorInstances: " + suggestedExecutorInstances);
+      logger.info("suggestedExecutorMemoryOverhead: " + suggestedExecutorMemoryOverhead);
 
     } catch (Exception e) {
       logger.error("Error in generating parameters ", e);
@@ -243,7 +258,8 @@ public class SparkHBTParamRecommender {
       if (getMemoryIncreaseForGC() != 0) {
         currSuggestedMemory = currSuggestedMemory * (100 + getMemoryIncreaseForGC()) / 100;
       }
-      currSuggestedMemory = currSuggestedMemory + RESERVED_MEMORY;
+      //Commenting as peak jvm memory is inclusive of reserved memory
+      //currSuggestedMemory = currSuggestedMemory + RESERVED_MEMORY;
       if (currSuggestedMemory < MAX_EXECUTOR_MEMORY || core == 1 || currSuggestedMemory < lastRunExecutorMemory) {
         suggestedExecutorMemory = currSuggestedMemory;
         suggestedCore = core;
@@ -258,6 +274,7 @@ public class SparkHBTParamRecommender {
     if (suggestedExecutorMemory < MIN_EXECUTOR_MEMORY) {
       suggestedExecutorMemory = MIN_EXECUTOR_MEMORY;
     }
+    suggestOverheadMemoryBasedOnCore();
     suggestedExecutorMemory = getRoundedExecutorMemory();
   }
 
@@ -269,15 +286,13 @@ public class SparkHBTParamRecommender {
    * @return rounded executor memory
    */
   private long getRoundedExecutorMemory() {
-    long memoryOverhead = lastRunExecutorMemoryOverhead;
-    if (lastRunExecutorMemoryOverhead == 0) {
-      memoryOverhead = Math.max(suggestedExecutorMemory / 10, 384);
+    long memoryOverhead = suggestedExecutorMemoryOverhead;
+    if (suggestedExecutorMemoryOverhead == 0) {
+      memoryOverhead = Math.max(suggestedExecutorMemory / 10, DEFAULT_MEMORY_OVERHEAD);
     }
 
     long roundedContainerSize = getRoundedContainerSize(suggestedExecutorMemory + memoryOverhead + FileUtils.ONE_MB);
-    long executorMemory =
-        (long) (suggestedExecutorMemory + (roundedContainerSize - suggestedExecutorMemory - memoryOverhead - FileUtils.ONE_MB) * 0.9);
-
+    long executorMemory = roundedContainerSize - memoryOverhead;
     return executorMemory;
   }
 
@@ -291,7 +306,7 @@ public class SparkHBTParamRecommender {
   private long getRoundedDriverMemory() {
     long memoryOverhead = lastRunDriverMemoryOverhead;
     if (lastRunDriverMemoryOverhead == 0) {
-      memoryOverhead = Math.max(suggestedDriverMemory / 10, 384);
+      memoryOverhead = Math.max(suggestedDriverMemory / 10, DEFAULT_MEMORY_OVERHEAD);
     }
 
     long roundedContainerSize = getRoundedContainerSize(suggestedDriverMemory + memoryOverhead + FileUtils.ONE_MB);
@@ -310,8 +325,10 @@ public class SparkHBTParamRecommender {
    * @return suggested executor memory
    */
   private long suggestExecutorMemory(long maxPeakJVMUsedMemoryPerCore, int core) {
-    return (maxPeakJVMUsedMemoryPerCore * (100 + EXECUTOR_MEMORY_BUFFER_PER_CORE) / 100) * core
+    long execMemorySuggestion = (maxPeakJVMUsedMemoryPerCore * (100 + EXECUTOR_MEMORY_BUFFER_PER_CORE) / 100) * core
         * (100 + EXECUTOR_MEMORY_BUFFER_OVERALL) / 100;
+    execMemorySuggestion += (core * FIX_MEMORY_BUFFER_PER_CORE) + FIX_MEMORY_BUFFER_OVERALL;
+    return execMemorySuggestion;
   }
 
   /**
@@ -378,6 +395,12 @@ public class SparkHBTParamRecommender {
     if (lastRunExecutorInstances != null) {
       suggestedExecutorInstances =
           (int) Math.ceil(lastRunExecutorInstances.doubleValue() * lastRunExecutorCore / suggestedCore);
+    }
+  }
+  private void suggestOverheadMemoryBasedOnCore() {
+    if (lastRunExecutorMemoryOverhead != 0) {
+      suggestedExecutorMemoryOverhead =
+          (long) Math.ceil(lastRunExecutorMemoryOverhead * 1.0 * suggestedCore / lastRunExecutorCore);
     }
   }
 }
