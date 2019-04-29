@@ -20,6 +20,7 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
 
   private final Logger logger = Logger.getLogger(getClass());
   private AzkabanJobStatusUtil _azkabanJobStatusUtil;
+  private static Pattern jobNamePattern=Pattern.compile("job=([^&]*)");
 
 
   public enum AzkabanJobStatus {
@@ -76,21 +77,19 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
   private boolean analyzeJobExecution(JobExecution jobExecution,JobSuggestedParamSet jobSuggestedParamSet){
     try {
       logger.debug(" Getting jobs for Flow "+jobExecution.flowExecution.flowExecId);
-      Pattern jobNamePattern=Pattern.compile("job=([^&]*)");
       String jobName="";
       Matcher m=jobNamePattern.matcher(jobExecution.jobExecId);
       if(m.find()){
         jobName = m.group(1);
-        logger.error("Expression matched. Job Name is " + jobName);
+        logger.info("Expression matched. Job Name is " + jobName);
       }else{
-        logger.error("Expression not matched. ");
+        logger.error("Job expression not matched for job " + jobExecution.jobExecId);
       }
       Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
       if (jobStatus != null) {
         for (Map.Entry<String, String> job : jobStatus.entrySet()) {
-          logger.info("Job Found:" + job.getKey() + ". Status: " + job.getValue());
           if (job.getKey().equals(jobName)) {
-            logger.debug(" Job Updated " + jobName);
+            logger.info("Job Found:" + job.getKey() + ". Status: " + job.getValue());
             updateJobExecutionMetrics(job, jobSuggestedParamSet, jobExecution);
           }
         }
