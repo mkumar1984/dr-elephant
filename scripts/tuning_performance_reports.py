@@ -6,7 +6,14 @@ import logging
 import logging.handlers as handlers
 import sys
 import csv
-import os
+
+
+job_definition_ids = "(100141, 100151, 106638,106664,106933,107230,107535,112720,112721,113359,116495,117326,117339,117342,117343,117344,117345,117351,117373,117374,117387,117434,117446,117941,117975,117998,118011,118052,118405,118607,120929,124253,125524,126922,128894,128948,129478,123630,119250,119091,119373,119252,119236,119271,119239,119314,119218,119278,119254,119289,119253,119315,119277,119255,119257,119248,119249,119238,119244,119233,119279,119241, 132773,118034,106435,107533,107538,107740,119245,107744,107092,107540,121855,106601,106602,133663,118017,117954,106559,132513,106809,107206,106811,118800,134349,107062,106603,119243,118007,106686,106687,106729,106605,126552,106730,119131,117331,124494)"
+
+if len (sys.argv) != 2 :
+    print "Usage: python tuning_performance_reports.py config_file_name "
+    sys.exit (1)
+config_file_name = sys.argv[1]
 
 get_max_execution_id_query="select coalesce(max(job_execution_id), 0) as max_job_execution_id from job_execution_performance"
 
@@ -55,7 +62,8 @@ ON         tjeps.job_suggested_param_set_id = jsps.id
 WHERE      je.execution_state IN ('SUCCEEDED' , 'FAILED') 
 AND        je.id>%s 
 AND        tjeps.tuning_enabled=1 
-ON duplicate KEY 
+AND		   je.input_size_in_bytes>1
+AND		   je.job_definition_id in  """ + job_definition_ids +  """on duplicate KEY 
 UPDATE job_definition_id=je.job_definition_id, 
        job_suggested_param_set_id=jsps.id, 
        tuning_algorithm_id=jsps.tuning_algorithm_id, 
@@ -162,6 +170,10 @@ VALUES(best_param_execution_time), default_param_ru_per_gb_input =
 VALUES(default_param_ru_per_gb_input), best_param_ru_per_gb_input =
 VALUES(best_param_ru_per_gb_input)"""
 
+get_performance_report_data_query="""select job_definition_id, default_param_fitness as default_parameter_hueristics_score, best_param_fitness as best_parameter_hueristics_score, round(default_param_ru_per_gb_input, 6) as default_param_ru_per_gb_input, round(best_param_ru_per_gb_input, 6) as best_param_ru_per_gb_input,  job_def_id 
+from job_aggregate_performance jap inner join job_definition jd on jap.job_definition_id = jd.id
+where job_definition_id in """ + job_definition_ids
+
 db_config = None
 conn = None
 
@@ -174,25 +186,20 @@ logger.addHandler(logHandler)
 
 logger.info("========================================================================")
 
-db_url=os.environ['db_url']
-db_name=os.environ['db_name']
-db_user=os.environ['db_user']
-db_password=os.environ['db_password']
-
 def get_mysql_connection():
-        return mysql.connector.connect(user=db_user, password=db_password, host=db_url, database=db_name)
+	db_config = json.load(open(config_file_name))
+	logger.info(db_config)
+	return mysql.connector.connect(**db_config)
 
-#Get max execution ID of already processed execution 
 def get_max_execution_id():
-	cursor=conn.cursor()
+	cursor=conn.cursor(dictionary=True)
 	cursor.execute(get_max_execution_id_query)
 	row=cursor.fetchone()
 	max_job_execution_id=0
 	if row is not None: 
-		max_job_execution_id = row[0]
+		max_job_execution_id = row["max_job_execution_id"]
 	return max_job_execution_id
 
-# job execution performance records 
 def update_job_execution_performance(max_job_execution_id): 
     try:
     	conn.autocommit = True 
@@ -209,35 +216,33 @@ def update_job_execution_performance(max_job_execution_id):
     finally:
 	   	cursor.close()
 
-# get job execution performance data
 def get_job_execution_performance(query):
 	jobExecutionMap = {}
-	cursor=conn.cursor()
+	cursor=conn.cursor(dictionary=True)
 	cursor.execute(query)
 	row=cursor.fetchone()
 	while row is not None: 
-		job_definition_id = row[0]
-		job_suggested_param_set_id = row[1]
-		tuning_algorithm_id = row[2]
-		tuning_enabled = row[3]
-		is_param_set_default = row[4]
-		is_param_set_best = row[5]
-		is_param_set_suggested = row[6]
-		is_manually_overriden_parameter = row[7]
-		job_execution_id = row[8]
-		execution_state = row[9]
-		fitness = row[10]
-		fitness_type = row[11]
-		resource_usage = row[12]
-		execution_time = row[13]
-		input_size_in_bytes = row[14]
+		job_definition_id = row["job_definition_id"]
+		job_suggested_param_set_id = row["job_suggested_param_set_id"]
+		tuning_algorithm_id = row["tuning_algorithm_id"]
+		tuning_enabled = row["tuning_enabled"]
+		is_param_set_default = row["is_param_set_default"]
+		is_param_set_best = row["is_param_set_best"]
+		is_param_set_suggested = row["is_param_set_suggested"]
+		is_manually_overriden_parameter = row["is_manually_overriden_parameter"]
+		job_execution_id = row["job_execution_id"]
+		execution_state = row["execution_state"]
+		fitness = row["fitness"]
+		fitness_type = row["fitness_type"]
+		resource_usage = row["resource_usage"]
+		execution_time = row["execution_time"]
+		input_size_in_bytes = row["input_size_in_bytes"]
 		job_execution_performance = JobExecutionPerformance(job_definition_id, job_suggested_param_set_id, tuning_algorithm_id, tuning_enabled, 
 is_param_set_default, is_param_set_best, is_param_set_suggested, is_manually_overriden_parameter, job_execution_id, execution_state, fitness, fitness_type, resource_usage,execution_time, input_size_in_bytes)
 		jobExecutionMap[job_definition_id] = job_execution_performance
 		row = cursor.fetchone()
 	return jobExecutionMap
 
-#Aggregate performance data 
 def update_job_aggregate_performance(default_param_job_exec_perf_map, best_param_job_exec_perf_map): 
 	job_agg_perf_list=[]
 	for job_definition_id, dpjep in default_param_job_exec_perf_map.items():
@@ -251,7 +256,8 @@ dpjep.execution_time, bpjep.execution_time, dpjep.get_ru_per_gb_input(), bpjep.g
 		job_agg_perf_list.append(job_aggregate_performance)
 	update_job_aggregate_performance_table(job_agg_perf_list)
 
-# update job aggregate performance table 
+
+
 def update_job_aggregate_performance_table(records_to_update): 
     try:
     	conn.autocommit = True 
@@ -264,6 +270,7 @@ def update_job_aggregate_performance_table(records_to_update):
 
     finally:
     	cursor.close()
+
 
 class JobExecutionPerformance:
 	def __init__(self, _job_definition_id, _job_suggested_param_set_id, _tuning_algorithm_id, _tuning_enabled, 
@@ -310,6 +317,38 @@ _default_param_execution_time, _best_param_execution_time, _default_param_ru_per
 		self.best_param_ru_per_gb_input = _best_param_ru_per_gb_input
 
 
+def get_performance_report_data():
+	performance_report_records = []
+	cursor=conn.cursor(dictionary=True)
+	cursor.execute(get_performance_report_data_query)
+	row=cursor.fetchone()
+	while row is not None: 
+		job_definition_id = row["job_definition_id"]
+		default_parameter_hueristics_score = row["default_parameter_hueristics_score"]
+		best_parameter_hueristics_score = row["best_parameter_hueristics_score"]
+		heurtisc_score_improvement = best_parameter_hueristics_score - default_parameter_hueristics_score
+		default_param_ru_per_gb_input = row["default_param_ru_per_gb_input"]
+		best_param_ru_per_gb_input = row["best_param_ru_per_gb_input"]
+		if default_param_ru_per_gb_input!=0:
+			ru_improvement = round((default_param_ru_per_gb_input - best_param_ru_per_gb_input) * 100 / default_param_ru_per_gb_input, 2)
+		else:
+			ru_improvement = 0
+		job_def_id = row["job_def_id"]
+		performance_report_record = (job_definition_id, default_parameter_hueristics_score, best_parameter_hueristics_score, heurtisc_score_improvement, default_param_ru_per_gb_input, best_param_ru_per_gb_input, ru_improvement, job_def_id)
+		performance_report_records.append(performance_report_record)
+		row = cursor.fetchone()
+	return performance_report_records
+
+
+def write_performance_report_csv(): 
+	header=("Tuning Job Definition ID", "Default Parameter Heuristics Score", "Best Parameter Heuristics Score", "Heuristics Score Improvement", "Default Parameter Resource Usage Per GB Input", "Best Parameter Resource Usage Per GB Input", "Resource Usage Improvement",  "Azkaban Job Definition ID")
+	performance_report_records=get_performance_report_data()
+	performance_report_records.insert(0, header)
+	with open('performance_report.csv', 'w') as csvFile:
+		writer = csv.writer(csvFile)
+		writer.writerows(performance_report_records)
+	csvFile.close()
+
 conn=get_mysql_connection()
 logger.info("mysql connection established")
 
@@ -318,7 +357,7 @@ update_job_execution_performance(max_execution_id)
 default_param_job_exec_perf_map=get_job_execution_performance(get_default_param_job_execution_performance_query)
 best_param_job_exec_perf_map=get_job_execution_performance(get_best_param_job_execution_performance_query)
 update_job_aggregate_performance(default_param_job_exec_perf_map, best_param_job_exec_perf_map)
-
+write_performance_report_csv()
 conn.close()
 logger.info("========================================================================")
 

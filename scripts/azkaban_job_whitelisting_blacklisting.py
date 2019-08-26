@@ -5,12 +5,12 @@ import smtplib
 import logging
 import logging.handlers as handlers
 import sys
-import os
 
-db_url=os.environ['db_url']
-db_name=os.environ['db_name']
-db_user=os.environ['db_user']
-db_password=os.environ['db_password']
+
+if len (sys.argv) != 2 :
+    print "Usage: python azkaban_job_whitelisting_blacklisting.py config_file_name "
+    sys.exit (1)
+config_file_name = sys.argv[1]
 
 get_all_tuning_auto_apply_azkaban_rules_query="select rule_type, project_name, flow_name_expr, job_name_expr, job_type from tuning_auto_apply_azkaban_rules"
 get_all_jobs_for_a_project_query = "select jd.id, job_def_id, tjd.auto_apply, ta.job_type from job_definition jd inner join tuning_job_definition tjd on jd.id=tjd.job_definition_id inner join tuning_algorithm ta on tjd.tuning_algorithm_id=ta.id where job_def_id rlike %s"
@@ -32,42 +32,41 @@ logger.addHandler(logHandler)
 logger.info("========================================================================")
 
 def get_mysql_connection():
-        return mysql.connector.connect(user=db_user, password=db_password, host=db_url, database=db_name)
+	db_config = json.load(open(config_file_name))
+	logger.info(db_config)
+	return mysql.connector.connect(**db_config)
 
-#Returns expression for project name in the Azkaban URL 
 def get_project_name_expr(project_name):
 	return "project=" + project_name + "&"
 
-#Get all jobs for given proj
 def get_all_jobs_for_a_project(project_name):
 	jobList = []
-	cursor=conn.cursor()
+	cursor=conn.cursor(dictionary=True)
 	args = (get_project_name_expr(project_name), )
 	cursor.execute(get_all_jobs_for_a_project_query, args)
 	row=cursor.fetchone()
 	while row is not None: 
-		job_definition_id = row[0]
-		job_def_id = row[1]
-		auto_apply = row[2]
-		job_type = row[3]
+		job_definition_id = row["id"]
+		job_def_id = row["job_def_id"]
+		auto_apply = row["auto_apply"]
+		job_type = row["job_type"]
 		job = Job(job_definition_id, job_def_id, auto_apply, job_type)
 		jobList.append(job)
 		row = cursor.fetchone()
 	return jobList
 
-#Get all azkaban whitelisting and blacklisting rules 
 def get_all_tuning_auto_apply_azkaban_rules():
 	ruleList = {}
 	projectRuleList = None
-	cursor=conn.cursor()
+	cursor=conn.cursor(dictionary=True)
 	cursor.execute(get_all_tuning_auto_apply_azkaban_rules_query)
 	row=cursor.fetchone()
 	while row is not None: 
-		rule_type = row[0]
-		project_name = row[1]
-		flow_name_expr = row[2]
-		job_name_expr = row[3]
-		job_type = row[4]
+		rule_type = row["rule_type"]
+		project_name = row["project_name"]
+		flow_name_expr = row["flow_name_expr"]
+		job_name_expr = row["job_name_expr"]
+		job_type = row["job_type"]
 		rule=Rule(rule_type, project_name, flow_name_expr, job_name_expr, job_type)
 		if(ruleList.has_key(project_name)):
 			projectRuleList=ruleList[project_name]
@@ -78,7 +77,6 @@ def get_all_tuning_auto_apply_azkaban_rules():
 		row = cursor.fetchone()
 	return ruleList
 
-#Update auto apply flag for given records with batch update
 def update_auto_apply_flag(records_to_update): 
     try:
     	conn.autocommit = True 
@@ -92,7 +90,6 @@ def update_auto_apply_flag(records_to_update):
     finally:
     	cursor.close()
 
-#update auto apply flag for given jobs
 def update_auto_apply_flag_for_jobs(jobs):
 	records_to_update = []
 	for job in jobs : 
@@ -118,7 +115,7 @@ class Job:
 		self.new_auto_appply=auto_apply
 
 	def apply_rules(self, rules):
-		auto_apply=self.auto_apply
+		auto_apply=False
 		for rule in rules :
 			if self.job_type == rule.job_type : 
 				pattern = self.get_flow_job_expr(rule)

@@ -19,7 +19,6 @@ package controllers;
 import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
 import com.codahale.metrics.Timer;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
@@ -36,10 +35,13 @@ import com.linkedin.drelephant.tuning.Constant.TuningType;
 import com.linkedin.drelephant.tuning.TuningInput;
 import com.linkedin.drelephant.tuning.engine.SparkConfigurationConstants;
 import com.linkedin.drelephant.util.Utils;
+
 import controllers.api.v1.JsonKeys;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -67,6 +69,7 @@ import models.TuningAlgorithm.JobType;
 import models.TuningJobDefinition;
 import models.TuningJobExecutionParamSet;
 import models.TuningParameter;
+
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -81,9 +84,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
-
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+
 import play.api.templates.Html;
 import play.data.DynamicForm;
 import play.data.Form;
@@ -106,7 +109,6 @@ import views.html.page.oldJobHistoryPage;
 import views.html.page.searchPage;
 import views.html.results.*;
 import views.html.results.jobDetails;
-
 import static com.linkedin.drelephant.util.Utils.*;
 import static controllers.api.v1.JsonKeys.*;
 
@@ -2496,4 +2498,111 @@ public class Application extends Controller {
     return tuningParameter;
   }
 
+  private static void validateAutoTuneJobParameter(String username, String password, String jobDefId,
+      Boolean enableAutoTuning) {
+    if (username == null || username.length() == 0) {
+      throw new IllegalArgumentException(String.format("Please provide valid username "));
+    }
+    if (password == null || password.length() == 0) {
+      throw new IllegalArgumentException(String.format("Please provide valid password "));
+    }
+    if (jobDefId == null || jobDefId.length() == 0) {
+      throw new IllegalArgumentException(String.format("Please provide valid job definition ID %s", jobDefId));
+    }
+    if (enableAutoTuning == null) {
+      throw new IllegalArgumentException(String.format("Please provide valid enableAutoTuning value "));
+    }
+  }
+
+  public static Result updateAutoTuneJob() {
+    String jsonString = request().body().asJson().toString();
+    logger.debug("Started processing updateAutoTuneJob request with following parameters " + jsonString);
+    ObjectMapper mapper = new ObjectMapper();
+    Map<String, String> paramValueMap = new HashMap<String, String>();
+    JsonObject output = new JsonObject();
+    try {
+      paramValueMap = (Map<String, String>) mapper.readValue(jsonString, Map.class);
+      String username = paramValueMap.get("username");
+      String password = paramValueMap.get("password");
+      String jobDefId = paramValueMap.get("jobDefId");
+      String enableAutoTuningStr = paramValueMap.get("enableAutoTuning");
+      Boolean enableAutoTuning=null;
+      if (enableAutoTuningStr != null) {
+        enableAutoTuning = Boolean.parseBoolean(enableAutoTuningStr);
+      }
+      validateAutoTuneJobParameter(username, password, jobDefId, enableAutoTuning);
+      TuningJobDefinition tuningJobDefinition =
+          TuningJobDefinition.find.where().eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefId)
+              .findUnique();
+      boolean isUserAuthorized = false;
+      if (tuningJobDefinition.autoApply != enableAutoTuning.booleanValue()) {
+        String hostAddress = "https://" + new URL(jobDefId).getAuthority();
+        Map<String, String> authenticatedUser = authenticateUser(username, password, hostAddress);
+        if (authenticatedUser != null && authenticatedUser.get(STATUS) != null
+            && authenticatedUser.get(STATUS).equals(SUCCESS)) {
+          String sessionId = authenticatedUser.get(AZKABAN_SESSION_ID_KEY);
+          isUserAuthorized = isUserAuthorizedForJobUpdate(sessionId, jobDefId, hostAddress);
+        }
+        if (isUserAuthorized) {
+          updateAutoApplyProperty(tuningJobDefinition, enableAutoTuning);
+          tuningJobDefinition.update();
+          output.addProperty("Update", true);
+          output.addProperty("Success", true);
+        } else {
+          output.addProperty("Success", false);
+          output.addProperty("Update", false);
+          output.addProperty("errorMessage", "Permission denied for updating the job " + jobDefId);
+        }
+      } else {
+        output.addProperty("Success", true);
+        output.addProperty("Update", false);
+      }
+    } catch (IllegalArgumentException ex) {
+      logger.error(ex);
+      return badRequest(ex.getMessage());
+    } catch (Exception ex) {
+      logger.error("Something went wrong while updateAutoTuneJob", ex);
+      return internalServerError();
+    }
+    logger.info("TuneIn update was successful");
+    return ok(new Gson().toJson(output));
+  }
+
+  /** Rest Api implementation for providing the status of user's authorization to WRITE
+   * to a respective project of a Scheduler
+   *
+   * @param jobDefId - JobDefintion Id specific to the project
+   * @param schedulerUrl - The url of the scheduler to which the job belongs
+   * @param sessionId - the scheduler session_id of the user
+   * @result JSON containing a Boolean (hasWritePermission) which tells if
+   * the user has WRITE access to the project
+   * eg: Formatted JSON Data
+   * {
+   *  "hasWritePermission" : "true"
+   *}
+   **/
+  public static boolean isUserAuthorizedForJobUpdate(String sessionId, String jobDefId, String schedulerUrl) {
+    try {
+      Map<String, String> queryParams = new HashMap<String, String>();
+      queryParams.put(AZKABAN_SESSION_ID_KEY, sessionId);
+      queryParams.put(AJAX, AUTHORIZATION_AJAX_ENDPOINT);
+      String projectName = getProjectName(jobDefId);
+      if (projectName != null) {
+        queryParams.put(PROJECT_KEY, projectName);
+      } else {
+        throw new IllegalArgumentException(String.format("Please provide valid project name in Job Def ID "));
+      }
+      HttpResponse response = httpGetCall(schedulerUrl + AZKABAN_AUTHORIZATION_URL_SUFFIX, queryParams);
+      HttpEntity entity = response.getEntity();
+      JSONObject result = new JSONObject(EntityUtils.toString(entity));
+      if (result.has(ERROR_KEY)) {
+        return false;
+      } else if (result.get(IS_USER_AUTHORISED_KEY) != null) {
+        return Boolean.parseBoolean(result.get(IS_USER_AUTHORISED_KEY).toString());
+      }
+    } catch (Exception ex) {
+      logger.error("Error while fetching User's Project Authorization status ", ex);
+    }
+    return false;
+  }
 }

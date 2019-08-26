@@ -62,7 +62,7 @@ POST       /rest/getCurrentRunParameters        controllers.Application.getCurre
 POST       /rest/showTuneinParams               controllers.Application.updateShowRecommendationCount()
 POST       /rest/login                          controllers.Application.authenticateUser()
 POST       /rest/tunein                         controllers.Application.updateTuneinDetails()
-
+POST       /rest/updateAutoTuneJob              controllers.Application.updateAutoTuneJob()
 # Metrics calls
 GET        /ping                                controllers.MetricsController.ping()
 GET        /metrics                             controllers.MetricsController.index()
