@@ -520,6 +520,8 @@ private [spark] object SparkTestUtilities {
     totalShuffleRead=0,
     totalShuffleWrite= 0,
     maxMemory = 0,
+    addTime = new Date(),
+    removeTime = new Date(),
     totalGCTimeSec * 1000,
     totalMemoryBytesSpilled = 0,
     executorLogs = Map.empty,

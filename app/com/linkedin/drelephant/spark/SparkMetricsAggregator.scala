@@ -27,9 +27,11 @@ import org.apache.log4j.Logger
 
 import scala.util.Try
 import java.util.Date
+
 import com.linkedin.drelephant.AutoTuner
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageStatus
 import com.linkedin.drelephant.ElephantContext
+import com.linkedin.drelephant.spark.heuristics.ConfigurationHeuristicsConstants
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.conf.Configuration
 
@@ -85,20 +87,43 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
   //calculates the resource usage by summing up the resources used per executor
   private def calculateResourceUsage(data: SparkApplicationData): (BigInt, BigInt) = {
     val executorSummaries = data.executorSummaries
+
+    val lastAttempt = data.applicationInfo.attempts.maxBy {
+      _.startTime
+    }
+    val attemptStartTime = lastAttempt.startTime
+    val attemptEndTime = lastAttempt.endTime
+
     var sumResourceUsage: BigInt = 0
     var sumResourcesAllocatedForUse: BigInt = 0
+    val driverContainerBytes = getRoundedContainerBytes(data, true).get
+    val executorContainerBytes = getRoundedContainerBytes(data, false).get
+    val driverMemoryOverhead = overheadMemoryBytesOf(data, true).get
+    val executorMemoryOverhead = overheadMemoryBytesOf(data, false).get
+
     executorSummaries.foreach(
       executorSummary => {
-        val memoryOverhead = overheadMemoryBytesOf(data).get
-        val roundedContainerBytes = getRoundedContainerBytes(data).get
-        val memUsedBytes: Long = executorSummary.peakJvmUsedMemory.getOrElse(JVM_USED_MEMORY, 0).asInstanceOf[Number].longValue + MemoryFormatUtils.stringToBytes(SPARK_RESERVED_MEMORY) + memoryOverhead
-        val timeSpent: Long = executorSummary.totalDuration
-        var totalCores: Int = executorSummary.totalCores
-        if (totalCores == 0) {
-          totalCores = 1
+        val executorStartTime = executorSummary.addTime
+        var executorEndTime = executorSummary.removeTime
+        if (executorEndTime == null) {
+          executorEndTime = attemptEndTime;
         }
-        val bytesMillisUsed = BigInt(memUsedBytes) * timeSpent / totalCores
-        val bytesMillisAllocated = BigInt(roundedContainerBytes) * timeSpent / totalCores
+        var memoryOverhead: Long = 0L
+        var roundedContainerBytes: Long = 0L
+        if (executorSummary.id.equals("driver")) {
+          roundedContainerBytes = driverContainerBytes
+          memoryOverhead = driverMemoryOverhead
+        } else {
+          roundedContainerBytes = executorContainerBytes
+          memoryOverhead = executorMemoryOverhead
+        }
+
+        val memUsedBytes: Long = executorSummary.peakJvmUsedMemory.getOrElse(JVM_USED_MEMORY,
+          0).asInstanceOf[Number].longValue + MemoryFormatUtils.stringToBytes(SPARK_RESERVED_MEMORY) + memoryOverhead
+        val timeSpent: BigInt = executorEndTime.getTime - executorStartTime.getTime
+        val bytesMillisUsed = BigInt(memUsedBytes) * timeSpent
+        val bytesMillisAllocated = BigInt(roundedContainerBytes) * timeSpent
+
         sumResourcesAllocatedForUse += (bytesMillisAllocated / (BigInt(FileUtils.ONE_MB) * BigInt(Statistics.SECOND_IN_MS)))
         sumResourceUsage += (bytesMillisUsed / (BigInt(FileUtils.ONE_MB) * BigInt(Statistics.SECOND_IN_MS)))
       })
@@ -123,6 +148,11 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
     appConfigurationProperties.get(SPARK_EXECUTOR_MEMORY_KEY).map(MemoryFormatUtils.stringToBytes)
   }
 
+  private def driverMemoryBytesOf(data: SparkApplicationData): Option[Long] = {
+    val appConfigurationProperties = data.appConfigurationProperties
+    appConfigurationProperties.get(ConfigurationHeuristicsConstants.SPARK_DRIVER_MEMORY).map(MemoryFormatUtils.stringToBytes)
+  }
+
   private def applicationDurationMillisOf(data: SparkApplicationData): Long = {
     require(data.applicationInfo.attempts.nonEmpty)
     val lastApplicationAttemptInfo = data.applicationInfo.attempts.last
@@ -132,21 +162,23 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
   private def totalExecutorTaskTimeMillisOf(data: SparkApplicationData): BigInt = {
     data.executorSummaries.map { executorSummary => BigInt(executorSummary.totalDuration) }.sum
   }
-  private def overheadMemoryBytesOf(data: SparkApplicationData): Option[Long] = {
-    val executorMemory = executorMemoryBytesOf(data)
+
+  private def overheadMemoryBytesOf(data: SparkApplicationData, isDriver: Boolean): Option[Long] = {
+    val executorMemory = if (isDriver) driverMemoryBytesOf(data) else executorMemoryBytesOf(data)
+    val memoryOverHeadConfigKey = if (isDriver) ConfigurationHeuristicsConstants.SPARK_DRIVER_MEMORY_OVERHEAD else SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD
     val appConfigurationProperties = data.appConfigurationProperties
-    if (appConfigurationProperties.get(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).isEmpty) {
+    if (appConfigurationProperties.get(memoryOverHeadConfigKey).isEmpty) {
       val overheadMemory = executorMemory.get * (appConfigurationProperties.get(SPARK_MEMORY_OVERHEAD_MULTIPLIER_PERCENT).getOrElse(DEFAULT_SPARK_MEMORY_OVERHEAD_MULTIPLIER_PERCENT)).toInt / 100
       Option(overheadMemory)
     } else {
-      appConfigurationProperties.get(SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD).map(MemoryFormatUtils.stringToBytes)
+      appConfigurationProperties.get(memoryOverHeadConfigKey).map(MemoryFormatUtils.stringToBytes)
     }
   }
 
-  private def getRoundedContainerBytes(data: SparkApplicationData): Option[Long] = {
+  private def getRoundedContainerBytes(data: SparkApplicationData, isDriver: Boolean): Option[Long] = {
     val increment = getIncrementBytes()
-    val executorMemory = executorMemoryBytesOf(data)
-    val memoryOverHead = overheadMemoryBytesOf(data)
+    val executorMemory = if (isDriver) driverMemoryBytesOf(data) else executorMemoryBytesOf(data)
+    val memoryOverHead = overheadMemoryBytesOf(data, isDriver)
     val totalMemoryRequired = executorMemory.get + memoryOverHead.get
     val roundedContainerBytes = Math.ceil((totalMemoryRequired * 1.0) / increment.get) * increment.get
     Option(roundedContainerBytes.longValue())

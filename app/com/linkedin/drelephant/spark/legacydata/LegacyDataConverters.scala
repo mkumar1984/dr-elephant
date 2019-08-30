@@ -233,6 +233,8 @@ object LegacyDataConverters {
         executorInfo.shuffleRead,
         executorInfo.shuffleWrite,
         executorInfo.maxMem,
+        new Date(executorInfo.addTime),
+        if(executorInfo.removeTime!=null) new Date(executorInfo.removeTime) else null,
         executorInfo.totalGCTime,
         executorInfo.totalMemoryBytesSpilled,
         executorLogs = Map.empty,

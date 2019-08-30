@@ -16,6 +16,8 @@
 
 package com.linkedin.drelephant.spark.heuristics
 
+import java.util.Date
+
 import scala.collection.JavaConverters
 import com.linkedin.drelephant.analysis.{ApplicationType, Severity, SeverityThresholds}
 import com.linkedin.drelephant.configurations.heuristic.HeuristicConfigurationData
@@ -123,6 +125,8 @@ object ExecutorStorageSpillHeuristicTest {
     totalShuffleRead=0,
     totalShuffleWrite= 0,
     maxMemory= 2000,
+    addTime = new Date(),
+    removeTime = new Date(),
     totalGCTime = 0,
     totalMemoryBytesSpilled,
     executorLogs = Map.empty,

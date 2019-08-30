@@ -95,12 +95,12 @@ class SparkMetricsAggregatorTest extends FunSpec with Matchers {
       val result = aggregator.getResult
 
       it("calculates resources used (allocated)") {
-        result.getResourceUsed should be(6826666)
+        result.getResourceUsed should be(20480000)
       }
 
       it("calculates resources wasted") {
-        val resourceAllocated = 6826666
-        val resourceUsed = 1366999
+        val resourceAllocated = 20480000
+        val resourceUsed = 4100998
         val resourceWasted: Long = (resourceAllocated.toDouble - resourceUsed.toDouble * 1.5).longValue()
         result.getResourceWasted should be(resourceWasted)
       }
@@ -203,6 +203,8 @@ object SparkMetricsAggregatorTest {
     totalShuffleRead = 0,
     totalShuffleWrite = 0,
     maxMemory = 0,
+    addTime = new Date(1567159291000L-totalDuration),
+    removeTime = new Date(1567159291000L),
     totalGCTime = 0,
     totalMemoryBytesSpilled = 0,
     executorLogs = Map.empty,

@@ -186,7 +186,13 @@ class SparkDataCollection extends SparkApplicationData {
         info.inputBytes = executorsListener.executorToInputBytes.getOrElse(info.execId, 0L)
         info.shuffleRead = executorsListener.executorToShuffleRead.getOrElse(info.execId, 0L)
         info.shuffleWrite = executorsListener.executorToShuffleWrite.getOrElse(info.execId, 0L)
-
+        if (!info.execId.equals("driver")) {
+          info.addTime = executorsListener.executorIdToData(info.execId).startTime
+          info.removeTime = if (executorsListener.executorIdToData(info.execId).finishTime.isEmpty) null else executorsListener.executorIdToData(info.execId).finishTime.get
+        } else {
+          info.addTime = _applicationData.getStartTime
+          info.removeTime =_applicationData.getEndTime
+        }
         _executorData.setExecutorInfo(info.execId, info)
       }
     }

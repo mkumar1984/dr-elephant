@@ -1,5 +1,7 @@
 package com.linkedin.drelephant.spark.heuristics
 
+import java.util.Date
+
 import com.linkedin.drelephant.analysis.{ApplicationType, Severity}
 import com.linkedin.drelephant.configurations.heuristic.HeuristicConfigurationData
 import com.linkedin.drelephant.spark.data.{SparkApplicationData, SparkLogDerivedData, SparkRestDerivedData}
@@ -149,6 +151,8 @@ object UnifiedMemoryHeuristicTest {
     totalShuffleRead = 0,
     totalShuffleWrite = 0,
     maxMemory,
+    addTime = new Date(),
+    removeTime = new Date(),
     totalGCTime = 0,
     totalMemoryBytesSpilled = 0,
     executorLogs = Map.empty,

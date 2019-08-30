@@ -45,6 +45,8 @@ public class SparkExecutorData {
     public long outputBytes = 0L;
     public long shuffleRead = 0L;
     public long totalGCTime = 0L;
+    public long addTime = 0L;
+    public Long removeTime = 0L;
     public long totalMemoryBytesSpilled = 0L;
     public long shuffleWrite = 0L;
 

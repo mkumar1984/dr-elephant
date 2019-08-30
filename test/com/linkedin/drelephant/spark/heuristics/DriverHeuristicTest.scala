@@ -1,5 +1,7 @@
 package com.linkedin.drelephant.spark.heuristics
 
+import java.util.Date
+
 import com.linkedin.drelephant.analysis.{ApplicationType, Severity}
 import com.linkedin.drelephant.configurations.heuristic.HeuristicConfigurationData
 import com.linkedin.drelephant.spark.data.{SparkApplicationData, SparkRestDerivedData}
@@ -86,6 +88,8 @@ object DriverHeuristicTest {
     totalShuffleRead = 0,
     totalShuffleWrite = 0,
     maxMemory,
+    new Date(),
+    new Date(),
     totalGCTime,
     totalMemoryBytesSpilled = 0,
     executorLogs = Map.empty,

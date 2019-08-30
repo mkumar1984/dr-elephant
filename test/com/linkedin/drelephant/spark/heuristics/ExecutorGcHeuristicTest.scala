@@ -16,6 +16,8 @@
 
 package com.linkedin.drelephant.spark.heuristics
 
+import java.util.Date
+
 import scala.collection.JavaConverters
 import com.linkedin.drelephant.analysis.{ApplicationType, Severity, SeverityThresholds}
 import com.linkedin.drelephant.configurations.heuristic.HeuristicConfigurationData
@@ -187,6 +189,8 @@ object ExecutorGcHeuristicTest {
     totalShuffleRead=0,
     totalShuffleWrite= 0,
     maxMemory = 0,
+    new Date(),
+    new Date(),
     totalGCTime,
     totalMemoryBytesSpilled = 0,
     executorLogs = Map.empty,
