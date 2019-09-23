@@ -234,7 +234,7 @@ object LegacyDataConverters {
         executorInfo.shuffleWrite,
         executorInfo.maxMem,
         new Date(executorInfo.addTime),
-        if(executorInfo.removeTime!=null) new Date(executorInfo.removeTime) else null,
+        if (Option(executorInfo.removeTime).isDefined) new Date(executorInfo.removeTime) else null,
         executorInfo.totalGCTime,
         executorInfo.totalMemoryBytesSpilled,
         executorLogs = Map.empty,

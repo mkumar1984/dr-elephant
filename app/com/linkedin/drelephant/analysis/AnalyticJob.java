@@ -69,6 +69,15 @@ public class AnalyticJob {
   private String _amHostHttpAddress;
   // Job final state is finished or failed
   private String _state;
+  private Long memorySeconds;
+
+  public Long getMemorySeconds() {
+    return memorySeconds;
+  }
+
+  public void setMemorySeconds(Long memorySeconds) {
+    this.memorySeconds = memorySeconds;
+  }
 
   /**
    * Returns the application type
@@ -291,7 +300,7 @@ public class AnalyticJob {
     result.finishTime = getFinishTime();
     result.name = Utils.truncateField(getName(), AppResult.APP_NAME_LIMIT, getAppId());
     result.jobType = Utils.truncateField(jobTypeName, AppResult.JOBTYPE_LIMIT, getAppId());
-    result.resourceUsed = hadoopAggregatedData.getResourceUsed();
+    result.resourceUsed = getMemorySeconds();
     result.totalDelay = hadoopAggregatedData.getTotalDelay();
     result.resourceWasted = hadoopAggregatedData.getResourceWasted();
 

@@ -62,6 +62,8 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
     if (applicationDurationMillis < 0) {
       logger.warn(s"applicationDurationMillis is negative. Skipping Metrics Aggregation:${applicationDurationMillis}")
     } else {
+      //From now on we will be using resource allocated from RM API. Not cleaning up the code now, will do 
+      //it in a separate PR. 
       var (resourcesActuallyUsed, resourcesAllocatedForUse) = calculateResourceUsage(data)
       val resourcesActuallyUsedWithBuffer = resourcesActuallyUsed.doubleValue() * (1.0 + allocatedMemoryWasteBufferPercentage)
       val resourcesWastedMBSeconds = (resourcesActuallyUsedWithBuffer < resourcesAllocatedForUse.doubleValue()) match {
@@ -105,7 +107,7 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
       executorSummary => {
         val executorStartTime = executorSummary.addTime
         var executorEndTime = executorSummary.removeTime
-        if (executorEndTime == null) {
+        if (Option(executorEndTime).isEmpty) {
           executorEndTime = attemptEndTime;
         }
         var memoryOverhead: Long = 0L
