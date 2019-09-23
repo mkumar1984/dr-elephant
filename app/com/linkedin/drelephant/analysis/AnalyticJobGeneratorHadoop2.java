@@ -270,8 +270,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
 
         if (type != null) {
           AnalyticJob analyticJob = new AnalyticJob();
-          analyticJob
-              .setAppId(appId)
+          analyticJob.setAppId(appId)
               .setAppType(type)
               .setUser(user)
               .setName(name)
