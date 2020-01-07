@@ -107,7 +107,7 @@ class SparkRestClient(sparkConf: SparkConf) {
         applicationInfo,
         jobData,
         Await.result(futureStageDatas, DEFAULT_TIMEOUT),
-        Await.result(futureExecutorSummaries, Duration(500, SECONDS)),
+        Await.result(futureExecutorSummaries, Duration(5, SECONDS)),
         Await.result(futureFailedTasks, DEFAULT_TIMEOUT),
         Await.result(futureLogData, Duration(5, SECONDS)),
         attemptTarget.getUri.toString,
