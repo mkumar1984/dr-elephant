@@ -16,7 +16,7 @@
 
 package com.linkedin.drelephant.spark.data
 
-import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationInfo, ExecutorSummary, JobData, StageData}
+import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationConfig, ApplicationInfo, ExecutorSummary, JobData, StageData}
 
 
 case class SparkRestDerivedData(
@@ -26,4 +26,5 @@ case class SparkRestDerivedData(
   executorSummaries: Seq[ExecutorSummary],
   stagesWithFailedTasks: Seq[StageData],
   private[spark] val logDerivedData: Option[SparkLogDerivedData] = None,
-  targetRestURI : String = "")
+  targetRestURI : String = "",
+  appConfigurationProperties : Option[ApplicationConfig] = None)

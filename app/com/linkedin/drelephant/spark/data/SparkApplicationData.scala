@@ -18,8 +18,7 @@ package com.linkedin.drelephant.spark.data
 
 import java.util.Properties
 
-import scala.collection.JavaConverters
-
+import scala.collection.{JavaConverters, mutable}
 import com.linkedin.drelephant.analysis.{ApplicationType, HadoopApplicationData}
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationInfo, ExecutorSummary, JobData, StageData}
 
@@ -61,10 +60,15 @@ object SparkApplicationData {
     restDerivedData: SparkRestDerivedData,
     logDerivedData: Option[SparkLogDerivedData]
   ): SparkApplicationData = {
-    val appConfigurationProperties: Map[String, String] =
-      logDerivedData
-        .flatMap { _.environmentUpdate.environmentDetails.get("Spark Properties").map(_.toMap) }
-        .getOrElse(Map.empty)
+    var appConfigurationProperties: Map[String, String] = null
+    if(!restDerivedData.appConfigurationProperties.isDefined) {
+      appConfigurationProperties =
+            logDerivedData
+              .flatMap { _.environmentUpdate.environmentDetails.get("Spark Properties").map(_.toMap) }
+              .getOrElse(Map.empty)
+    }else{
+      appConfigurationProperties = getConfigurationPropertiesMap(restDerivedData.appConfigurationProperties.get.sparkProperties)
+    }
     val applicationInfo = restDerivedData.applicationInfo
     val jobDatas = restDerivedData.jobDatas
     val stageDatas = restDerivedData.stageDatas
@@ -72,5 +76,13 @@ object SparkApplicationData {
     val stagesWithFailedTasks = restDerivedData.stagesWithFailedTasks
     val targetRestURIForEF = restDerivedData.targetRestURI
     apply(appId, appConfigurationProperties, applicationInfo, jobDatas, stageDatas, executorSummaries, stagesWithFailedTasks, targetRestURIForEF)
+  }
+  
+  def getConfigurationPropertiesMap(sparkProperties: Seq[Seq[String]]): Map[String, String] ={
+    var appProperties = scala.collection.immutable.Map.empty[String,String]
+    for(sparkProperty <- sparkProperties) {
+      appProperties += (sparkProperty(0) -> sparkProperty(1))
+    }
+    appProperties.toMap
   }
 }

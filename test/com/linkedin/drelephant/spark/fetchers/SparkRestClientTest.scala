@@ -18,9 +18,11 @@ package com.linkedin.drelephant.spark.fetchers
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 import java.text.SimpleDateFormat
-import java.util.zip.{ZipInputStream, ZipEntry, ZipOutputStream}
+import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 import java.util.{Calendar, Date, SimpleTimeZone}
+
 import javax.ws.rs.client.WebTarget
+import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationAttemptInfoImpl, ApplicationConfigImpl, ApplicationInfoImpl, ExecutorSummaryImpl, JobDataImpl, StageDataImpl, StageStatus}
 
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageStatus
 import scala.concurrent.ExecutionContext
@@ -31,9 +33,11 @@ import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationAttemptInf
 import javax.ws.rs.{GET, Path, PathParam, Produces}
 import javax.ws.rs.core.{Application, MediaType, Response}
 import javax.ws.rs.ext.ContextResolver
-
 import com.google.common.io.Resources
+import com.linkedin.drelephant.spark.data.SparkApplicationData
+import com.linkedin.drelephant.spark.fetchers.SparkRestClientTest.FetchClientModeDataFixtures.SparkConfig
 import com.ning.compress.lzf.LZFEncoder
+import org.apache.log4j.Logger
 import org.apache.spark.{JobExecutionStatus, SparkConf}
 import org.glassfish.jersey.client.ClientConfig
 import org.glassfish.jersey.server.ResourceConfig
@@ -55,6 +59,7 @@ class SparkRestClientTest extends AsyncFunSpec with Matchers {
               .register(classOf[FetchClusterModeDataFixtures.ApplicationResource])
               .register(classOf[FetchClusterModeDataFixtures.JobsResource])
               .register(classOf[FetchClusterModeDataFixtures.StagesResource])
+              .register(classOf[FetchClusterModeDataFixtures.SparkConfig])
               .register(classOf[FetchClusterModeDataFixtures.ExecutorsResource])
               .register(classOf[FetchClusterModeDataFixtures.LogsResource])
           case config => config
@@ -78,7 +83,7 @@ class SparkRestClientTest extends AsyncFunSpec with Matchers {
         case assertion: Try[Assertion] => assertion
         case _ =>
           sparkRestClient.fetchData(FetchClusterModeDataFixtures.APP_ID, fetchLogs = true)
-            .map { _.logDerivedData.get.appConfigurationProperties should be(EXPECTED_PROPERTIES_FROM_LOG_1) }
+            .map { restDerivedData => SparkApplicationData.getConfigurationPropertiesMap(restDerivedData.appConfigurationProperties.get.sparkProperties) should be(EXPECTED_PROPERTIES_FROM_LOG_1) }
       } andThen { case assertion: Try[Assertion] =>
         fakeJerseyServer.tearDown()
         assertion
@@ -170,6 +175,7 @@ class SparkRestClientTest extends AsyncFunSpec with Matchers {
               .register(classOf[FetchClientModeDataFixtures.ApplicationResource])
               .register(classOf[FetchClientModeDataFixtures.JobsResource])
               .register(classOf[FetchClientModeDataFixtures.StagesResource])
+              .register(classOf[FetchClientModeDataFixtures.SparkConfig])
               .register(classOf[FetchClientModeDataFixtures.ExecutorsResource])
               .register(classOf[FetchClientModeDataFixtures.LogsResource])
               .register(classOf[FetchClientModeDataFixtures.StagesWithFailedTasksResource])
@@ -182,9 +188,10 @@ class SparkRestClientTest extends AsyncFunSpec with Matchers {
       val sparkConf = new SparkConf().set("spark.yarn.historyServer.address", s"${historyServerUri.getHost}:${historyServerUri.getPort}")
       val sparkRestClient = new SparkRestClient(sparkConf)
 
-      sparkRestClient.fetchData(FetchClusterModeDataFixtures.APP_ID) map { restDerivedData =>
-        restDerivedData.applicationInfo.id should be(FetchClusterModeDataFixtures.APP_ID)
-        restDerivedData.applicationInfo.name should be(FetchClusterModeDataFixtures.APP_NAME)
+      
+      sparkRestClient.fetchData(FetchClientModeDataFixtures.APP_ID) map { restDerivedData =>
+        restDerivedData.applicationInfo.id should be(FetchClientModeDataFixtures.APP_ID)
+        restDerivedData.applicationInfo.name should be(FetchClientModeDataFixtures.APP_NAME)
         restDerivedData.jobDatas should not be(None)
         restDerivedData.stageDatas should not be(None)
         restDerivedData.executorSummaries should not be(None)
@@ -193,7 +200,7 @@ class SparkRestClientTest extends AsyncFunSpec with Matchers {
         case assertion: Try[Assertion] => assertion
         case _ =>
           sparkRestClient.fetchData(FetchClientModeDataFixtures.APP_ID, fetchLogs = true)
-            .map { _.logDerivedData.get.appConfigurationProperties should be(EXPECTED_PROPERTIES_FROM_LOG_1) }
+            .map { restDerivedData => SparkApplicationData.getConfigurationPropertiesMap(restDerivedData.appConfigurationProperties.get.sparkProperties) should be(EXPECTED_PROPERTIES_FROM_LOG_1) }
       } andThen { case assertion: Try[Assertion] =>
         fakeJerseyServer.tearDown()
         assertion
@@ -309,6 +316,9 @@ object SparkRestClientTest {
       @Path("applications/{appId}/{attemptId}/logs")
       def getLogs(): LogsResource = new LogsResource()
 
+      @Path("applications/{appId}/{attemptId}/environment")
+      def getSparkConfigs(): SparkConfig = new SparkConfig()
+
       @Path("applications/{appId}/{attemptId}/stages/failedTasks")
       def getStagesWithFailedTasks(): StagesWithFailedTasksResource = new StagesWithFailedTasksResource()
     }
@@ -328,6 +338,22 @@ object SparkRestClientTest {
             newFakeApplicationAttemptInfo(Some("1"), startTime = new Date(t1 - duration), endTime = new Date(t1))
           )
         )
+      }
+    }
+    
+    @Produces(Array(MediaType.APPLICATION_JSON))
+    class SparkConfig {
+      val logger: Logger = Logger.getLogger(classOf[SparkConfig])
+
+      @GET
+      def getSparkConfigs(@PathParam("appId") appId: String, @PathParam("attemptId") attemptId: String): ApplicationConfigImpl = {
+        var configArray:Seq[Seq[String]] = Seq()
+        logger.info("Size of the EXPECTED_PROPERTIES_FROM_LOG_1 array " + EXPECTED_PROPERTIES_FROM_LOG_1.size);
+        for ((k,v) <- EXPECTED_PROPERTIES_FROM_LOG_1) {
+          val configVal = Seq(k, v);
+          configArray = configArray :+ configVal
+        }
+        new ApplicationConfigImpl(configArray, Seq.empty)
       }
     }
 
@@ -391,6 +417,9 @@ object SparkRestClientTest {
       @Path("applications/{appId}/logs")
       def getLogs(): LogsResource = new LogsResource()
 
+      @Path("applications/{appId}/environment")
+      def getSparkConfigs(): SparkConfig = new SparkConfig()
+
       @Path("applications/{appId}/stages/failedTasks")
       def getStagesWithFailedTasks(): StagesWithFailedTasksResource = new StagesWithFailedTasksResource()
     }
@@ -413,6 +442,22 @@ object SparkRestClientTest {
       }
     }
 
+    @Produces(Array(MediaType.APPLICATION_JSON))
+    class SparkConfig {
+      val logger: Logger = Logger.getLogger(classOf[SparkConfig])
+
+      @GET
+      def getSparkConfigs(@PathParam("appId") appId: String): ApplicationConfigImpl = {
+        var configArray:Seq[Seq[String]] = Seq()
+        logger.info("Size of the EXPECTED_PROPERTIES_FROM_LOG_1 array " + EXPECTED_PROPERTIES_FROM_LOG_1.size);
+        for ((k,v) <- EXPECTED_PROPERTIES_FROM_LOG_1) {
+          val configVal = Seq(k, v);
+          configArray = configArray :+ configVal
+        }
+        new ApplicationConfigImpl(configArray, Seq.empty)
+      }
+    }
+    
     @Produces(Array(MediaType.APPLICATION_JSON))
     class JobsResource {
       @GET

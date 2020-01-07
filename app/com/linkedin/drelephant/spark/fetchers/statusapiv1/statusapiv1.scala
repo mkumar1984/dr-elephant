@@ -59,6 +59,11 @@ trait ApplicationAttemptInfo{
   def completed: Boolean
 }
 
+trait ApplicationConfig{
+  def sparkProperties : Seq[Seq[String]]
+  def systemProperties : Seq[Seq[String]]
+}
+
 trait ExecutorStageSummary{
   def taskTime : Long
   def failedTasks : Int
@@ -311,6 +316,11 @@ class ApplicationAttemptInfoImpl(
   var endTime: Date,
   var sparkUser: String,
   var completed: Boolean = false) extends ApplicationAttemptInfo
+
+class ApplicationConfigImpl(
+  var sparkProperties: Seq[Seq[String]],
+  var systemProperties: Seq[Seq[String]]
+) extends ApplicationConfig
 
 class ExecutorStageSummaryImpl(
   var taskTime : Long,

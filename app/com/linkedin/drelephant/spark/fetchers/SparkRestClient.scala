@@ -31,8 +31,7 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.linkedin.drelephant.spark.data.{SparkApplicationData, SparkLogDerivedData, SparkRestDerivedData}
-import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationInfo, ExecutorSummary, JobData, StageData}
-import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationInfoImpl, ExecutorSummaryImpl, JobDataImpl, StageDataImpl}
+import com.linkedin.drelephant.spark.fetchers.statusapiv1.{ApplicationConfig, ApplicationConfigImpl, ApplicationInfo, ApplicationInfoImpl, ExecutorSummary, ExecutorSummaryImpl, JobData, JobDataImpl, StageData, StageDataImpl}
 import com.linkedin.drelephant.util.SparkUtils
 import javax.ws.rs.client.{Client, ClientBuilder, WebTarget}
 import javax.ws.rs.core.MediaType
@@ -83,17 +82,19 @@ class SparkRestClient(sparkConf: SparkConf) {
     val (applicationInfo, attemptTarget) = getApplicationMetaData(appId)
     val jobData = getJobDatas(attemptTarget)
     Future {
+      val appConfigurationProperties = if (fetchLogs) {
+        Future {
+          Option(getSparkConfigs(attemptTarget))
+        }
+      } else Future.successful(None: Option[ApplicationConfigImpl])
+      
       val futureStageDatas = Future {
         getStageDatas(attemptTarget)
       }
       val futureExecutorSummaries = Future {
         getExecutorSummaries(attemptTarget)
       }
-      val futureLogData = if (fetchLogs) {
-        Future {
-          getLogData(attemptTarget)
-        }
-      } else Future.successful(None)
+      val futureLogData = Future.successful(None)
       val futureFailedTasks = if (fetchFailedTasks) {
         Future {
           getStagesWithFailedTasks(attemptTarget)
@@ -106,10 +107,11 @@ class SparkRestClient(sparkConf: SparkConf) {
         applicationInfo,
         jobData,
         Await.result(futureStageDatas, DEFAULT_TIMEOUT),
-        Await.result(futureExecutorSummaries, Duration(5, SECONDS)),
+        Await.result(futureExecutorSummaries, Duration(500, SECONDS)),
         Await.result(futureFailedTasks, DEFAULT_TIMEOUT),
         Await.result(futureLogData, Duration(5, SECONDS)),
-        attemptTarget.getUri.toString
+        attemptTarget.getUri.toString,
+        Await.result(appConfigurationProperties, DEFAULT_TIMEOUT)
       )
 
     }
@@ -217,6 +219,19 @@ class SparkRestClient(sparkConf: SparkConf) {
     }
   }
 
+  private def getSparkConfigs(attemptTarget: WebTarget): ApplicationConfigImpl = {
+    val target = attemptTarget.path("environment")
+    try {
+      get(target, SparkRestObjectMapper.readValue[ApplicationConfigImpl])
+    } catch {
+      case NonFatal(e) => {
+        logger.error(s"error reading sparkConfigs ${target.getUri}. Exception Message = " + e.getMessage, e)
+        logger.debug(e)
+        throw e
+      }
+    }
+  }
+  
   private def getStageDatas(attemptTarget: WebTarget): Seq[StageDataImpl] = {
     val target = attemptTarget.path("stages/withSummaries")
     try {
