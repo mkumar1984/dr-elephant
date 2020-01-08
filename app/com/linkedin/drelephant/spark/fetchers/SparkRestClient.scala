@@ -94,7 +94,6 @@ class SparkRestClient(sparkConf: SparkConf) {
       val futureExecutorSummaries = Future {
         getExecutorSummaries(attemptTarget)
       }
-      val futureLogData = Future.successful(None)
       val futureFailedTasks = if (fetchFailedTasks) {
         Future {
           getStagesWithFailedTasks(attemptTarget)
@@ -109,7 +108,6 @@ class SparkRestClient(sparkConf: SparkConf) {
         Await.result(futureStageDatas, DEFAULT_TIMEOUT),
         Await.result(futureExecutorSummaries, Duration(5, SECONDS)),
         Await.result(futureFailedTasks, DEFAULT_TIMEOUT),
-        Await.result(futureLogData, Duration(5, SECONDS)),
         attemptTarget.getUri.toString,
         Await.result(appConfigurationProperties, DEFAULT_TIMEOUT)
       )

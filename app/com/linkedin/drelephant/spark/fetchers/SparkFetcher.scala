@@ -116,7 +116,7 @@ class SparkFetcher(fetcherConfigurationData: FetcherConfigurationData)
 
     val logDerivedData = eventLogSource match {
       case EventLogSource.None => None
-      case EventLogSource.Rest => restDerivedData.logDerivedData
+      case EventLogSource.Rest => None
       case EventLogSource.WebHdfs =>
         val lastAttemptId = restDerivedData.applicationInfo.attempts.maxBy {
           _.startTime

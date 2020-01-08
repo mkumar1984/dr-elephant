@@ -78,7 +78,6 @@ class SparkRestClientTest extends AsyncFunSpec with Matchers {
         restDerivedData.jobDatas should not be (None)
         restDerivedData.stageDatas should not be (None)
         restDerivedData.executorSummaries should not be (None)
-        restDerivedData.logDerivedData should be(None)
       } flatMap {
         case assertion: Try[Assertion] => assertion
         case _ =>
@@ -195,7 +194,6 @@ class SparkRestClientTest extends AsyncFunSpec with Matchers {
         restDerivedData.jobDatas should not be(None)
         restDerivedData.stageDatas should not be(None)
         restDerivedData.executorSummaries should not be(None)
-        restDerivedData.logDerivedData should be(None)
       } flatMap {
         case assertion: Try[Assertion] => assertion
         case _ =>
