@@ -60,7 +60,7 @@ object SparkApplicationData {
     restDerivedData: SparkRestDerivedData,
     logDerivedData: Option[SparkLogDerivedData]
   ): SparkApplicationData = {
-    var appConfigurationProperties: Map[String, String] = null
+    var appConfigurationProperties: Map[String, String] = Map.empty[String, String]
     if(!restDerivedData.appConfigurationProperties.isDefined) {
       appConfigurationProperties =
             logDerivedData
